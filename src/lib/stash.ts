@@ -9,16 +9,20 @@ export type FeedItem = {
   description: string | null;
   image_url: string | null;
   created_at: string;
+  brand_id: string | null;
+  category: string | null;
   authorName: string;
+  brandName: string | null;
+  brandSlug: string | null;
   stashCount: number;
   trashCount: number;
   myVerdict: Verdict | null;
   signedImageUrl: string | null;
 };
 
-const BUCKET = "item-images";
+export const BUCKET = "item-images";
 
-async function signImages(paths: (string | null)[]): Promise<Map<string, string>> {
+export async function signImages(paths: (string | null)[]): Promise<Map<string, string>> {
   const unique = [...new Set(paths.filter((p): p is string => !!p))];
   const map = new Map<string, string>();
   if (unique.length === 0) return map;
@@ -29,30 +33,43 @@ async function signImages(paths: (string | null)[]): Promise<Map<string, string>
   return map;
 }
 
-export async function fetchFeed(currentUserId: string | null): Promise<FeedItem[]> {
-  const { data: items, error } = await supabase
+export async function fetchFeed(
+  currentUserId: string | null,
+  opts?: { brandId?: string },
+): Promise<FeedItem[]> {
+  let query = supabase
     .from("items")
-    .select("id, user_id, title, description, image_url, created_at")
+    .select("id, user_id, title, description, image_url, created_at, brand_id, category")
     .order("created_at", { ascending: false });
+  if (opts?.brandId) query = query.eq("brand_id", opts.brandId);
+  const { data: items, error } = await query;
   if (error) throw error;
   if (!items || items.length === 0) return [];
 
   const itemIds = items.map((i) => i.id);
   const authorIds = [...new Set(items.map((i) => i.user_id))];
+  const brandIds = [...new Set(items.map((i) => i.brand_id).filter((b): b is string => !!b))];
 
-  const [{ data: votes }, { data: profiles }, signed] = await Promise.all([
+  const [{ data: votes }, { data: profiles }, brandsRes, signed] = await Promise.all([
     supabase.from("votes").select("item_id, user_id, verdict").in("item_id", itemIds),
     supabase.from("profiles").select("id, display_name").in("id", authorIds),
+    brandIds.length
+      ? supabase.from("brands").select("id, name, slug").in("id", brandIds)
+      : Promise.resolve({ data: [] as { id: string; name: string; slug: string }[] }),
     signImages(items.map((i) => i.image_url)),
   ]);
 
   const nameById = new Map((profiles ?? []).map((p) => [p.id, p.display_name]));
+  const brandById = new Map((brandsRes.data ?? []).map((b) => [b.id, b]));
 
   return items.map((item) => {
     const itemVotes = (votes ?? []).filter((v) => v.item_id === item.id);
+    const brand = item.brand_id ? brandById.get(item.brand_id) : null;
     return {
       ...item,
       authorName: nameById.get(item.user_id) ?? "Anonymous",
+      brandName: brand?.name ?? null,
+      brandSlug: brand?.slug ?? null,
       stashCount: itemVotes.filter((v) => v.verdict === "stash").length,
       trashCount: itemVotes.filter((v) => v.verdict === "trash").length,
       myVerdict:
@@ -81,6 +98,8 @@ export async function createItem(input: {
   title: string;
   description: string;
   file: File | null;
+  brandId?: string | null;
+  category?: string | null;
 }) {
   let imagePath: string | null = null;
   if (input.file) {
@@ -97,6 +116,8 @@ export async function createItem(input: {
     title: input.title.trim(),
     description: input.description.trim() || null,
     image_url: imagePath,
+    brand_id: input.brandId || null,
+    category: input.category?.trim() || null,
   });
   if (error) throw error;
 }

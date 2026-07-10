@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { createItem } from "@/lib/stash";
+import { fetchBrands } from "@/lib/brands";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +12,13 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,17 +26,35 @@ import { Label } from "@/components/ui/label";
 import { Plus, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 
-export function SubmitDialog({ onPosted }: { onPosted?: () => void }) {
+const NO_BRAND = "__none__";
+
+export function SubmitDialog({
+  onPosted,
+  defaultBrandId,
+}: {
+  onPosted?: () => void;
+  defaultBrandId?: string;
+}) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [brandId, setBrandId] = useState<string>(defaultBrandId ?? NO_BRAND);
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const { data: brands } = useQuery({
+    queryKey: ["brands-select"],
+    queryFn: fetchBrands,
+    enabled: open && !defaultBrandId,
+  });
 
   const reset = () => {
     setTitle("");
     setDescription("");
+    setCategory("");
+    setBrandId(defaultBrandId ?? NO_BRAND);
     setFile(null);
   };
 
@@ -39,7 +66,14 @@ export function SubmitDialog({ onPosted }: { onPosted?: () => void }) {
     }
     setSubmitting(true);
     try {
-      await createItem({ userId: user.id, title, description, file });
+      await createItem({
+        userId: user.id,
+        title,
+        description,
+        file,
+        brandId: brandId === NO_BRAND ? null : brandId,
+        category,
+      });
       toast.success("Posted! Let the verdict begin.");
       reset();
       setOpen(false);
@@ -62,7 +96,7 @@ export function SubmitDialog({ onPosted }: { onPosted?: () => void }) {
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">Post something to judge</DialogTitle>
           <DialogDescription>
-            Add a photo and a few words. The community decides: stash it or trash it.
+            Tag a brand, add a photo, and let the community decide: stash it or trash it.
           </DialogDescription>
         </DialogHeader>
 
@@ -77,6 +111,38 @@ export function SubmitDialog({ onPosted }: { onPosted?: () => void }) {
               maxLength={120}
             />
           </div>
+
+          {!defaultBrandId && (
+            <div className="space-y-2">
+              <Label>Brand (optional)</Label>
+              <Select value={brandId} onValueChange={setBrandId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pick a brand" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_BRAND}>No brand</SelectItem>
+                  {(brands ?? []).map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
+                      {b.verified ? " ✓" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Category (optional)</Label>
+            <Input
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Packaging, ad, product, service…"
+              maxLength={40}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="desc">Description (optional)</Label>
             <Textarea

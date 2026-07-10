@@ -1,8 +1,9 @@
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, Link } from "@tanstack/react-router";
 import type { FeedItem, Verdict } from "@/lib/stash";
 import { castVote, removeVote, deleteItem } from "@/lib/stash";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ThumbsUp, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -64,6 +65,24 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
+            {(item.brandName || item.category) && (
+              <div className="mb-1 flex flex-wrap items-center gap-2">
+                {item.brandName && item.brandSlug && (
+                  <Link
+                    to="/brands/$slug"
+                    params={{ slug: item.brandSlug }}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    {item.brandName}
+                  </Link>
+                )}
+                {item.category && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {item.category}
+                  </Badge>
+                )}
+              </div>
+            )}
             <h3 className="font-display text-xl font-bold leading-tight">{item.title}</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">by {item.authorName}</p>
           </div>
