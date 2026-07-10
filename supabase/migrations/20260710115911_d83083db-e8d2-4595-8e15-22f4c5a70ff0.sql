@@ -1,0 +1,9 @@
+REVOKE EXECUTE ON FUNCTION public.recompute_brand_trust(uuid) FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.recompute_user_trust(uuid) FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.grant_brand_role() FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.protect_brand_privileged_fields() FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.protect_profile_trust() FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.trg_votes_recompute() FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.trg_items_recompute() FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.update_updated_at_column() FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon, authenticated;

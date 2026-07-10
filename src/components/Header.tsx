@@ -1,39 +1,70 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
+import { useRoles } from "@/hooks/useRoles";
 import { Button } from "@/components/ui/button";
 import { SubmitDialog } from "@/components/SubmitDialog";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { MessageCircle, Shield } from "lucide-react";
 import sotLogo from "@/assets/sot-logo.png.asset.json";
 
 export function Header({ onPosted }: { onPosted?: () => void }) {
   const { user, loading, signOut } = useAuth();
+  const { isAdmin } = useRoles();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <img
-            src={sotLogo.url}
-            alt="Stash or Trash logo"
-            className="h-10 w-10 rounded-lg object-contain"
-          />
-          <span className="font-display text-xl font-extrabold">
-            Stash<span className="text-muted-foreground"> or </span>
-            <span className="text-trash">Trash</span>
-          </span>
-        </Link>
+      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
+        <div className="flex items-center gap-6">
+          <Link to="/" className="flex items-center gap-2">
+            <img
+              src={sotLogo.url}
+              alt="Stash or Trash logo"
+              className="h-10 w-10 rounded-lg object-contain"
+            />
+            <span className="hidden font-display text-xl font-extrabold sm:inline">
+              Stash<span className="text-muted-foreground"> or </span>
+              <span className="text-trash">Trash</span>
+            </span>
+          </Link>
+          <nav className="flex items-center gap-1 text-sm font-medium">
+            <Link
+              to="/"
+              className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
+            >
+              {t("nav.feed")}
+            </Link>
+            <Link
+              to="/brands"
+              className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
+            >
+              {t("nav.brands")}
+            </Link>
+          </nav>
+        </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <LanguageSwitcher />
           {loading ? null : user ? (
             <>
+              {isAdmin && (
+                <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/admin" })} aria-label={t("nav.admin")}>
+                  <Shield className="h-4 w-4" />
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/messages" })} aria-label={t("nav.messages")}>
+                <MessageCircle className="h-4 w-4" />
+              </Button>
               <SubmitDialog onPosted={onPosted} />
               <Button variant="ghost" size="sm" onClick={() => signOut()}>
-                Sign out
+                {t("nav.signOut")}
               </Button>
             </>
           ) : (
             <Button size="sm" onClick={() => navigate({ to: "/auth" })}>
-              Sign in
+              {t("nav.signIn")}
             </Button>
           )}
         </div>
