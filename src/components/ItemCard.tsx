@@ -8,6 +8,7 @@ import { ThumbsUp, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useState } from "react";
+import { recordVote, emitEngagementChange } from "@/lib/engagement";
 
 export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => void }) {
   const { user } = useAuth();
