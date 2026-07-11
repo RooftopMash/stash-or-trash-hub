@@ -30,6 +30,9 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
         await removeVote(item.id, user.id);
       } else {
         await castVote(item.id, user.id, verdict);
+        const { reward, milestone } = recordVote();
+        emitEngagementChange();
+        toast.success(milestone ?? reward);
       }
       onChange();
     } catch (e) {
