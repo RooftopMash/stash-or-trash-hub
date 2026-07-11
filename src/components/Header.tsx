@@ -19,15 +19,14 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
         <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="group flex items-center gap-2">
             <img
               src={sotLogo.url}
-              alt="Stash or Trash logo"
-              className="h-10 w-10 rounded-lg object-contain"
+              alt="SOT — Stash Or Trash logo"
+              className="h-10 w-10 rounded-lg object-contain transition-transform group-hover:scale-110 group-hover:rotate-3"
             />
-            <span className="hidden font-display text-xl font-extrabold sm:inline">
-              Stash<span className="text-muted-foreground"> or </span>
-              <span className="text-trash">Trash</span>
+            <span className="hidden sm:inline">
+              <SotWordmark className="text-xl" />
             </span>
           </Link>
           <nav className="flex items-center gap-1 text-sm font-medium">
