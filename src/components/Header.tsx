@@ -7,6 +7,7 @@ import { SubmitDialog } from "@/components/SubmitDialog";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { MessageCircle, Shield } from "lucide-react";
 import sotLogo from "@/assets/sot-logo.png.asset.json";
+import { SotWordmark } from "@/components/SotWordmark";
 
 export function Header({ onPosted }: { onPosted?: () => void }) {
   const { user, loading, signOut } = useAuth();
