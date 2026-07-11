@@ -81,17 +81,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Stash or Trash — The community verdict app" },
+      { title: "SOT — Stash Or Trash | The Brand Barometer" },
       {
         name: "description",
         content:
-          "Post it. Let the crowd decide. Stash or Trash lets people vote Stash or Trash on anything — products, outfits, ideas — and watch the verdict roll in live.",
+          "SOT (Stash Or Trash) is the Brand Barometer — a CX/UX marketing & PR tool where the community delivers a live verdict on brands. Cast yours and keep your streak alive.",
       },
-      { name: "author", content: "Stash or Trash" },
-      { property: "og:title", content: "Stash or Trash — The community verdict app" },
+      { name: "author", content: "SOT — Stash Or Trash" },
+      { property: "og:title", content: "SOT — Stash Or Trash | The Brand Barometer" },
       {
         property: "og:description",
-        content: "Post anything and let the community decide: Stash it or Trash it.",
+        content: "Post anything about a brand and let the community decide: Stash it Or Trash it.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

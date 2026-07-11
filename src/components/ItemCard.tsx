@@ -8,6 +8,7 @@ import { ThumbsUp, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useState } from "react";
+import { recordVote, emitEngagementChange } from "@/lib/engagement";
 
 export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => void }) {
   const { user } = useAuth();
@@ -29,6 +30,9 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
         await removeVote(item.id, user.id);
       } else {
         await castVote(item.id, user.id, verdict);
+        const { reward, milestone } = recordVote();
+        emitEngagementChange();
+        toast.success(milestone ?? reward);
       }
       onChange();
     } catch (e) {

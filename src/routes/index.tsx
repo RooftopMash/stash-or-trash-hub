@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { ItemCard } from "@/components/ItemCard";
+import { EngagementBar } from "@/components/EngagementBar";
+import { SotWordmark } from "@/components/SotWordmark";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchFeed } from "@/lib/stash";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,14 +27,18 @@ function Index() {
       <main className="mx-auto max-w-3xl px-4 py-8">
         <section className="mb-8 text-center">
           <h1 className="font-display text-4xl font-extrabold sm:text-5xl">
-            Post it. <span className="text-stash">Stash</span> it or{" "}
-            <span className="text-trash">trash</span> it.
+            <SotWordmark size="lg" />
           </h1>
           <p className="mx-auto mt-3 max-w-md text-muted-foreground">
-            Share anything — a product, an outfit, an idea — and let the community deliver its
-            verdict in real time.
+            The Brand Barometer. Post anything about a brand and let the community deliver its
+            verdict in real time — the CX &amp; PR signal that matters.
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-sm font-medium text-foreground">
+            Every verdict brings brands closer to the people they serve. Cast yours. 🔥
           </p>
         </section>
+
+        <EngagementBar />
 
         {isLoading ? (
           <div className="space-y-4">
