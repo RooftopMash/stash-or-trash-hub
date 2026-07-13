@@ -51,6 +51,16 @@ export async function fetchBrands(): Promise<Brand[]> {
   return decorate(data ?? []);
 }
 
+export async function fetchMyBrands(ownerId: string): Promise<Brand[]> {
+  const { data, error } = await supabase
+    .from("brands")
+    .select("*")
+    .eq("owner_id", ownerId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return decorate(data ?? []);
+}
+
 export async function fetchBrandBySlug(slug: string): Promise<Brand | null> {
   const { data, error } = await supabase.from("brands").select("*").eq("slug", slug).maybeSingle();
   if (error) throw error;
@@ -177,4 +187,20 @@ export async function reviewVerification(input: {
     const { error: bErr } = await supabase.from("brands").update({ verified: true }).eq("id", input.brandId);
     if (bErr) throw bErr;
   }
+}
+
+export type BrandStats = {
+  posts: number;
+  stash: number;
+  trash: number;
+};
+
+export async function fetchBrandStats(brandId: string): Promise<BrandStats> {
+  const { data: items } = await supabase.from("items").select("id").eq("brand_id", brandId);
+  const itemIds = (items ?? []).map((i) => i.id);
+  if (itemIds.length === 0) return { posts: 0, stash: 0, trash: 0 };
+  const { data: votes } = await supabase.from("votes").select("verdict").in("item_id", itemIds);
+  const stash = (votes ?? []).filter((v) => v.verdict === "stash").length;
+  const trash = (votes ?? []).filter((v) => v.verdict === "trash").length;
+  return { posts: itemIds.length, stash, trash };
 }

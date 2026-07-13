@@ -55,6 +55,9 @@ export const LANGUAGES: { code: string; label: string }[] = [
   { code: "sw", label: "Kiswahili" },
   { code: "am", label: "አማርኛ" },
   { code: "zu", label: "isiZulu" },
+  { code: "xh", label: "isiXhosa" },
+  { code: "st", label: "Sesotho" },
+  { code: "tn", label: "Setswana" },
   { code: "af", label: "Afrikaans" },
   { code: "ha", label: "Hausa" },
   { code: "yo", label: "Yorùbá" },
@@ -70,6 +73,8 @@ const en = {
       brands: "Brands",
       messages: "Messages",
       admin: "Admin",
+      dashboard: "Dashboard",
+      awards: "Awards",
       post: "Post",
       signIn: "Sign in",
       signOut: "Sign out",
@@ -110,6 +115,44 @@ const en = {
       website: "Website",
       by: "Managed by",
     },
+    dashboard: {
+      title: "Brand dashboard",
+      subtitle: "Manage the brands you represent and track their live sentiment.",
+      noBrands: "You don't manage any brands yet.",
+      createFirst: "Create your first brand",
+      newBrand: "New brand",
+      trustScore: "Trust score",
+      posts: "Posts",
+      stash: "Stash",
+      trash: "Trash",
+      verified: "Verified",
+      unverified: "Unverified",
+      requestVerification: "Request verification",
+      view: "View page",
+      manage: "Manage",
+    },
+    awards: {
+      title: "The SOT Awards",
+      tagline: "The people's verdict, made official.",
+      intro:
+        "Every year, the brands the world trusts most are crowned at the SOT Awards — decided entirely by real verdicts from real people. No paid panels. No boardrooms. Just the crowd.",
+      leaderboard: "Live leaderboard",
+      leaderboardNote: "The current standings that shape this year's awards.",
+      rank: "Rank",
+      brand: "Brand",
+      score: "Trust score",
+      categoryTitle: "Award categories",
+      cat1: "Most Trusted Brand",
+      cat1d: "Highest overall trust score across the year.",
+      cat2: "People's Champion",
+      cat2d: "Most Stash verdicts from the community.",
+      cat3: "Biggest Turnaround",
+      cat3d: "Largest trust-score climb over 12 months.",
+      cat4: "Rising Star",
+      cat4d: "Best new brand of the year.",
+      cta: "Represent your brand",
+      ctaNote: "Own a brand? Claim your page and climb the leaderboard.",
+    },
     messages: {
       title: "Messages",
       empty: "No messages yet.",
@@ -133,68 +176,129 @@ const en = {
   },
 };
 
+// Helper to build a translation bundle from just a nav override, keeping the
+// rest of the English strings so nothing renders blank.
+function withNav(nav: Record<string, string>): typeof en {
+  return { translation: { ...en.translation, nav: { ...en.translation.nav, ...nav } } };
+}
+
 const resources: Record<string, typeof en> = {
   en,
-  es: {
-    translation: {
-      ...en.translation,
-      nav: {
-        feed: "Inicio",
-        brands: "Marcas",
-        messages: "Mensajes",
-        admin: "Admin",
-        post: "Publicar",
-        signIn: "Entrar",
-        signOut: "Salir",
-        profile: "Perfil",
-      },
-    },
-  },
-  fr: {
-    translation: {
-      ...en.translation,
-      nav: {
-        feed: "Accueil",
-        brands: "Marques",
-        messages: "Messages",
-        admin: "Admin",
-        post: "Publier",
-        signIn: "Connexion",
-        signOut: "Déconnexion",
-        profile: "Profil",
-      },
-    },
-  },
-  de: {
-    translation: {
-      ...en.translation,
-      nav: {
-        feed: "Feed",
-        brands: "Marken",
-        messages: "Nachrichten",
-        admin: "Admin",
-        post: "Posten",
-        signIn: "Anmelden",
-        signOut: "Abmelden",
-        profile: "Profil",
-      },
-    },
-  },
-  pt: {
-    translation: {
-      ...en.translation,
-      nav: {
-        feed: "Início",
-        brands: "Marcas",
-        messages: "Mensagens",
-        admin: "Admin",
-        post: "Publicar",
-        signIn: "Entrar",
-        signOut: "Sair",
-        profile: "Perfil",
-      },
-    },
-  },
+  es: withNav({
+    feed: "Inicio", brands: "Marcas", messages: "Mensajes", admin: "Admin",
+    dashboard: "Panel", awards: "Premios", post: "Publicar",
+    signIn: "Entrar", signOut: "Salir", profile: "Perfil",
+  }),
+  fr: withNav({
+    feed: "Accueil", brands: "Marques", messages: "Messages", admin: "Admin",
+    dashboard: "Tableau de bord", awards: "Prix", post: "Publier",
+    signIn: "Connexion", signOut: "Déconnexion", profile: "Profil",
+  }),
+  de: withNav({
+    feed: "Feed", brands: "Marken", messages: "Nachrichten", admin: "Admin",
+    dashboard: "Dashboard", awards: "Awards", post: "Posten",
+    signIn: "Anmelden", signOut: "Abmelden", profile: "Profil",
+  }),
+  pt: withNav({
+    feed: "Início", brands: "Marcas", messages: "Mensagens", admin: "Admin",
+    dashboard: "Painel", awards: "Prémios", post: "Publicar",
+    signIn: "Entrar", signOut: "Sair", profile: "Perfil",
+  }),
+  it: withNav({
+    feed: "Feed", brands: "Marchi", messages: "Messaggi", admin: "Admin",
+    dashboard: "Cruscotto", awards: "Premi", post: "Pubblica",
+    signIn: "Accedi", signOut: "Esci", profile: "Profilo",
+  }),
+  nl: withNav({
+    feed: "Feed", brands: "Merken", messages: "Berichten", admin: "Admin",
+    dashboard: "Dashboard", awards: "Awards", post: "Plaatsen",
+    signIn: "Inloggen", signOut: "Uitloggen", profile: "Profiel",
+  }),
+  ru: withNav({
+    feed: "Лента", brands: "Бренды", messages: "Сообщения", admin: "Админ",
+    dashboard: "Панель", awards: "Награды", post: "Опубликовать",
+    signIn: "Войти", signOut: "Выйти", profile: "Профиль",
+  }),
+  ar: withNav({
+    feed: "الرئيسية", brands: "العلامات", messages: "الرسائل", admin: "المشرف",
+    dashboard: "لوحة التحكم", awards: "الجوائز", post: "نشر",
+    signIn: "تسجيل الدخول", signOut: "تسجيل الخروج", profile: "الملف الشخصي",
+  }),
+  hi: withNav({
+    feed: "फ़ीड", brands: "ब्रांड", messages: "संदेश", admin: "एडमिन",
+    dashboard: "डैशबोर्ड", awards: "पुरस्कार", post: "पोस्ट करें",
+    signIn: "साइन इन", signOut: "साइन आउट", profile: "प्रोफ़ाइल",
+  }),
+  zh: withNav({
+    feed: "动态", brands: "品牌", messages: "消息", admin: "管理",
+    dashboard: "仪表板", awards: "大奖", post: "发布",
+    signIn: "登录", signOut: "退出", profile: "个人资料",
+  }),
+  ja: withNav({
+    feed: "フィード", brands: "ブランド", messages: "メッセージ", admin: "管理",
+    dashboard: "ダッシュボード", awards: "アワード", post: "投稿",
+    signIn: "ログイン", signOut: "ログアウト", profile: "プロフィール",
+  }),
+  sw: withNav({
+    feed: "Mlisho", brands: "Chapa", messages: "Ujumbe", admin: "Msimamizi",
+    dashboard: "Dashibodi", awards: "Tuzo", post: "Chapisha",
+    signIn: "Ingia", signOut: "Toka", profile: "Wasifu",
+  }),
+  zu: withNav({
+    feed: "Ifidi", brands: "Amabhrendi", messages: "Imilayezo", admin: "Umlawuli",
+    dashboard: "Ideshubhodi", awards: "Imiklomelo", post: "Thumela",
+    signIn: "Ngena", signOut: "Phuma", profile: "Iphrofayela",
+  }),
+  xh: withNav({
+    feed: "Ifidi", brands: "Iimpawu", messages: "Imiyalezo", admin: "Umlawuli",
+    dashboard: "Ideshbhodi", awards: "Amabhaso", post: "Thumela",
+    signIn: "Ngena", signOut: "Phuma", profile: "Iprofayile",
+  }),
+  st: withNav({
+    feed: "Phepha", brands: "Diteko", messages: "Melaetsa", admin: "Molaodi",
+    dashboard: "Laeboto", awards: "Dikgau", post: "Phatlalatsa",
+    signIn: "Kena", signOut: "Tswa", profile: "Boemo",
+  }),
+  tn: withNav({
+    feed: "Phephe", brands: "Diteko", messages: "Melaetsa", admin: "Molaodi",
+    dashboard: "Laeboto", awards: "Dituelo", post: "Phasalatsa",
+    signIn: "Tsena", signOut: "Tswa", profile: "Semelo",
+  }),
+  af: withNav({
+    feed: "Voer", brands: "Handelsmerke", messages: "Boodskappe", admin: "Admin",
+    dashboard: "Kontroleskerm", awards: "Toekennings", post: "Plaas",
+    signIn: "Meld aan", signOut: "Meld af", profile: "Profiel",
+  }),
+  ha: withNav({
+    feed: "Ciyarwa", brands: "Alamu", messages: "Saƙonni", admin: "Admin",
+    dashboard: "Dashboard", awards: "Kyaututtuka", post: "Turawa",
+    signIn: "Shiga", signOut: "Fita", profile: "Bayani",
+  }),
+  yo: withNav({
+    feed: "Ìfúnnì", brands: "Àmì", messages: "Ìránṣẹ́", admin: "Alámòjútó",
+    dashboard: "Pátákó", awards: "Ẹ̀bùn", post: "Fìránṣẹ́",
+    signIn: "Wọlé", signOut: "Jáde", profile: "Àkọọ́lẹ̀",
+  }),
+  ig: withNav({
+    feed: "Ntanetị", brands: "Akara", messages: "Ozi", admin: "Onye nchịkwa",
+    dashboard: "Dashboard", awards: "Onyinye", post: "Tinye",
+    signIn: "Banye", signOut: "Pụọ", profile: "Profaịlụ",
+  }),
+  tr: withNav({
+    feed: "Akış", brands: "Markalar", messages: "Mesajlar", admin: "Yönetici",
+    dashboard: "Panel", awards: "Ödüller", post: "Paylaş",
+    signIn: "Giriş", signOut: "Çıkış", profile: "Profil",
+  }),
+  id: withNav({
+    feed: "Beranda", brands: "Merek", messages: "Pesan", admin: "Admin",
+    dashboard: "Dasbor", awards: "Penghargaan", post: "Posting",
+    signIn: "Masuk", signOut: "Keluar", profile: "Profil",
+  }),
+  ko: withNav({
+    feed: "피드", brands: "브랜드", messages: "메시지", admin: "관리자",
+    dashboard: "대시보드", awards: "어워드", post: "게시",
+    signIn: "로그인", signOut: "로그아웃", profile: "프로필",
+  }),
 };
 
 if (!i18n.isInitialized) {
