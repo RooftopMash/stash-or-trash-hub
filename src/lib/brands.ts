@@ -188,3 +188,19 @@ export async function reviewVerification(input: {
     if (bErr) throw bErr;
   }
 }
+
+export type BrandStats = {
+  posts: number;
+  stash: number;
+  trash: number;
+};
+
+export async function fetchBrandStats(brandId: string): Promise<BrandStats> {
+  const { data: items } = await supabase.from("items").select("id").eq("brand_id", brandId);
+  const itemIds = (items ?? []).map((i) => i.id);
+  if (itemIds.length === 0) return { posts: 0, stash: 0, trash: 0 };
+  const { data: votes } = await supabase.from("votes").select("verdict").in("item_id", itemIds);
+  const stash = (votes ?? []).filter((v) => v.verdict === "stash").length;
+  const trash = (votes ?? []).filter((v) => v.verdict === "trash").length;
+  return { posts: itemIds.length, stash, trash };
+}
