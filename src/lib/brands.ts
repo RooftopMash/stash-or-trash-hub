@@ -51,6 +51,16 @@ export async function fetchBrands(): Promise<Brand[]> {
   return decorate(data ?? []);
 }
 
+export async function fetchMyBrands(ownerId: string): Promise<Brand[]> {
+  const { data, error } = await supabase
+    .from("brands")
+    .select("*")
+    .eq("owner_id", ownerId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return decorate(data ?? []);
+}
+
 export async function fetchBrandBySlug(slug: string): Promise<Brand | null> {
   const { data, error } = await supabase.from("brands").select("*").eq("slug", slug).maybeSingle();
   if (error) throw error;
