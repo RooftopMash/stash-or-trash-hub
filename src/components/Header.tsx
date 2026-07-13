@@ -42,6 +42,20 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
             >
               {t("nav.brands")}
             </Link>
+            <Link
+              to="/awards"
+              className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
+            >
+              {t("nav.awards")}
+            </Link>
+            {user && (
+              <Link
+                to="/dashboard"
+                className="hidden rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground sm:inline-block"
+              >
+                {t("nav.dashboard")}
+              </Link>
+            )}
           </nav>
         </div>
 
