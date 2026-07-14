@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      brand_import_candidates: {
+        Row: {
+          category: string | null
+          country: string | null
+          created_at: string
+          description: string | null
+          id: string
+          imported_brand_id: string | null
+          logo_url: string | null
+          name: string
+          notes: string | null
+          reviewed_by: string | null
+          slug: string
+          source: string
+          source_id: string | null
+          status: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          category?: string | null
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          imported_brand_id?: string | null
+          logo_url?: string | null
+          name: string
+          notes?: string | null
+          reviewed_by?: string | null
+          slug: string
+          source?: string
+          source_id?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          category?: string | null
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          imported_brand_id?: string | null
+          logo_url?: string | null
+          name?: string
+          notes?: string | null
+          reviewed_by?: string | null
+          slug?: string
+          source?: string
+          source_id?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_import_candidates_imported_brand_id_fkey"
+            columns: ["imported_brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_verification_requests: {
         Row: {
           brand_id: string
