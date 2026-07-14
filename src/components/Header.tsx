@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoles } from "@/hooks/useRoles";
+import { useUnreadCount } from "@/hooks/useUnreadCount";
 import { Button } from "@/components/ui/button";
 import { SubmitDialog } from "@/components/SubmitDialog";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -14,6 +15,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
   const { isAdmin } = useRoles();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const unread = useUnreadCount(user?.id);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -68,8 +70,13 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
                   <Shield className="h-4 w-4" />
                 </Button>
               )}
-              <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/messages" })} aria-label={t("nav.messages")}>
+              <Button variant="ghost" size="icon" className="relative" onClick={() => navigate({ to: "/messages" })} aria-label={t("nav.messages")}>
                 <MessageCircle className="h-4 w-4" />
+                {unread > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-trash px-1 text-[10px] font-bold text-white">
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                )}
               </Button>
               <SubmitDialog onPosted={onPosted} />
               <Button variant="ghost" size="sm" onClick={() => signOut()}>
