@@ -11,6 +11,7 @@ import {
   markThreadRead,
   partnerName,
 } from "@/lib/messages";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,25 @@ function MessagesPage() {
   useEffect(() => {
     if (user && active) markThreadRead(user.id, active).then(() => refetchInbox());
   }, [user, active, thread?.length, refetchInbox]);
+
+  // Realtime: live inbox + open thread updates.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`messages-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages", filter: `recipient_id=eq.${user.id}` },
+        () => { refetchInbox(); refetchThread(); },
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages", filter: `sender_id=eq.${user.id}` },
+        () => { refetchInbox(); refetchThread(); },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, refetchInbox, refetchThread]);
 
   const conversations = useMemo(() => inbox ?? [], [inbox]);
 
