@@ -40,16 +40,20 @@ function BrandPage() {
   const isOwner = !!user && brand?.owner_id === user.id;
 
   const { data: verReq, refetch: refetchVer } = useQuery({
-    queryKey: ["brand-verify", brand?.id],
+    queryKey: ["brand-verify", brand?.id, user?.id],
     queryFn: () => fetchMyVerificationRequest(brand!.id),
-    enabled: !!brand && isOwner,
+    enabled: !!brand && !!user,
   });
 
-  const askVerify = async () => {
+  const askVerify = async (claim = false) => {
     if (!brand || !user) return;
     try {
-      await requestVerification({ brandId: brand.id, userId: user.id, message: "" });
-      toast.success("Verification requested.");
+      await requestVerification({
+        brandId: brand.id,
+        userId: user.id,
+        message: claim ? `I represent ${brand.name} and would like to claim this SOT brand page.` : "",
+      });
+      toast.success(claim ? "Brand claim requested." : "Verification requested.");
       refetchVer();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not request verification.");
@@ -101,7 +105,7 @@ function BrandPage() {
                   )}
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {user && !isOwner && (
+                  {user && !isOwner && brand.verified && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -111,12 +115,22 @@ function BrandPage() {
                       <MessageCircle className="h-4 w-4" /> {t("brand.message")}
                     </Button>
                   )}
+                  {user && !isOwner && !brand.verified && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={verReq?.status === "pending"}
+                      onClick={() => askVerify(true)}
+                    >
+                      {verReq?.status === "pending" ? "Claim pending" : "Claim this brand"}
+                    </Button>
+                  )}
                   {isOwner && !brand.verified && (
                     <Button
                       size="sm"
                       variant="outline"
                       disabled={verReq?.status === "pending"}
-                      onClick={askVerify}
+                      onClick={() => askVerify(false)}
                     >
                       {verReq?.status === "pending"
                         ? t("brand.verificationPending")

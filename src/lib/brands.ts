@@ -29,14 +29,19 @@ export function slugify(name: string): string {
 async function decorate(rows: any[]): Promise<Brand[]> {
   if (!rows.length) return [];
   const ownerIds = [...new Set(rows.map((b) => b.owner_id))];
+  const storageLogos = rows
+    .map((b) => b.logo_url)
+    .filter((url): url is string => !!url && !/^https?:\/\//i.test(url));
   const [{ data: profiles }, signed] = await Promise.all([
     supabase.from("profiles").select("id, display_name").in("id", ownerIds),
-    signImages(rows.map((b) => b.logo_url)),
+    signImages(storageLogos),
   ]);
   const nameById = new Map((profiles ?? []).map((p) => [p.id, p.display_name]));
   return rows.map((b) => ({
     ...b,
-    signedLogoUrl: b.logo_url ? (signed.get(b.logo_url) ?? null) : null,
+    signedLogoUrl: b.logo_url
+      ? (/^https?:\/\//i.test(b.logo_url) ? b.logo_url : (signed.get(b.logo_url) ?? null))
+      : null,
     ownerName: nameById.get(b.owner_id) ?? null,
   }));
 }

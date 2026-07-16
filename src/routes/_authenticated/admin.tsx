@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
@@ -11,13 +10,15 @@ import {
   importBrandsFromWikidata,
   approveBrandCandidate,
   rejectBrandCandidate,
-} from "@/lib/wikidata-import.functions";
+  buildBrandInvitation,
+} from "@/lib/wikidata-import";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Download, Check, X, Globe } from "lucide-react";
+import { Download, Check, X, Globe, Copy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
@@ -59,18 +60,15 @@ function AdminPage() {
     enabled: isAdmin,
   });
 
-  const importFn = useServerFn(importBrandsFromWikidata);
-  const approveFn = useServerFn(approveBrandCandidate);
-  const rejectFn = useServerFn(rejectBrandCandidate);
-
   const [country, setCountry] = useState("ZA");
   const [limit, setLimit] = useState(50);
   const [importing, setImporting] = useState(false);
+  const [invitation, setInvitation] = useState("");
 
   const runImport = async () => {
     setImporting(true);
     try {
-      const r = await importFn({ data: { countryCode: country, limit } });
+      const r = await importBrandsFromWikidata({ countryCode: country, limit });
       toast.success(`Imported ${r.inserted} new brands (${r.skipped} already queued).`);
       refetchCand();
     } catch (e) {
@@ -92,9 +90,13 @@ function AdminPage() {
   };
 
   const approveCandidate = async (id: string) => {
+    if (!user) return;
     try {
-      await approveFn({ data: { id } });
-      toast.success("Brand added to public directory.");
+      const brand = await approveBrandCandidate(id, user.id);
+      const text = buildBrandInvitation(brand);
+      setInvitation(text);
+      await navigator.clipboard?.writeText(text);
+      toast.success("Brand added and invitation copied.");
       refetchCand();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Approve failed.");
@@ -102,8 +104,9 @@ function AdminPage() {
   };
 
   const rejectCandidate = async (id: string) => {
+    if (!user) return;
     try {
-      await rejectFn({ data: { id } });
+      await rejectBrandCandidate(id, user.id);
       toast.success("Rejected.");
       refetchCand();
     } catch (e) {
@@ -164,6 +167,17 @@ function AdminPage() {
                     {importing ? "Importing…" : "Fetch from Wikidata"}
                   </Button>
                 </div>
+                {invitation && (
+                  <div className="mt-5 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold">Latest brand-owner invitation</p>
+                      <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigator.clipboard?.writeText(invitation)}>
+                        <Copy className="h-4 w-4" /> Copy
+                      </Button>
+                    </div>
+                    <Textarea value={invitation} readOnly className="min-h-48 text-xs" />
+                  </div>
+                )}
               </div>
             </TabsContent>
 
@@ -186,6 +200,19 @@ function AdminPage() {
                     </p>
                   </div>
                   <Button size="sm" onClick={() => approveCandidate(c.id)} className="gap-1"><Check className="h-4 w-4" />Approve</Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      const text = buildBrandInvitation({ name: c.name, slug: c.slug, website: c.website });
+                      setInvitation(text);
+                      navigator.clipboard?.writeText(text);
+                      toast.success("Invitation copied.");
+                    }}
+                    className="gap-1"
+                  >
+                    <Copy className="h-4 w-4" />Invite
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => rejectCandidate(c.id)} className="gap-1"><X className="h-4 w-4" />Reject</Button>
                 </div>
               ))}
