@@ -66,11 +66,22 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
           {loading ? null : user ? (
             <>
               {isAdmin && (
-                <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/admin" })} aria-label={t("nav.admin")}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate({ to: "/admin" })}
+                  aria-label={t("nav.admin")}
+                >
                   <Shield className="h-4 w-4" />
                 </Button>
               )}
-              <Button variant="ghost" size="icon" className="relative" onClick={() => navigate({ to: "/messages" })} aria-label={t("nav.messages")}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => navigate({ to: "/messages" })}
+                aria-label={t("nav.messages")}
+              >
                 <MessageCircle className="h-4 w-4" />
                 {unread > 0 && (
                   <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-trash px-1 text-[10px] font-bold text-white">

@@ -18,7 +18,11 @@ function DashboardPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const { data: brands, isLoading, refetch } = useQuery({
+  const {
+    data: brands,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["my-brands", user?.id],
     queryFn: () => fetchMyBrands(user!.id),
     enabled: !!user,
@@ -84,7 +88,11 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
       <div className="flex items-start gap-4">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-secondary text-lg font-bold">
           {brand.signedLogoUrl ? (
-            <img src={brand.signedLogoUrl} alt={brand.name} className="h-full w-full object-cover" />
+            <img
+              src={brand.signedLogoUrl}
+              alt={brand.name}
+              className="h-full w-full object-cover"
+            />
           ) : (
             brand.name.charAt(0).toUpperCase()
           )}

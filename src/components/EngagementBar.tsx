@@ -25,7 +25,9 @@ export function EngagementBar() {
     <div className="mb-6 rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-3 text-sm">
         <div className="flex items-center gap-1.5 font-semibold">
-          <Flame className={e.streak > 0 ? "h-4 w-4 text-trash" : "h-4 w-4 text-muted-foreground"} />
+          <Flame
+            className={e.streak > 0 ? "h-4 w-4 text-trash" : "h-4 w-4 text-muted-foreground"}
+          />
           <span>{e.streak}-day streak</span>
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground">

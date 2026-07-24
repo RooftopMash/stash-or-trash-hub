@@ -5,11 +5,7 @@ import { Header } from "@/components/Header";
 import { SubmitDialog } from "@/components/SubmitDialog";
 import { ItemCard } from "@/components/ItemCard";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  fetchBrandBySlug,
-  fetchMyVerificationRequest,
-  requestVerification,
-} from "@/lib/brands";
+import { fetchBrandBySlug, fetchMyVerificationRequest, requestVerification } from "@/lib/brands";
 import { fetchFeed } from "@/lib/stash";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,7 +47,9 @@ function BrandPage() {
       await requestVerification({
         brandId: brand.id,
         userId: user.id,
-        message: claim ? `I represent ${brand.name} and would like to claim this SOT brand page.` : "",
+        message: claim
+          ? `I represent ${brand.name} and would like to claim this SOT brand page.`
+          : "",
       });
       toast.success(claim ? "Brand claim requested." : "Verification requested.");
       refetchVer();
@@ -68,14 +66,21 @@ function BrandPage() {
           <Skeleton className="h-40 w-full rounded-2xl" />
         ) : !brand ? (
           <div className="rounded-2xl border border-dashed border-border py-16 text-center text-muted-foreground">
-            Brand not found. <Link to="/brands" className="text-primary hover:underline">Back to brands</Link>
+            Brand not found.{" "}
+            <Link to="/brands" className="text-primary hover:underline">
+              Back to brands
+            </Link>
           </div>
         ) : (
           <>
             <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 sm:flex-row">
               <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-secondary text-2xl font-bold">
                 {brand.signedLogoUrl ? (
-                  <img src={brand.signedLogoUrl} alt={brand.name} className="h-full w-full object-cover" />
+                  <img
+                    src={brand.signedLogoUrl}
+                    alt={brand.name}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   brand.name.charAt(0).toUpperCase()
                 )}
@@ -85,13 +90,17 @@ function BrandPage() {
                   <h1 className="font-display text-2xl font-extrabold">{brand.name}</h1>
                   {brand.verified && <BadgeCheck className="h-5 w-5 text-primary" />}
                 </div>
-                {brand.category && <p className="text-sm text-muted-foreground">{brand.category}</p>}
+                {brand.category && (
+                  <p className="text-sm text-muted-foreground">{brand.category}</p>
+                )}
                 {brand.description && <p className="mt-2 text-sm">{brand.description}</p>}
                 <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
                   <span className="flex items-center gap-1.5">
                     <TrendingUp className="h-4 w-4 text-stash" />
                     <span className="font-semibold">{brand.trust_score}</span>
-                    <span className="text-muted-foreground">/ 100 {t("brand.trustScore").toLowerCase()}</span>
+                    <span className="text-muted-foreground">
+                      / 100 {t("brand.trustScore").toLowerCase()}
+                    </span>
                   </span>
                   {brand.website && (
                     <a
