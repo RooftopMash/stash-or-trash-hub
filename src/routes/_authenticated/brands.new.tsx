@@ -57,7 +57,12 @@ function NewBrandPage() {
         <div className="mt-6 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Brand name</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={80}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="cat">Category</Label>

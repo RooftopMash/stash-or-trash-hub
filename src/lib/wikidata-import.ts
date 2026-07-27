@@ -1,11 +1,30 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const ISO_TO_QID: Record<string, string> = {
-  ZA: "Q258", US: "Q30", GB: "Q145", FR: "Q142", DE: "Q183",
-  IT: "Q38", ES: "Q29", PT: "Q45", NL: "Q55", BR: "Q155",
-  IN: "Q668", CN: "Q148", JP: "Q17", KR: "Q884", MX: "Q96",
-  CA: "Q16", AU: "Q408", NG: "Q1033", KE: "Q114", EG: "Q79",
-  MA: "Q1028", GH: "Q117", SN: "Q1041", ET: "Q115",
+  ZA: "Q258",
+  US: "Q30",
+  GB: "Q145",
+  FR: "Q142",
+  DE: "Q183",
+  IT: "Q38",
+  ES: "Q29",
+  PT: "Q45",
+  NL: "Q55",
+  BR: "Q155",
+  IN: "Q668",
+  CN: "Q148",
+  JP: "Q17",
+  KR: "Q884",
+  MX: "Q96",
+  CA: "Q16",
+  AU: "Q408",
+  NG: "Q1033",
+  KE: "Q114",
+  EG: "Q79",
+  MA: "Q1028",
+  GH: "Q117",
+  SN: "Q1041",
+  ET: "Q115",
 };
 
 const SPARQL_ENDPOINT = "https://query.wikidata.org/sparql";
@@ -36,9 +55,21 @@ export function buildBrandInvitation(input: {
   slug: string;
   website?: string | null;
 }) {
-  const origin = typeof window === "undefined" ? "https://stash-or-trash-hub.lovable.app" : window.location.origin;
+  const origin =
+    typeof window === "undefined"
+      ? "https://stash-or-trash-hub.lovable.app"
+      : window.location.origin;
   const brandUrl = `${origin}/brands/${input.slug}`;
   return `Subject: ${input.name} is now on SOT — Stash Or Trash\n\nHello ${input.name} team,\n\nWe have opened a live brand-rating page for ${input.name} on SOT — Stash Or Trash, the Consumer Brand Revolution built to turn everyday customer feedback into a credible reputation signal.\n\nYour page: ${brandUrl}\n${input.website ? `Website we found: ${input.website}\n` : ""}\nConsumers can now Stash or Trash brand experiences in public, and verified brand owners can claim their page, monitor sentiment, and respond directly through the platform.\n\nPlease create an account with your official company email, open the page above, and choose “Claim this brand” so our team can verify your ownership.\n\nRegards,\nSOT — Stash Or Trash\nThe Brand Barometer`;
+}
+
+interface WikidataBinding {
+  item?: { value: string };
+  itemLabel?: { value: string };
+  desc?: { value: string };
+  logo?: { value: string };
+  website?: { value: string };
+  industryLabel?: { value: string };
 }
 
 export async function importBrandsFromWikidata(input: {
@@ -63,11 +94,19 @@ export async function importBrandsFromWikidata(input: {
     LIMIT ${limit}
   `;
 
-  const res = await fetch(`${SPARQL_ENDPOINT}?format=json&query=${encodeURIComponent(query)}`, {
-    headers: { Accept: "application/sparql-results+json" },
+  // Wikidata's SPARQL endpoint strictly requires a specific 'User-Agent' header matching their robot policy to avoid 403 Forbidden errors.
+  // For browser fetch(), setting a custom 'User-Agent' is blocked, so we must set "Api-User-Agent".
+  // To avoid CORS issues when fetching directly from client-side code, we append `origin=*` to the SPARQL endpoint URL.
+  const url = `${SPARQL_ENDPOINT}?origin=*&format=json&query=${encodeURIComponent(query)}`;
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/sparql-results+json",
+      "Api-User-Agent":
+        "StashOrTrashHub/1.0 (https://stash-or-trash-hub.lovable.app; contact@stash-or-trash-hub.com) Fetching brand data",
+    },
   });
   if (!res.ok) throw new Error(`Wikidata returned ${res.status}. Please try again.`);
-  const json = await res.json() as { results?: { bindings?: any[] } };
+  const json = (await res.json()) as { results?: { bindings?: WikidataBinding[] } };
 
   const rows = (json.results?.bindings ?? [])
     .map((b) => {
@@ -99,7 +138,10 @@ export async function importBrandsFromWikidata(input: {
   return { inserted: data?.length ?? 0, skipped: rows.length - (data?.length ?? 0) };
 }
 
-export async function approveBrandCandidate(id: string, reviewerId: string): Promise<ApprovedBrand> {
+export async function approveBrandCandidate(
+  id: string,
+  reviewerId: string,
+): Promise<ApprovedBrand> {
   const { data: cand, error: candidateError } = await supabase
     .from("brand_import_candidates")
     .select("*")
@@ -110,7 +152,11 @@ export async function approveBrandCandidate(id: string, reviewerId: string): Pro
 
   let slug = cand.slug;
   for (let i = 0; i < 5; i += 1) {
-    const { data: existing } = await supabase.from("brands").select("id").eq("slug", slug).maybeSingle();
+    const { data: existing } = await supabase
+      .from("brands")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
     if (!existing) break;
     slug = `${cand.slug}-${Math.floor(Math.random() * 10000)}`;
   }

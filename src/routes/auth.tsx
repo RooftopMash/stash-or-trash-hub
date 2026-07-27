@@ -96,16 +96,33 @@ function AuthPage() {
 
             <TabsContent value="signin" className="mt-4 space-y-3">
               <Field id="si-email" label="Email" type="email" value={email} onChange={setEmail} />
-              <Field id="si-pw" label="Password" type="password" value={password} onChange={setPassword} />
+              <Field
+                id="si-pw"
+                label="Password"
+                type="password"
+                value={password}
+                onChange={setPassword}
+              />
               <Button className="w-full" onClick={signIn} disabled={busy}>
                 {busy ? "…" : "Sign in"}
               </Button>
             </TabsContent>
 
             <TabsContent value="signup" className="mt-4 space-y-3">
-              <Field id="su-name" label="Display name" value={displayName} onChange={setDisplayName} />
+              <Field
+                id="su-name"
+                label="Display name"
+                value={displayName}
+                onChange={setDisplayName}
+              />
               <Field id="su-email" label="Email" type="email" value={email} onChange={setEmail} />
-              <Field id="su-pw" label="Password" type="password" value={password} onChange={setPassword} />
+              <Field
+                id="su-pw"
+                label="Password"
+                type="password"
+                value={password}
+                onChange={setPassword}
+              />
               <Button className="w-full" onClick={signUp} disabled={busy}>
                 {busy ? "…" : "Create account"}
               </Button>

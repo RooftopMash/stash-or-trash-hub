@@ -62,7 +62,11 @@ function BrandsPage() {
               >
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-secondary text-lg font-bold">
                   {b.signedLogoUrl ? (
-                    <img src={b.signedLogoUrl} alt={b.name} className="h-full w-full object-cover" />
+                    <img
+                      src={b.signedLogoUrl}
+                      alt={b.name}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     b.name.charAt(0).toUpperCase()
                   )}
@@ -80,7 +84,9 @@ function BrandsPage() {
                   <div className="mt-2 flex items-center gap-1.5 text-sm">
                     <TrendingUp className="h-4 w-4 text-stash" />
                     <span className="font-semibold">{b.trust_score}</span>
-                    <span className="text-muted-foreground">/ 100 {t("brand.trustScore").toLowerCase()}</span>
+                    <span className="text-muted-foreground">
+                      / 100 {t("brand.trustScore").toLowerCase()}
+                    </span>
                   </div>
                 </div>
               </Link>

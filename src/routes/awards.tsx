@@ -52,8 +52,12 @@ function AwardsPage() {
         {/* Hero */}
         <section className="rounded-3xl border border-border bg-gradient-to-b from-secondary/60 to-card p-8 text-center">
           <Trophy className="mx-auto h-12 w-12 text-primary" />
-          <h1 className="mt-4 font-display text-4xl font-extrabold sm:text-5xl">{t("awards.title")}</h1>
-          <p className="mt-2 font-display text-lg font-semibold text-primary">{t("awards.tagline")}</p>
+          <h1 className="mt-4 font-display text-4xl font-extrabold sm:text-5xl">
+            {t("awards.title")}
+          </h1>
+          <p className="mt-2 font-display text-lg font-semibold text-primary">
+            {t("awards.tagline")}
+          </p>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">{t("awards.intro")}</p>
         </section>
 
@@ -84,7 +88,11 @@ function AwardsPage() {
                   </span>
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary text-sm font-bold">
                     {b.signedLogoUrl ? (
-                      <img src={b.signedLogoUrl} alt={b.name} className="h-full w-full object-cover" />
+                      <img
+                        src={b.signedLogoUrl}
+                        alt={b.name}
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       b.name.charAt(0).toUpperCase()
                     )}

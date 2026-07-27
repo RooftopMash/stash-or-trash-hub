@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { ItemCard } from "@/components/ItemCard";
 import { EngagementBar } from "@/components/EngagementBar";
@@ -8,6 +8,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { fetchFeed } from "@/lib/stash";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Recycle } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -15,10 +17,49 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["feed", user?.id ?? "anon"],
     queryFn: () => fetchFeed(user?.id ?? null),
   });
+
+  const refetchRef = useRef(refetch);
+  useEffect(() => {
+    refetchRef.current = refetch;
+  }, [refetch]);
+
+  // Subscribe to real-time changes in items and votes
+  useEffect(() => {
+    const channel = supabase
+      .channel("feed-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "votes",
+        },
+        () => {
+          refetchRef.current();
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "items",
+        },
+        () => {
+          refetchRef.current();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen">

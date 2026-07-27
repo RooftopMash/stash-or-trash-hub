@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { BUCKET, signImages } from "@/lib/stash";
+import type { Database } from "@/integrations/supabase/types";
+
+type BrandRow = Database["public"]["Tables"]["brands"]["Row"];
 
 export type Brand = {
   id: string;
@@ -26,7 +29,7 @@ export function slugify(name: string): string {
     .slice(0, 60);
 }
 
-async function decorate(rows: any[]): Promise<Brand[]> {
+async function decorate(rows: BrandRow[]): Promise<Brand[]> {
   if (!rows.length) return [];
   const ownerIds = [...new Set(rows.map((b) => b.owner_id))];
   const storageLogos = rows
@@ -40,7 +43,9 @@ async function decorate(rows: any[]): Promise<Brand[]> {
   return rows.map((b) => ({
     ...b,
     signedLogoUrl: b.logo_url
-      ? (/^https?:\/\//i.test(b.logo_url) ? b.logo_url : (signed.get(b.logo_url) ?? null))
+      ? /^https?:\/\//i.test(b.logo_url)
+        ? b.logo_url
+        : (signed.get(b.logo_url) ?? null)
       : null,
     ownerName: nameById.get(b.owner_id) ?? null,
   }));
@@ -94,7 +99,11 @@ export async function createBrand(input: {
   const base = slugify(input.name) || "brand";
   let slug = base;
   for (let i = 0; i < 5; i++) {
-    const { data: existing } = await supabase.from("brands").select("id").eq("slug", slug).maybeSingle();
+    const { data: existing } = await supabase
+      .from("brands")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
     if (!existing) break;
     slug = `${base}-${Math.floor(Math.random() * 10000)}`;
   }
@@ -125,7 +134,9 @@ export type VerificationRequest = {
   created_at: string;
 };
 
-export async function fetchMyVerificationRequest(brandId: string): Promise<VerificationRequest | null> {
+export async function fetchMyVerificationRequest(
+  brandId: string,
+): Promise<VerificationRequest | null> {
   const { data, error } = await supabase
     .from("brand_verification_requests")
     .select("*")
@@ -165,7 +176,10 @@ export async function fetchPendingVerifications(): Promise<PendingVerification[]
   const rows = data ?? [];
   if (!rows.length) return [];
   const brandIds = [...new Set(rows.map((r) => r.brand_id))];
-  const { data: brands } = await supabase.from("brands").select("id, name, slug").in("id", brandIds);
+  const { data: brands } = await supabase
+    .from("brands")
+    .select("id, name, slug")
+    .in("id", brandIds);
   const byId = new Map((brands ?? []).map((b) => [b.id, b]));
   return rows.map((r) => ({
     ...r,
@@ -189,7 +203,10 @@ export async function reviewVerification(input: {
     .eq("id", input.requestId);
   if (error) throw error;
   if (input.approve) {
-    const { error: bErr } = await supabase.from("brands").update({ verified: true }).eq("id", input.brandId);
+    const { error: bErr } = await supabase
+      .from("brands")
+      .update({ verified: true })
+      .eq("id", input.brandId);
     if (bErr) throw bErr;
   }
 }

@@ -12,8 +12,7 @@ export function SotWordmark({
   className?: string;
   size?: "sm" | "md" | "lg";
 }) {
-  const cap =
-    size === "lg" ? "text-[1.15em]" : size === "sm" ? "text-[1.08em]" : "text-[1.1em]";
+  const cap = size === "lg" ? "text-[1.15em]" : size === "sm" ? "text-[1.08em]" : "text-[1.1em]";
 
   return (
     <span className={cn("font-display font-extrabold tracking-tight", className)}>

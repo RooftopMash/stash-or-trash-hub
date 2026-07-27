@@ -89,7 +89,11 @@ export async function castVote(itemId: string, userId: string, verdict: Verdict)
 }
 
 export async function removeVote(itemId: string, userId: string) {
-  const { error } = await supabase.from("votes").delete().eq("item_id", itemId).eq("user_id", userId);
+  const { error } = await supabase
+    .from("votes")
+    .delete()
+    .eq("item_id", itemId)
+    .eq("user_id", userId);
   if (error) throw error;
 }
 

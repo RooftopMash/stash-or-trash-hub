@@ -4,13 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  fetchInbox,
-  fetchThread,
-  sendMessage,
-  markThreadRead,
-  partnerName,
-} from "@/lib/messages";
+import { fetchInbox, fetchThread, sendMessage, markThreadRead, partnerName } from "@/lib/messages";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,16 +54,29 @@ function MessagesPage() {
       .channel(`messages-${user.id}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `recipient_id=eq.${user.id}` },
-        () => { refetchInbox(); refetchThread(); },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        () => {
+          refetchInbox();
+          refetchThread();
+        },
       )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages", filter: `sender_id=eq.${user.id}` },
-        () => { refetchInbox(); refetchThread(); },
+        () => {
+          refetchInbox();
+          refetchThread();
+        },
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, refetchInbox, refetchThread]);
 
   const conversations = useMemo(() => inbox ?? [], [inbox]);
