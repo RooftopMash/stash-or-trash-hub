@@ -94,8 +94,16 @@ export async function importBrandsFromWikidata(input: {
     LIMIT ${limit}
   `;
 
-  const res = await fetch(`${SPARQL_ENDPOINT}?format=json&query=${encodeURIComponent(query)}`, {
-    headers: { Accept: "application/sparql-results+json" },
+  // Wikidata's SPARQL endpoint strictly requires a specific 'User-Agent' header matching their robot policy to avoid 403 Forbidden errors.
+  // For browser fetch(), setting a custom 'User-Agent' is blocked, so we must set "Api-User-Agent".
+  // To avoid CORS issues when fetching directly from client-side code, we append `origin=*` to the SPARQL endpoint URL.
+  const url = `${SPARQL_ENDPOINT}?origin=*&format=json&query=${encodeURIComponent(query)}`;
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/sparql-results+json",
+      "Api-User-Agent":
+        "StashOrTrashHub/1.0 (https://stash-or-trash-hub.lovable.app; contact@stash-or-trash-hub.com) Fetching brand data",
+    },
   });
   if (!res.ok) throw new Error(`Wikidata returned ${res.status}. Please try again.`);
   const json = (await res.json()) as { results?: { bindings?: WikidataBinding[] } };
