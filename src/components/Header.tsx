@@ -53,7 +53,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
             {user && (
               <Link
                 to="/dashboard"
-                className="hidden rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground sm:inline-block"
+                className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
               >
                 {t("nav.dashboard")}
               </Link>

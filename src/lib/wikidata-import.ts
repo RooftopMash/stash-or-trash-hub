@@ -63,8 +63,12 @@ export async function importBrandsFromWikidata(input: {
     LIMIT ${limit}
   `;
 
-  const res = await fetch(`${SPARQL_ENDPOINT}?format=json&query=${encodeURIComponent(query)}`, {
-    headers: { Accept: "application/sparql-results+json" },
+  const url = `${SPARQL_ENDPOINT}?origin=*&format=json&query=${encodeURIComponent(query)}`;
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/sparql-results+json",
+      "Api-User-Agent": "StashOrTrashHub/1.0 (https://stash-or-trash-hub.lovable.app; contact@stash-or-trash-hub.lovable.app)",
+    },
   });
   if (!res.ok) throw new Error(`Wikidata returned ${res.status}. Please try again.`);
   const json = await res.json() as { results?: { bindings?: any[] } };
