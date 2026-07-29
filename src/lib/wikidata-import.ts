@@ -52,8 +52,13 @@ export async function importBrandsFromWikidata(input: {
 
   const query = `
     SELECT DISTINCT ?item ?itemLabel ?desc ?logo ?website ?industryLabel WHERE {
-      ?item wdt:P31/wdt:P279* wd:Q4830453 .
+      # Bind ?item to the selected country first to optimize query performance and prevent 502/500 timeouts
       { ?item wdt:P17 wd:${qid} } UNION { ?item wdt:P159/wdt:P17 wd:${qid} } .
+
+      # Match common business, enterprise, brand, and company entity types
+      ?item wdt:P31 ?type .
+      VALUES ?type { wd:Q4830453 wd:Q6881511 wd:Q34614 wd:Q43229 } .
+
       OPTIONAL { ?item wdt:P154 ?logo }
       OPTIONAL { ?item wdt:P856 ?website }
       OPTIONAL { ?item wdt:P452 ?industry . ?industry rdfs:label ?industryLabel FILTER(LANG(?industryLabel)="en") }
