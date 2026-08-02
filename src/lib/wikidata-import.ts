@@ -50,17 +50,21 @@ export async function importBrandsFromWikidata(input: {
   const qid = ISO_TO_QID[countryCode];
   if (!qid) throw new Error(`Country ${countryCode} is not supported yet.`);
 
+  // Order by sitelink count so the best-known brands in the country come first.
   const query = `
-    SELECT DISTINCT ?item ?itemLabel ?desc ?logo ?website ?industryLabel WHERE {
-      ?item wdt:P31/wdt:P279* wd:Q4830453 .
-      { ?item wdt:P17 wd:${qid} } UNION { ?item wdt:P159/wdt:P17 wd:${qid} } .
+    SELECT ?item ?itemLabel ?desc ?logo ?website ?industryLabel ?sitelinks WHERE {
+      { SELECT ?item ?sitelinks WHERE {
+          ?item wdt:P31/wdt:P279* wd:Q4830453 ;
+                wikibase:sitelinks ?sitelinks .
+          { ?item wdt:P17 wd:${qid} } UNION { ?item wdt:P159/wdt:P17 wd:${qid} }
+        } ORDER BY DESC(?sitelinks) LIMIT ${limit} }
       OPTIONAL { ?item wdt:P154 ?logo }
       OPTIONAL { ?item wdt:P856 ?website }
       OPTIONAL { ?item wdt:P452 ?industry . ?industry rdfs:label ?industryLabel FILTER(LANG(?industryLabel)="en") }
       OPTIONAL { ?item schema:description ?desc FILTER(LANG(?desc)="en") }
       SERVICE wikibase:label { bd:serviceParam wikibase:language "en" }
     }
-    LIMIT ${limit}
+    ORDER BY DESC(?sitelinks)
   `;
 
   const url = `${SPARQL_ENDPOINT}?origin=*&format=json&query=${encodeURIComponent(query)}`;
@@ -73,25 +77,53 @@ export async function importBrandsFromWikidata(input: {
   if (!res.ok) throw new Error(`Wikidata returned ${res.status}. Please try again.`);
   const json = await res.json() as { results?: { bindings?: any[] } };
 
-  const rows = (json.results?.bindings ?? [])
-    .map((b) => {
-      const qUrl: string = b.item?.value ?? "";
-      const name: string = b.itemLabel?.value ?? "";
-      return {
-        source: "wikidata",
-        source_id: qUrl.split("/").pop() ?? null,
-        name,
-        slug: slugify(name),
-        country: countryCode,
-        category: b.industryLabel?.value ?? null,
-        description: b.desc?.value ?? null,
-        website: b.website?.value ?? null,
-        logo_url: b.logo?.value ?? null,
-        status: "pending",
-      };
-    })
-    .filter((row) => row.name && row.slug);
+  // Wikidata returns one row per optional value combination — collapse to one row per entity.
+  const byId = new Map<string, {
+    source: string;
+    source_id: string;
+    name: string;
+    slug: string;
+    country: string;
+    category: string | null;
+    description: string | null;
+    website: string | null;
+    logo_url: string | null;
+    status: string;
+  }>();
 
+  for (const b of json.results?.bindings ?? []) {
+    const qUrl: string = b.item?.value ?? "";
+    const sourceId = qUrl.split("/").pop() ?? "";
+    const name: string = b.itemLabel?.value ?? "";
+    // Skip entities with no English label (Wikidata falls back to the raw Q-id).
+    if (!sourceId || !name || /^Q\d+$/.test(name)) continue;
+    const slug = slugify(name);
+    if (!slug) continue;
+
+    const existing = byId.get(sourceId);
+    if (existing) {
+      existing.category ??= b.industryLabel?.value ?? null;
+      existing.description ??= b.desc?.value ?? null;
+      existing.website ??= b.website?.value ?? null;
+      existing.logo_url ??= b.logo?.value ?? null;
+      continue;
+    }
+
+    byId.set(sourceId, {
+      source: "wikidata",
+      source_id: sourceId,
+      name,
+      slug,
+      country: countryCode,
+      category: b.industryLabel?.value ?? null,
+      description: b.desc?.value ?? null,
+      website: b.website?.value ?? null,
+      logo_url: b.logo?.value ?? null,
+      status: "pending",
+    });
+  }
+
+  const rows = [...byId.values()];
   if (!rows.length) return { inserted: 0, skipped: 0 };
 
   const { data, error } = await supabase
