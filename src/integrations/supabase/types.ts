@@ -315,7 +315,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          display_name: string | null
+          id: string | null
+          trust_score: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          display_name?: string | null
+          id?: string | null
+          trust_score?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          display_name?: string | null
+          id?: string | null
+          trust_score?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
