@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Flame, Zap, TrendingUp } from "lucide-react";
 import { readEngagement, ENGAGEMENT_EVENT, type Engagement } from "@/lib/engagement";
 
 export function EngagementBar() {
+  const { t } = useTranslation();
   const [e, setE] = useState<Engagement | null>(null);
 
   useEffect(() => {
@@ -26,15 +28,15 @@ export function EngagementBar() {
       <div className="flex items-center justify-between gap-3 text-sm">
         <div className="flex items-center gap-1.5 font-semibold">
           <Flame className={e.streak > 0 ? "h-4 w-4 text-trash" : "h-4 w-4 text-muted-foreground"} />
-          <span>{e.streak}-day streak</span>
+          <span>{t("engagement.streak", { count: e.streak })}</span>
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <Zap className="h-4 w-4 text-stash" />
-          <span>{e.todayVerdicts} today</span>
+          <span>{t("engagement.today", { count: e.todayVerdicts })}</span>
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <TrendingUp className="h-4 w-4 text-primary" />
-          <span>{e.totalVerdicts} total</span>
+          <span>{t("engagement.total", { count: e.totalVerdicts })}</span>
         </div>
       </div>
       <div className="mt-3">
@@ -43,8 +45,8 @@ export function EngagementBar() {
         </div>
         <p className="mt-1.5 text-xs text-muted-foreground">
           {nextMilestone - e.totalVerdicts > 0
-            ? `${nextMilestone - e.totalVerdicts} more verdicts to your next badge`
-            : "You're a top critic — brands are listening. 👑"}
+            ? t("engagement.next", { count: nextMilestone - e.totalVerdicts })
+            : t("engagement.topCritic")}
         </p>
       </div>
     </div>

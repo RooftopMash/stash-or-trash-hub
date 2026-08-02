@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { createItem } from "@/lib/stash";
@@ -36,6 +37,7 @@ export function SubmitDialog({
   defaultBrandId?: string;
 }) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -61,7 +63,7 @@ export function SubmitDialog({
   const handleSubmit = async () => {
     if (!user) return;
     if (!title.trim()) {
-      toast.error("Give it a title first.");
+      toast.error(t("submit.needTitle"));
       return;
     }
     setSubmitting(true);
@@ -74,12 +76,12 @@ export function SubmitDialog({
         brandId: brandId === NO_BRAND ? null : brandId,
         category,
       });
-      toast.success("Posted! Let the verdict begin.");
+      toast.success(t("submit.posted"));
       reset();
       setOpen(false);
       onPosted?.();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong.");
+      toast.error(e instanceof Error ? e.message : t("submit.error"));
     } finally {
       setSubmitting(false);
     }
@@ -89,38 +91,38 @@ export function SubmitDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5">
-          <Plus className="h-4 w-4" /> Post
+          <Plus className="h-4 w-4" /> {t("submit.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">Post something to judge</DialogTitle>
+          <DialogTitle className="font-display text-2xl">{t("submit.title")}</DialogTitle>
           <DialogDescription>
-            Tag a brand, add a photo, and let the community decide: stash it or trash it.
+            {t("submit.intro")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">{t("submit.fieldTitle")}</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="These neon sneakers…"
+              placeholder={t("submit.titlePh")}
               maxLength={120}
             />
           </div>
 
           {!defaultBrandId && (
             <div className="space-y-2">
-              <Label>Brand (optional)</Label>
+              <Label>{t("submit.brand")}</Label>
               <Select value={brandId} onValueChange={setBrandId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Pick a brand" />
+                  <SelectValue placeholder={t("submit.brandPh")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NO_BRAND}>No brand</SelectItem>
+                  <SelectItem value={NO_BRAND}>{t("submit.noBrand")}</SelectItem>
                   {(brands ?? []).map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.name}
@@ -133,30 +135,30 @@ export function SubmitDialog({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="category">Category (optional)</Label>
+            <Label htmlFor="category">{t("submit.category")}</Label>
             <Input
               id="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              placeholder="Packaging, ad, product, service…"
+              placeholder={t("submit.categoryPh")}
               maxLength={40}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="desc">Description (optional)</Label>
+            <Label htmlFor="desc">{t("submit.description")}</Label>
             <Textarea
               id="desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Why should people stash or trash this?"
+              placeholder={t("submit.descriptionPh")}
               rows={3}
               maxLength={500}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="file" className="flex items-center gap-2">
-              <ImagePlus className="h-4 w-4" /> Photo (optional)
+              <ImagePlus className="h-4 w-4" /> {t("submit.photo")}
             </Label>
             <Input
               id="file"
@@ -170,7 +172,7 @@ export function SubmitDialog({
 
         <DialogFooter>
           <Button onClick={handleSubmit} disabled={submitting} className="w-full">
-            {submitting ? "Posting…" : "Post it"}
+            {submitting ? t("submit.posting") : t("submit.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>
