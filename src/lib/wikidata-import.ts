@@ -41,22 +41,31 @@ export function buildBrandInvitation(input: {
   return `Subject: ${input.name} is now on SOT — Stash Or Trash\n\nHello ${input.name} team,\n\nWe have opened a live brand-rating page for ${input.name} on SOT — Stash Or Trash, the Consumer Brand Revolution built to turn everyday customer feedback into a credible reputation signal.\n\nYour page: ${brandUrl}\n${input.website ? `Website we found: ${input.website}\n` : ""}\nConsumers can now Stash or Trash brand experiences in public, and verified brand owners can claim their page, monitor sentiment, and respond directly through the platform.\n\nPlease create an account with your official company email, open the page above, and choose “Claim this brand” so our team can verify your ownership.\n\nRegards,\nSOT — Stash Or Trash\nThe Brand Barometer`;
 }
 
-export async function importBrandsFromWikidata(input: {
-  countryCode: string;
-  limit: number;
-}): Promise<WikidataImportResult> {
-  const countryCode = input.countryCode.toUpperCase();
-  const limit = Math.max(1, Math.min(200, input.limit));
-  const qid = ISO_TO_QID[countryCode];
-  if (!qid) throw new Error(`Country ${countryCode} is not supported yet.`);
+// Wikidata's public endpoint times out on broad subclass traversal for large
+// countries (e.g. the US), so we query each company class separately and merge.
+const BRAND_CLASSES = ["Q4830453", "Q891723", "Q431289", "Q6881511", "Q783794"];
 
-  // Order by sitelink count so the best-known brands in the country come first.
-  const query = `
+type Candidate = {
+  source: string;
+  source_id: string;
+  name: string;
+  slug: string;
+  country: string;
+  category: string | null;
+  description: string | null;
+  website: string | null;
+  logo_url: string | null;
+  status: string;
+};
+
+function buildQuery(cls: string, qid: string, path: "P17" | "P159/wdt:P17", limit: number) {
+  const countryPath = path === "P17" ? "wdt:P17" : "wdt:P159/wdt:P17";
+  return `
     SELECT ?item ?itemLabel ?desc ?logo ?website ?industryLabel ?sitelinks WHERE {
       { SELECT ?item ?sitelinks WHERE {
-          ?item wdt:P31/wdt:P279* wd:Q4830453 ;
+          ?item wdt:P31 wd:${cls} ;
+                ${countryPath} wd:${qid} ;
                 wikibase:sitelinks ?sitelinks .
-          { ?item wdt:P17 wd:${qid} } UNION { ?item wdt:P159/wdt:P17 wd:${qid} }
         } ORDER BY DESC(?sitelinks) LIMIT ${limit} }
       OPTIONAL { ?item wdt:P154 ?logo }
       OPTIONAL { ?item wdt:P856 ?website }
@@ -66,7 +75,9 @@ export async function importBrandsFromWikidata(input: {
     }
     ORDER BY DESC(?sitelinks)
   `;
+}
 
+async function runQuery(query: string): Promise<any[]> {
   const url = `${SPARQL_ENDPOINT}?origin=*&format=json&query=${encodeURIComponent(query)}`;
   const res = await fetch(url, {
     headers: {
@@ -74,24 +85,36 @@ export async function importBrandsFromWikidata(input: {
       "Api-User-Agent": "StashOrTrashHub/1.0 (https://stash-or-trash-hub.lovable.app; contact@stash-or-trash-hub.lovable.app)",
     },
   });
-  if (!res.ok) throw new Error(`Wikidata returned ${res.status}. Please try again.`);
-  const json = await res.json() as { results?: { bindings?: any[] } };
+  if (!res.ok) throw new Error(`Wikidata returned ${res.status}`);
+  const json = (await res.json()) as { results?: { bindings?: any[] } };
+  return json.results?.bindings ?? [];
+}
+
+export async function importBrandsFromWikidata(input: {
+  countryCode: string;
+  limit: number;
+}): Promise<WikidataImportResult> {
+  const countryCode = input.countryCode.toUpperCase();
+  const limit = Math.max(1, Math.min(200, input.limit));
+  const qid = ISO_TO_QID[countryCode];
+  if (!qid) throw new Error(`Country ${countryCode} is not supported yet.`);
+
+  const queries: string[] = [];
+  for (const cls of BRAND_CLASSES) {
+    queries.push(buildQuery(cls, qid, "P17", limit));
+    queries.push(buildQuery(cls, qid, "P159/wdt:P17", limit));
+  }
+
+  const settled = await Promise.allSettled(queries.map(runQuery));
+  const bindings = settled.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+  if (!bindings.length) {
+    throw new Error("Wikidata did not respond in time. Please try again with a smaller limit.");
+  }
 
   // Wikidata returns one row per optional value combination — collapse to one row per entity.
-  const byId = new Map<string, {
-    source: string;
-    source_id: string;
-    name: string;
-    slug: string;
-    country: string;
-    category: string | null;
-    description: string | null;
-    website: string | null;
-    logo_url: string | null;
-    status: string;
-  }>();
+  const byId = new Map<string, Candidate & { sitelinks: number }>();
 
-  for (const b of json.results?.bindings ?? []) {
+  for (const b of bindings) {
     const qUrl: string = b.item?.value ?? "";
     const sourceId = qUrl.split("/").pop() ?? "";
     const name: string = b.itemLabel?.value ?? "";
@@ -120,10 +143,14 @@ export async function importBrandsFromWikidata(input: {
       website: b.website?.value ?? null,
       logo_url: b.logo?.value ?? null,
       status: "pending",
+      sitelinks: Number(b.sitelinks?.value ?? 0),
     });
   }
 
-  const rows = [...byId.values()];
+  const rows: Candidate[] = [...byId.values()]
+    .sort((a, b) => b.sitelinks - a.sitelinks)
+    .slice(0, limit)
+    .map(({ sitelinks: _s, ...row }) => row);
   if (!rows.length) return { inserted: 0, skipped: 0 };
 
   const { data, error } = await supabase
@@ -134,6 +161,7 @@ export async function importBrandsFromWikidata(input: {
 
   return { inserted: data?.length ?? 0, skipped: rows.length - (data?.length ?? 0) };
 }
+
 
 export async function approveBrandCandidate(id: string, reviewerId: string): Promise<ApprovedBrand> {
   const { data: cand, error: candidateError } = await supabase
