@@ -8,10 +8,12 @@ import { ThumbsUp, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { recordVote, emitEngagementChange } from "@/lib/engagement";
 
 export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => void }) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
 
@@ -20,7 +22,7 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
 
   const vote = async (verdict: Verdict) => {
     if (!user) {
-      toast.info("Sign in to cast your verdict.");
+      toast.info(t("vote.signInPrompt"));
       navigate({ to: "/auth" });
       return;
     }
@@ -36,7 +38,7 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
       }
       onChange();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Vote failed.");
+      toast.error(e instanceof Error ? e.message : t("vote.voteFailed"));
     } finally {
       setBusy(false);
     }
@@ -46,10 +48,10 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
     setBusy(true);
     try {
       await deleteItem(item.id);
-      toast.success("Deleted.");
+      toast.success(t("vote.deleted"));
       onChange();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Delete failed.");
+      toast.error(e instanceof Error ? e.message : t("vote.deleteFailed"));
     } finally {
       setBusy(false);
     }
@@ -88,14 +90,14 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
               </div>
             )}
             <h3 className="font-display text-xl font-bold leading-tight">{item.title}</h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">by {item.authorName}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t("vote.by", { name: item.authorName })}</p>
           </div>
           {user?.id === item.user_id && (
             <button
               onClick={handleDelete}
               disabled={busy}
               className="text-muted-foreground transition-colors hover:text-trash"
-              aria-label="Delete post"
+              aria-label={t("vote.deletePost")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -113,11 +115,11 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
             <div className="bg-trash" style={{ width: `${100 - stashPct}%` }} />
           </div>
           <div className="mt-1.5 flex justify-between text-xs font-medium">
-            <span className="text-stash">{item.stashCount} stash</span>
+            <span className="text-stash">{t("vote.stashCount", { count: item.stashCount })}</span>
             <span className="text-muted-foreground">
-              {total === 0 ? "No votes yet" : `${stashPct}% stash`}
+              {total === 0 ? t("vote.noVotes") : t("vote.stashPct", { pct: stashPct })}
             </span>
-            <span className="text-trash">{item.trashCount} trash</span>
+            <span className="text-trash">{t("vote.trashCount", { count: item.trashCount })}</span>
           </div>
         </div>
 
@@ -131,7 +133,7 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
               item.myVerdict === "stash" && "bg-stash text-stash-foreground hover:bg-stash hover:text-stash-foreground",
             )}
           >
-            <ThumbsUp className="h-4 w-4" /> Stash
+            <ThumbsUp className="h-4 w-4" /> {t("vote.stash")}
           </Button>
           <Button
             variant="outline"
@@ -142,7 +144,7 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
               item.myVerdict === "trash" && "bg-trash text-trash-foreground hover:bg-trash hover:text-trash-foreground",
             )}
           >
-            <Trash2 className="h-4 w-4" /> Trash
+            <Trash2 className="h-4 w-4" /> {t("vote.trash")}
           </Button>
         </div>
       </div>

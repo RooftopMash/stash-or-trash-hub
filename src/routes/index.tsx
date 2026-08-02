@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
 import { ItemCard } from "@/components/ItemCard";
 import { EngagementBar } from "@/components/EngagementBar";
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["feed", user?.id ?? "anon"],
     queryFn: () => fetchFeed(user?.id ?? null),
@@ -30,11 +32,10 @@ function Index() {
             <SotWordmark size="lg" />
           </h1>
           <p className="mx-auto mt-3 max-w-md text-muted-foreground">
-            The Brand Barometer. Post anything about a brand and let the community deliver its
-            verdict in real time — the CX &amp; PR signal that matters.
+            {t("home.subtitle")}
           </p>
           <p className="mx-auto mt-2 max-w-md text-sm font-medium text-foreground">
-            Every verdict brings brands closer to the people they serve. Cast yours. 🔥
+            {t("home.hook")}
           </p>
         </section>
 
@@ -55,9 +56,9 @@ function Index() {
         ) : (
           <div className="rounded-2xl border border-dashed border-border py-16 text-center">
             <Recycle className="mx-auto h-10 w-10 text-muted-foreground" />
-            <p className="mt-4 font-display text-lg font-semibold">Nothing to judge yet</p>
+            <p className="mt-4 font-display text-lg font-semibold">{t("home.emptyTitle")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Be the first — {user ? "hit Post" : "sign in and post"} something.
+              {user ? t("home.emptyBodyUser") : t("home.emptyBodyGuest")}
             </p>
           </div>
         )}
