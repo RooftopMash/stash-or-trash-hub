@@ -14,7 +14,9 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BrandsIndexRouteImport } from './routes/brands.index'
+import { Route as HashtagsTagRouteImport } from './routes/hashtags.$tag'
 import { Route as BrandsSlugRouteImport } from './routes/brands.$slug'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -44,11 +46,22 @@ const BrandsIndexRoute = BrandsIndexRouteImport.update({
   path: '/brands/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HashtagsTagRoute = HashtagsTagRouteImport.update({
+  id: '/hashtags/$tag',
+  path: '/hashtags/$tag',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BrandsSlugRoute = BrandsSlugRouteImport.update({
   id: '/brands/$slug',
   path: '/brands/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
@@ -77,7 +90,9 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/messages': typeof AuthenticatedMessagesRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/brands/$slug': typeof BrandsSlugRoute
+  '/hashtags/$tag': typeof HashtagsTagRoute
   '/brands/': typeof BrandsIndexRoute
   '/brands/new': typeof AuthenticatedBrandsNewRoute
 }
@@ -88,7 +103,9 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/messages': typeof AuthenticatedMessagesRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/brands/$slug': typeof BrandsSlugRoute
+  '/hashtags/$tag': typeof HashtagsTagRoute
   '/brands': typeof BrandsIndexRoute
   '/brands/new': typeof AuthenticatedBrandsNewRoute
 }
@@ -101,7 +118,9 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/brands/$slug': typeof BrandsSlugRoute
+  '/hashtags/$tag': typeof HashtagsTagRoute
   '/brands/': typeof BrandsIndexRoute
   '/_authenticated/brands/new': typeof AuthenticatedBrandsNewRoute
 }
@@ -114,7 +133,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/messages'
+    | '/notifications'
     | '/brands/$slug'
+    | '/hashtags/$tag'
     | '/brands/'
     | '/brands/new'
   fileRoutesByTo: FileRoutesByTo
@@ -125,7 +146,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/messages'
+    | '/notifications'
     | '/brands/$slug'
+    | '/hashtags/$tag'
     | '/brands'
     | '/brands/new'
   id:
@@ -137,7 +160,9 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/_authenticated/messages'
+    | '/_authenticated/notifications'
     | '/brands/$slug'
+    | '/hashtags/$tag'
     | '/brands/'
     | '/_authenticated/brands/new'
   fileRoutesById: FileRoutesById
@@ -148,6 +173,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   AwardsRoute: typeof AwardsRoute
   BrandsSlugRoute: typeof BrandsSlugRoute
+  HashtagsTagRoute: typeof HashtagsTagRoute
   BrandsIndexRoute: typeof BrandsIndexRoute
 }
 
@@ -188,12 +214,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BrandsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hashtags/$tag': {
+      id: '/hashtags/$tag'
+      path: '/hashtags/$tag'
+      fullPath: '/hashtags/$tag'
+      preLoaderRoute: typeof HashtagsTagRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/brands/$slug': {
       id: '/brands/$slug'
       path: '/brands/$slug'
       fullPath: '/brands/$slug'
       preLoaderRoute: typeof BrandsSlugRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/messages': {
       id: '/_authenticated/messages'
@@ -230,6 +270,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedBrandsNewRoute: typeof AuthenticatedBrandsNewRoute
 }
 
@@ -237,6 +278,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedBrandsNewRoute: AuthenticatedBrandsNewRoute,
 }
 
@@ -249,8 +291,19 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   AwardsRoute: AwardsRoute,
   BrandsSlugRoute: BrandsSlugRoute,
+  HashtagsTagRoute: HashtagsTagRoute,
   BrandsIndexRoute: BrandsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
