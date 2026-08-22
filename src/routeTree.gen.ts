@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BrandsIndexRouteImport } from './routes/brands.index'
+import { Route as UsersIdRouteImport } from './routes/users.$id'
 import { Route as ItemsIdRouteImport } from './routes/items.$id'
 import { Route as HashtagsTagRouteImport } from './routes/hashtags.$tag'
 import { Route as BrandsSlugRouteImport } from './routes/brands.$slug'
@@ -45,6 +46,11 @@ const IndexRoute = IndexRouteImport.update({
 const BrandsIndexRoute = BrandsIndexRouteImport.update({
   id: '/brands/',
   path: '/brands/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersIdRoute = UsersIdRouteImport.update({
+  id: '/users/$id',
+  path: '/users/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ItemsIdRoute = ItemsIdRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
   '/items/$id': typeof ItemsIdRoute
+  '/users/$id': typeof UsersIdRoute
   '/brands/': typeof BrandsIndexRoute
   '/brands/new': typeof AuthenticatedBrandsNewRoute
 }
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
   '/items/$id': typeof ItemsIdRoute
+  '/users/$id': typeof UsersIdRoute
   '/brands': typeof BrandsIndexRoute
   '/brands/new': typeof AuthenticatedBrandsNewRoute
 }
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
   '/items/$id': typeof ItemsIdRoute
+  '/users/$id': typeof UsersIdRoute
   '/brands/': typeof BrandsIndexRoute
   '/_authenticated/brands/new': typeof AuthenticatedBrandsNewRoute
 }
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/brands/$slug'
     | '/hashtags/$tag'
     | '/items/$id'
+    | '/users/$id'
     | '/brands/'
     | '/brands/new'
   fileRoutesByTo: FileRoutesByTo
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/brands/$slug'
     | '/hashtags/$tag'
     | '/items/$id'
+    | '/users/$id'
     | '/brands'
     | '/brands/new'
   id:
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/brands/$slug'
     | '/hashtags/$tag'
     | '/items/$id'
+    | '/users/$id'
     | '/brands/'
     | '/_authenticated/brands/new'
   fileRoutesById: FileRoutesById
@@ -187,6 +199,7 @@ export interface RootRouteChildren {
   BrandsSlugRoute: typeof BrandsSlugRoute
   HashtagsTagRoute: typeof HashtagsTagRoute
   ItemsIdRoute: typeof ItemsIdRoute
+  UsersIdRoute: typeof UsersIdRoute
   BrandsIndexRoute: typeof BrandsIndexRoute
 }
 
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       path: '/brands'
       fullPath: '/brands/'
       preLoaderRoute: typeof BrandsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users/$id': {
+      id: '/users/$id'
+      path: '/users/$id'
+      fullPath: '/users/$id'
+      preLoaderRoute: typeof UsersIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/items/$id': {
@@ -313,6 +333,7 @@ const rootRouteChildren: RootRouteChildren = {
   BrandsSlugRoute: BrandsSlugRoute,
   HashtagsTagRoute: HashtagsTagRoute,
   ItemsIdRoute: ItemsIdRoute,
+  UsersIdRoute: UsersIdRoute,
   BrandsIndexRoute: BrandsIndexRoute,
 }
 export const routeTree = rootRouteImport
