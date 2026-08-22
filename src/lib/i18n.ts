@@ -3,6 +3,7 @@ import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { en } from "./locale-en";
 import { translations } from "./locales";
+import { socialTranslations } from "./locale-social";
 
 // Full list of selectable languages (native names). UI strings fall back to
 // English until a full translation bundle exists for a given code.
@@ -69,7 +70,11 @@ export const LANGUAGES: { code: string; label: string }[] = [
 export const RTL_LANGUAGES = ["ar", "he", "fa", "ur"];
 
 const resources: Record<string, { translation: typeof en }> = { en: { translation: en } };
-for (const [code, bundle] of Object.entries(translations)) {
+const codes = new Set([...Object.keys(translations), ...Object.keys(socialTranslations)]);
+for (const code of codes) {
+  const bundle: Record<string, unknown> = { ...(translations[code] ?? {}) };
+  const social = socialTranslations[code];
+  if (social) bundle.social = { ...(bundle.social as object), ...social };
   const merged: Record<string, unknown> = { ...en };
   for (const [section, values] of Object.entries(bundle)) {
     merged[section] = { ...(en as Record<string, any>)[section], ...(values as object) };
