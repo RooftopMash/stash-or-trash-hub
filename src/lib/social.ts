@@ -312,3 +312,23 @@ export async function markNotificationsRead(userId: string) {
     .eq("user_id", userId)
     .is("read_at", null);
 }
+
+/* -------------------------------- profiles -------------------------------- */
+
+export type PublicProfile = {
+  id: string;
+  display_name: string;
+  bio: string | null;
+  avatar_url: string | null;
+  trust_score: number;
+};
+
+export async function getPublicProfile(userId: string): Promise<PublicProfile | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, display_name, bio, avatar_url, trust_score")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}

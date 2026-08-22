@@ -126,3 +126,50 @@ export async function deleteItem(itemId: string) {
   const { error } = await supabase.from("items").delete().eq("id", itemId);
   if (error) throw error;
 }
+
+/** Single post with its verdict counts (public read). */
+export async function fetchItem(
+  itemId: string,
+  currentUserId: string | null,
+): Promise<FeedItem | null> {
+  const { data: item, error } = await supabase
+    .from("items")
+    .select("id, user_id, title, description, image_url, created_at, brand_id, category")
+    .eq("id", itemId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!item) return null;
+
+  const [{ data: votes }, { data: profile }, brandRes, signed] = await Promise.all([
+    supabase.from("votes").select("item_id, user_id, verdict").eq("item_id", item.id),
+    supabase.from("profiles").select("id, display_name").eq("id", item.user_id).maybeSingle(),
+    item.brand_id
+      ? supabase.from("brands").select("id, name, slug").eq("id", item.brand_id).maybeSingle()
+      : Promise.resolve({ data: null as { id: string; name: string; slug: string } | null }),
+    signImages([item.image_url]),
+  ]);
+
+  const itemVotes = votes ?? [];
+  return {
+    ...item,
+    authorName: profile?.display_name ?? "Anonymous",
+    brandName: brandRes.data?.name ?? null,
+    brandSlug: brandRes.data?.slug ?? null,
+    stashCount: itemVotes.filter((v) => v.verdict === "stash").length,
+    trashCount: itemVotes.filter((v) => v.verdict === "trash").length,
+    myVerdict:
+      (currentUserId
+        ? (itemVotes.find((v) => v.user_id === currentUserId)?.verdict as Verdict | undefined)
+        : undefined) ?? null,
+    signedImageUrl: item.image_url ? (signed.get(item.image_url) ?? null) : null,
+  };
+}
+
+/** Posts authored by one user. */
+export async function fetchUserItems(
+  userId: string,
+  currentUserId: string | null,
+): Promise<FeedItem[]> {
+  const all = await fetchFeed(currentUserId);
+  return all.filter((i) => i.user_id === userId);
+}
