@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BrandsIndexRouteImport } from './routes/brands.index'
+import { Route as ItemsIdRouteImport } from './routes/items.$id'
 import { Route as HashtagsTagRouteImport } from './routes/hashtags.$tag'
 import { Route as BrandsSlugRouteImport } from './routes/brands.$slug'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
@@ -44,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
 const BrandsIndexRoute = BrandsIndexRouteImport.update({
   id: '/brands/',
   path: '/brands/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ItemsIdRoute = ItemsIdRouteImport.update({
+  id: '/items/$id',
+  path: '/items/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HashtagsTagRoute = HashtagsTagRouteImport.update({
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
+  '/items/$id': typeof ItemsIdRoute
   '/brands/': typeof BrandsIndexRoute
   '/brands/new': typeof AuthenticatedBrandsNewRoute
 }
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
+  '/items/$id': typeof ItemsIdRoute
   '/brands': typeof BrandsIndexRoute
   '/brands/new': typeof AuthenticatedBrandsNewRoute
 }
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
+  '/items/$id': typeof ItemsIdRoute
   '/brands/': typeof BrandsIndexRoute
   '/_authenticated/brands/new': typeof AuthenticatedBrandsNewRoute
 }
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/brands/$slug'
     | '/hashtags/$tag'
+    | '/items/$id'
     | '/brands/'
     | '/brands/new'
   fileRoutesByTo: FileRoutesByTo
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/brands/$slug'
     | '/hashtags/$tag'
+    | '/items/$id'
     | '/brands'
     | '/brands/new'
   id:
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notifications'
     | '/brands/$slug'
     | '/hashtags/$tag'
+    | '/items/$id'
     | '/brands/'
     | '/_authenticated/brands/new'
   fileRoutesById: FileRoutesById
@@ -174,6 +186,7 @@ export interface RootRouteChildren {
   AwardsRoute: typeof AwardsRoute
   BrandsSlugRoute: typeof BrandsSlugRoute
   HashtagsTagRoute: typeof HashtagsTagRoute
+  ItemsIdRoute: typeof ItemsIdRoute
   BrandsIndexRoute: typeof BrandsIndexRoute
 }
 
@@ -212,6 +225,13 @@ declare module '@tanstack/react-router' {
       path: '/brands'
       fullPath: '/brands/'
       preLoaderRoute: typeof BrandsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/items/$id': {
+      id: '/items/$id'
+      path: '/items/$id'
+      fullPath: '/items/$id'
+      preLoaderRoute: typeof ItemsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hashtags/$tag': {
@@ -292,6 +312,7 @@ const rootRouteChildren: RootRouteChildren = {
   AwardsRoute: AwardsRoute,
   BrandsSlugRoute: BrandsSlugRoute,
   HashtagsTagRoute: HashtagsTagRoute,
+  ItemsIdRoute: ItemsIdRoute,
   BrandsIndexRoute: BrandsIndexRoute,
 }
 export const routeTree = rootRouteImport
