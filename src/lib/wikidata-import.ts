@@ -63,13 +63,54 @@ export function buildBrandInvitation(input: {
   return `Subject: ${input.name} is now on SOT — Stash Or Trash\n\nHello ${input.name} team,\n\nWe have opened a live brand-rating page for ${input.name} on SOT — Stash Or Trash, the Consumer Brand Revolution built to turn everyday customer feedback into a credible reputation signal.\n\nYour page: ${brandUrl}\n${input.website ? `Website we found: ${input.website}\n` : ""}\nConsumers can now Stash or Trash brand experiences in public, and verified brand owners can claim their page, monitor sentiment, and respond directly through the platform.\n\nPlease create an account with your official company email, open the page above, and choose “Claim this brand” so our team can verify your ownership.\n\nRegards,\nSOT — Stash Or Trash\nThe Brand Barometer`;
 }
 
-interface WikidataBinding {
-  item?: { value: string };
-  itemLabel?: { value: string };
-  desc?: { value: string };
-  logo?: { value: string };
-  website?: { value: string };
-  industryLabel?: { value: string };
+// Wikidata's public endpoint times out on broad subclass traversal for large
+// countries (e.g. the US), so we query each company class separately and merge.
+const BRAND_CLASSES = ["Q4830453", "Q891723", "Q431289", "Q6881511", "Q783794"];
+
+type Candidate = {
+  source: string;
+  source_id: string;
+  name: string;
+  slug: string;
+  country: string;
+  category: string | null;
+  description: string | null;
+  website: string | null;
+  logo_url: string | null;
+  status: string;
+};
+
+function buildQuery(cls: string, qid: string, path: "P17" | "P159/wdt:P17", limit: number) {
+  const countryPath = path === "P17" ? "wdt:P17" : "wdt:P159/wdt:P17";
+  return `
+    SELECT ?item ?itemLabel ?desc ?logo ?website ?industryLabel ?sitelinks WHERE {
+      { SELECT ?item ?sitelinks WHERE {
+          ?item wdt:P31 wd:${cls} ;
+                ${countryPath} wd:${qid} ;
+                wikibase:sitelinks ?sitelinks .
+        } ORDER BY DESC(?sitelinks) LIMIT ${limit} }
+      OPTIONAL { ?item wdt:P154 ?logo }
+      OPTIONAL { ?item wdt:P856 ?website }
+      OPTIONAL { ?item wdt:P452 ?industry . ?industry rdfs:label ?industryLabel FILTER(LANG(?industryLabel)="en") }
+      OPTIONAL { ?item schema:description ?desc FILTER(LANG(?desc)="en") }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "en" }
+    }
+    ORDER BY DESC(?sitelinks)
+  `;
+}
+
+async function runQuery(query: string): Promise<any[]> {
+  const url = `${SPARQL_ENDPOINT}?origin=*&format=json&query=${encodeURIComponent(query)}`;
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/sparql-results+json",
+      "Api-User-Agent":
+        "StashOrTrashHub/1.0 (https://stash-or-trash-hub.lovable.app; contact@stash-or-trash-hub.lovable.app)",
+    },
+  });
+  if (!res.ok) throw new Error(`Wikidata returned ${res.status}`);
+  const json = (await res.json()) as { results?: { bindings?: any[] } };
+  return json.results?.bindings ?? [];
 }
 
 export async function importBrandsFromWikidata(input: {
@@ -81,52 +122,58 @@ export async function importBrandsFromWikidata(input: {
   const qid = ISO_TO_QID[countryCode];
   if (!qid) throw new Error(`Country ${countryCode} is not supported yet.`);
 
-  const query = `
-    SELECT DISTINCT ?item ?itemLabel ?desc ?logo ?website ?industryLabel WHERE {
-      ?item wdt:P31/wdt:P279* wd:Q4830453 .
-      { ?item wdt:P17 wd:${qid} } UNION { ?item wdt:P159/wdt:P17 wd:${qid} } .
-      OPTIONAL { ?item wdt:P154 ?logo }
-      OPTIONAL { ?item wdt:P856 ?website }
-      OPTIONAL { ?item wdt:P452 ?industry . ?industry rdfs:label ?industryLabel FILTER(LANG(?industryLabel)="en") }
-      OPTIONAL { ?item schema:description ?desc FILTER(LANG(?desc)="en") }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "en" }
+  const queries: string[] = [];
+  for (const cls of BRAND_CLASSES) {
+    queries.push(buildQuery(cls, qid, "P17", limit));
+    queries.push(buildQuery(cls, qid, "P159/wdt:P17", limit));
+  }
+
+  const settled = await Promise.allSettled(queries.map(runQuery));
+  const bindings = settled.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+  if (!bindings.length) {
+    throw new Error("Wikidata did not respond in time. Please try again with a smaller limit.");
+  }
+
+  // Wikidata returns one row per optional value combination — collapse to one row per entity.
+  const byId = new Map<string, Candidate & { sitelinks: number }>();
+
+  for (const b of bindings) {
+    const qUrl: string = b.item?.value ?? "";
+    const sourceId = qUrl.split("/").pop() ?? "";
+    const name: string = b.itemLabel?.value ?? "";
+    // Skip entities with no English label (Wikidata falls back to the raw Q-id).
+    if (!sourceId || !name || /^Q\d+$/.test(name)) continue;
+    const slug = slugify(name);
+    if (!slug) continue;
+
+    const existing = byId.get(sourceId);
+    if (existing) {
+      existing.category ??= b.industryLabel?.value ?? null;
+      existing.description ??= b.desc?.value ?? null;
+      existing.website ??= b.website?.value ?? null;
+      existing.logo_url ??= b.logo?.value ?? null;
+      continue;
     }
-    LIMIT ${limit}
-  `;
 
-  // Wikidata's SPARQL endpoint strictly requires a specific 'User-Agent' header matching their robot policy to avoid 403 Forbidden errors.
-  // For browser fetch(), setting a custom 'User-Agent' is blocked, so we must set "Api-User-Agent".
-  // To avoid CORS issues when fetching directly from client-side code, we append `origin=*` to the SPARQL endpoint URL.
-  const url = `${SPARQL_ENDPOINT}?origin=*&format=json&query=${encodeURIComponent(query)}`;
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/sparql-results+json",
-      "Api-User-Agent":
-        "StashOrTrashHub/1.0 (https://stash-or-trash-hub.lovable.app; contact@stash-or-trash-hub.com) Fetching brand data",
-    },
-  });
-  if (!res.ok) throw new Error(`Wikidata returned ${res.status}. Please try again.`);
-  const json = (await res.json()) as { results?: { bindings?: WikidataBinding[] } };
+    byId.set(sourceId, {
+      source: "wikidata",
+      source_id: sourceId,
+      name,
+      slug,
+      country: countryCode,
+      category: b.industryLabel?.value ?? null,
+      description: b.desc?.value ?? null,
+      website: b.website?.value ?? null,
+      logo_url: b.logo?.value ?? null,
+      status: "pending",
+      sitelinks: Number(b.sitelinks?.value ?? 0),
+    });
+  }
 
-  const rows = (json.results?.bindings ?? [])
-    .map((b) => {
-      const qUrl: string = b.item?.value ?? "";
-      const name: string = b.itemLabel?.value ?? "";
-      return {
-        source: "wikidata",
-        source_id: qUrl.split("/").pop() ?? null,
-        name,
-        slug: slugify(name),
-        country: countryCode,
-        category: b.industryLabel?.value ?? null,
-        description: b.desc?.value ?? null,
-        website: b.website?.value ?? null,
-        logo_url: b.logo?.value ?? null,
-        status: "pending",
-      };
-    })
-    .filter((row) => row.name && row.slug);
-
+  const rows: Candidate[] = [...byId.values()]
+    .sort((a, b) => b.sitelinks - a.sitelinks)
+    .slice(0, limit)
+    .map(({ sitelinks: _s, ...row }) => row);
   if (!rows.length) return { inserted: 0, skipped: 0 };
 
   const { data, error } = await supabase

@@ -159,6 +159,88 @@ export type Database = {
         };
         Relationships: [];
       };
+      comment_likes: {
+        Row: {
+          comment_id: string;
+          created_at: string;
+          id: string;
+          user_id: string;
+        };
+        Insert: {
+          comment_id: string;
+          created_at?: string;
+          id?: string;
+          user_id: string;
+        };
+        Update: {
+          comment_id?: string;
+          created_at?: string;
+          id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey";
+            columns: ["comment_id"];
+            isOneToOne: false;
+            referencedRelation: "post_comments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      follows: {
+        Row: {
+          brand_id: string | null;
+          created_at: string;
+          followee_id: string | null;
+          follower_id: string;
+          id: string;
+        };
+        Insert: {
+          brand_id?: string | null;
+          created_at?: string;
+          followee_id?: string | null;
+          follower_id: string;
+          id?: string;
+        };
+        Update: {
+          brand_id?: string | null;
+          created_at?: string;
+          followee_id?: string | null;
+          follower_id?: string;
+          id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "follows_brand_id_fkey";
+            columns: ["brand_id"];
+            isOneToOne: false;
+            referencedRelation: "brands";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      hashtags: {
+        Row: {
+          created_at: string;
+          id: string;
+          tag: string;
+          use_count: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          tag: string;
+          use_count?: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          tag?: string;
+          use_count?: number;
+        };
+        Relationships: [];
+      };
       items: {
         Row: {
           brand_id: string | null;
@@ -227,6 +309,161 @@ export type Database = {
         };
         Relationships: [];
       };
+      notifications: {
+        Row: {
+          actor_id: string | null;
+          comment_id: string | null;
+          created_at: string;
+          id: string;
+          item_id: string | null;
+          read_at: string | null;
+          type: string;
+          user_id: string;
+        };
+        Insert: {
+          actor_id?: string | null;
+          comment_id?: string | null;
+          created_at?: string;
+          id?: string;
+          item_id?: string | null;
+          read_at?: string | null;
+          type: string;
+          user_id: string;
+        };
+        Update: {
+          actor_id?: string | null;
+          comment_id?: string | null;
+          created_at?: string;
+          id?: string;
+          item_id?: string | null;
+          read_at?: string | null;
+          type?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_comment_id_fkey";
+            columns: ["comment_id"];
+            isOneToOne: false;
+            referencedRelation: "post_comments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      post_comments: {
+        Row: {
+          body: string;
+          created_at: string;
+          id: string;
+          item_id: string;
+          parent_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          body: string;
+          created_at?: string;
+          id?: string;
+          item_id: string;
+          parent_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          id?: string;
+          item_id?: string;
+          parent_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "post_comments_parent_id_fkey";
+            columns: ["parent_id"];
+            isOneToOne: false;
+            referencedRelation: "post_comments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      post_hashtags: {
+        Row: {
+          created_at: string;
+          hashtag_id: string;
+          id: string;
+          item_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          hashtag_id: string;
+          id?: string;
+          item_id: string;
+        };
+        Update: {
+          created_at?: string;
+          hashtag_id?: string;
+          id?: string;
+          item_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "post_hashtags_hashtag_id_fkey";
+            columns: ["hashtag_id"];
+            isOneToOne: false;
+            referencedRelation: "hashtags";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "post_hashtags_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      post_likes: {
+        Row: {
+          created_at: string;
+          id: string;
+          item_id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          item_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          item_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -253,6 +490,35 @@ export type Database = {
           trust_score?: number;
         };
         Relationships: [];
+      };
+      reposts: {
+        Row: {
+          created_at: string;
+          id: string;
+          item_id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          item_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          item_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reposts_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       user_roles: {
         Row: {
@@ -318,6 +584,16 @@ export type Database = {
           _user_id: string;
         };
         Returns: boolean;
+      };
+      notify: {
+        Args: {
+          _actor_id: string;
+          _comment_id: string;
+          _item_id: string;
+          _type: string;
+          _user_id: string;
+        };
+        Returns: undefined;
       };
       recompute_brand_trust: { Args: { _brand_id: string }; Returns: undefined };
       recompute_user_trust: { Args: { _user_id: string }; Returns: undefined };

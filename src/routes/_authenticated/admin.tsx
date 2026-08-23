@@ -13,10 +13,7 @@ import {
   buildBrandInvitation,
 } from "@/lib/wikidata-import";
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
-
-type BrandImportCandidate = Database["public"]["Tables"]["brand_import_candidates"]["Row"];
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -69,13 +66,13 @@ function AdminPage() {
     queryKey: ["brand-candidates"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("brand_import_candidates")
+        .from("brand_import_candidates" as any)
         .select("*")
         .eq("status", "pending")
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
-      return (data ?? []) as BrandImportCandidate[];
+      return (data ?? []) as any[];
     },
     enabled: isAdmin,
   });

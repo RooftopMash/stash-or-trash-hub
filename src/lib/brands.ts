@@ -1,8 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import { BUCKET, signImages } from "@/lib/stash";
-import type { Database } from "@/integrations/supabase/types";
-
-type BrandRow = Database["public"]["Tables"]["brands"]["Row"];
 
 export type Brand = {
   id: string;
@@ -29,7 +26,7 @@ export function slugify(name: string): string {
     .slice(0, 60);
 }
 
-async function decorate(rows: BrandRow[]): Promise<Brand[]> {
+async function decorate(rows: any[]): Promise<Brand[]> {
   if (!rows.length) return [];
   const ownerIds = [...new Set(rows.map((b) => b.owner_id))];
   const storageLogos = rows
