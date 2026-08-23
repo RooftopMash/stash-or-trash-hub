@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
 import { ItemCard } from "@/components/ItemCard";
 import { EngagementBar } from "@/components/EngagementBar";
+import { TrendingHashtags } from "@/components/TrendingHashtags";
 import { SotWordmark } from "@/components/SotWordmark";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchFeed } from "@/lib/stash";
