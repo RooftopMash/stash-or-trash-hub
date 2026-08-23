@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { TrendingUp } from "lucide-react";
@@ -27,11 +26,11 @@ export function TrendingHashtags() {
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
       <h2 className="font-display font-bold text-lg flex items-center gap-2 mb-3">
-        <TrendingUp className="h-5 w-5 text-stash" /> Trending
+        <TrendingUp className="h-5 w-5 text-stash" /> {t("social.trending")}
       </h2>
       <div className="space-y-2">
         {hashtags && hashtags.length > 0 ? (
-          hashtags.map((tag: any) => (
+          hashtags.map((tag) => (
             <Link
               key={tag.id}
               to="/hashtags/$tag"
@@ -43,7 +42,7 @@ export function TrendingHashtags() {
                   #{tag.tag}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {tag.use_count} posts
+                  {t("social.postsCount", { count: tag.use_count })}
                 </p>
               </div>
               <span className="text-xs text-muted-foreground">{tag.use_count.toLocaleString()}</span>
@@ -51,7 +50,7 @@ export function TrendingHashtags() {
           ))
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No trending hashtags yet
+            {t("social.noTrending")}
           </p>
         )}
       </div>
