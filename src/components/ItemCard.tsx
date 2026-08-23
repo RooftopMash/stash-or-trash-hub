@@ -108,16 +108,13 @@ export function ItemCard({
                 <PostText text={item.title} />
               </Link>
             </h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {t("vote.by", { name: "" }).replace("{{name}}", "")}
-              <Link
-                to="/users/$id"
-                params={{ id: item.user_id }}
-                className="font-medium hover:underline"
-              >
-                {item.authorName}
-              </Link>
-            </p>
+            <Link
+              to="/users/$id"
+              params={{ id: item.user_id }}
+              className="mt-0.5 block text-xs text-muted-foreground hover:underline"
+            >
+              {t("vote.by", { name: item.authorName })}
+            </Link>
           </div>
           {user?.id === item.user_id && (
             <button
