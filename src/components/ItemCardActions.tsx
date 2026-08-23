@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Heart, MessageCircle, Repeat2, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export function ItemCardActions({
   onCommentClick,
   onRefresh,
 }: ItemCardActionProps) {
+  const { t } = useTranslation();
   const [isLiking, setIsLiking] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
 
@@ -57,7 +59,7 @@ export function ItemCardActions({
 
   const handleLike = async () => {
     if (!currentUserId) {
-      toast.error("Sign in to like posts");
+      toast.info(t("social.signInToLike"));
       return;
     }
     setIsLiking(true);
@@ -70,7 +72,7 @@ export function ItemCardActions({
       await refetchLikes();
       await refetchUserLiked();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Error updating like");
+      toast.error(e instanceof Error ? e.message : t("social.likeError"));
     } finally {
       setIsLiking(false);
     }
@@ -78,7 +80,7 @@ export function ItemCardActions({
 
   const handleRepost = async () => {
     if (!currentUserId) {
-      toast.error("Sign in to repost");
+      toast.info(t("social.signInToRepost"));
       return;
     }
     setIsReposting(true);
@@ -91,7 +93,7 @@ export function ItemCardActions({
       await refetchReposts();
       await refetchUserReposted();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Error updating repost");
+      toast.error(e instanceof Error ? e.message : t("social.likeError"));
     } finally {
       setIsReposting(false);
     }
@@ -107,7 +109,7 @@ export function ItemCardActions({
         className="flex-1 gap-1.5"
       >
         <MessageCircle className="h-4 w-4" />
-        <span className="hidden sm:inline">Comment</span>
+        <span className="hidden sm:inline">{t("social.comment")}</span>
       </Button>
 
       {/* Like */}
@@ -118,7 +120,7 @@ export function ItemCardActions({
         disabled={isLiking}
         className={cn(
           "flex-1 gap-1.5",
-          userLiked && "text-red-500 hover:text-red-600"
+          userLiked && "text-trash hover:text-trash"
         )}
       >
         <Heart className={cn("h-4 w-4", userLiked && "fill-current")} />
@@ -133,7 +135,7 @@ export function ItemCardActions({
         disabled={isReposting}
         className={cn(
           "flex-1 gap-1.5",
-          userRepostedPost && "text-green-500 hover:text-green-600"
+          userRepostedPost && "text-stash hover:text-stash"
         )}
       >
         <Repeat2 className={cn("h-4 w-4", userRepostedPost && "fill-current")} />
@@ -148,12 +150,12 @@ export function ItemCardActions({
           navigator.clipboard?.writeText(
             `${typeof window !== "undefined" ? window.location.origin : ""}/items/${itemId}`
           );
-          toast.success("Link copied!");
+          toast.success(t("social.linkCopied"));
         }}
         className="flex-1 gap-1.5"
       >
         <Share className="h-4 w-4" />
-        <span className="hidden sm:inline">Share</span>
+        <span className="hidden sm:inline">{t("social.share")}</span>
       </Button>
     </div>
   );
