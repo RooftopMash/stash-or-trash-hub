@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,19 +13,14 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, ImagePlus } from "lucide-react";
+import { Plus, ImagePlus, Check, ChevronsUpDown, Search, Building2 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const NO_BRAND = "__none__";
 
@@ -39,6 +34,8 @@ export function SubmitDialog({
   const { user } = useAuth();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [brandPopoverOpen, setBrandPopoverOpen] = useState(false);
+  const [brandSearch, setBrandSearch] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -52,11 +49,24 @@ export function SubmitDialog({
     enabled: open && !defaultBrandId,
   });
 
+  const selectedBrand = useMemo(() => {
+    if (brandId === NO_BRAND) return null;
+    return (brands ?? []).find((b) => b.id === brandId) ?? null;
+  }, [brands, brandId]);
+
+  const filteredBrands = useMemo(() => {
+    if (!brands) return [];
+    const query = brandSearch.trim().toLowerCase();
+    if (!query) return brands;
+    return brands.filter((b) => b.name.toLowerCase().includes(query));
+  }, [brands, brandSearch]);
+
   const reset = () => {
     setTitle("");
     setDescription("");
     setCategory("");
     setBrandId(defaultBrandId ?? NO_BRAND);
+    setBrandSearch("");
     setFile(null);
   };
 
@@ -115,20 +125,82 @@ export function SubmitDialog({
           {!defaultBrandId && (
             <div className="space-y-2">
               <Label>{t("submit.brand")}</Label>
-              <Select value={brandId} onValueChange={setBrandId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("submit.brandPh")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_BRAND}>{t("submit.noBrand")}</SelectItem>
-                  {(brands ?? []).map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.name}
-                      {b.verified ? " ✓" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={brandPopoverOpen} onOpenChange={setBrandPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={brandPopoverOpen}
+                    className="w-full justify-between h-10 px-3 bg-background border-border font-normal text-left"
+                  >
+                    <span className="flex items-center gap-2 truncate">
+                      <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      {selectedBrand ? (
+                        <span className="font-medium text-foreground">
+                          {selectedBrand.name} {selectedBrand.verified ? "✓" : ""}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">{t("submit.noBrand")}</span>
+                      )}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[var(--radix-popover-trigger-width)] p-2"
+                  align="start"
+                >
+                  <div className="relative mb-2">
+                    <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Type 3 letters to search brands..."
+                      value={brandSearch}
+                      onChange={(e) => setBrandSearch(e.target.value)}
+                      className="h-8 pl-8 text-xs bg-card"
+                    />
+                  </div>
+                  <div className="max-h-52 overflow-y-auto space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBrandId(NO_BRAND);
+                        setBrandPopoverOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors hover:bg-accent text-left",
+                        brandId === NO_BRAND && "bg-accent font-semibold",
+                      )}
+                    >
+                      <span>{t("submit.noBrand")}</span>
+                      {brandId === NO_BRAND && <Check className="h-3.5 w-3.5 text-primary" />}
+                    </button>
+                    {filteredBrands.map((b) => (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => {
+                          setBrandId(b.id);
+                          setBrandPopoverOpen(false);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors hover:bg-accent text-left",
+                          brandId === b.id && "bg-accent font-semibold",
+                        )}
+                      >
+                        <span className="truncate">
+                          {b.name} {b.verified ? "✓" : ""}
+                        </span>
+                        {brandId === b.id && <Check className="h-3.5 w-3.5 text-primary" />}
+                      </button>
+                    ))}
+                    {filteredBrands.length === 0 && (
+                      <div className="p-3 text-center text-xs text-muted-foreground">
+                        No brands matching "{brandSearch}"
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           )}
 
