@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
 import { ItemCard } from "@/components/ItemCard";
 import { EngagementBar } from "@/components/EngagementBar";
+import { TrendingHashtags } from "@/components/TrendingHashtags";
 import { SotWordmark } from "@/components/SotWordmark";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchFeed } from "@/lib/stash";
@@ -26,7 +27,7 @@ function Index() {
     <div className="min-h-screen">
       <Header onPosted={() => refetch()} />
 
-      <main className="mx-auto max-w-3xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-4 py-8">
         <section className="mb-8 text-center">
           <h1 className="font-display text-4xl font-extrabold sm:text-5xl">
             <SotWordmark size="lg" />
@@ -39,29 +40,39 @@ function Index() {
           </p>
         </section>
 
-        <EngagementBar />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div>
+            <EngagementBar />
 
-        {isLoading ? (
-          <div className="space-y-4">
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-64 w-full rounded-2xl" />
-            ))}
+            {isLoading ? (
+              <div className="space-y-4">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-64 w-full rounded-2xl" />
+                ))}
+              </div>
+            ) : data && data.length > 0 ? (
+              <div className="space-y-4">
+                {data.map((item) => (
+                  <ItemCard key={item.id} item={item} onChange={() => refetch()} />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border py-16 text-center">
+                <Recycle className="mx-auto h-10 w-10 text-muted-foreground" />
+                <p className="mt-4 font-display text-lg font-semibold">{t("home.emptyTitle")}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {user ? t("home.emptyBodyUser") : t("home.emptyBodyGuest")}
+                </p>
+              </div>
+            )}
           </div>
-        ) : data && data.length > 0 ? (
-          <div className="space-y-4">
-            {data.map((item) => (
-              <ItemCard key={item.id} item={item} onChange={() => refetch()} />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-border py-16 text-center">
-            <Recycle className="mx-auto h-10 w-10 text-muted-foreground" />
-            <p className="mt-4 font-display text-lg font-semibold">{t("home.emptyTitle")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {user ? t("home.emptyBodyUser") : t("home.emptyBodyGuest")}
-            </p>
-          </div>
-        )}
+
+          <aside className="hidden lg:block">
+            <div className="sticky top-20">
+              <TrendingHashtags />
+            </div>
+          </aside>
+        </div>
       </main>
     </div>
   );

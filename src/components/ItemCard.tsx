@@ -10,12 +10,24 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { recordVote, emitEngagementChange } from "@/lib/engagement";
+import { ItemCardActions } from "@/components/ItemCardActions";
+import { CommentThread } from "@/components/CommentThread";
+import { PostText } from "@/components/PostText";
 
-export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => void }) {
+export function ItemCard({
+  item,
+  onChange,
+  defaultCommentsOpen = false,
+}: {
+  item: FeedItem;
+  onChange: () => void;
+  defaultCommentsOpen?: boolean;
+}) {
   const { user } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(defaultCommentsOpen);
 
   const total = item.stashCount + item.trashCount;
   const stashPct = total === 0 ? 50 : Math.round((item.stashCount / total) * 100);
@@ -60,12 +72,14 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-card">
       {item.signedImageUrl && (
-        <img
-          src={item.signedImageUrl}
-          alt={item.title}
-          className="aspect-video w-full object-cover"
-          loading="lazy"
-        />
+        <Link to="/items/$id" params={{ id: item.id }}>
+          <img
+            src={item.signedImageUrl}
+            alt={item.title}
+            className="aspect-video w-full object-cover"
+            loading="lazy"
+          />
+        </Link>
       )}
 
       <div className="p-5">
@@ -89,8 +103,18 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
                 )}
               </div>
             )}
-            <h3 className="font-display text-xl font-bold leading-tight">{item.title}</h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">{t("vote.by", { name: item.authorName })}</p>
+            <h3 className="font-display text-xl font-bold leading-tight">
+              <Link to="/items/$id" params={{ id: item.id }} className="hover:underline">
+                <PostText text={item.title} />
+              </Link>
+            </h3>
+            <Link
+              to="/users/$id"
+              params={{ id: item.user_id }}
+              className="mt-0.5 block text-xs text-muted-foreground hover:underline"
+            >
+              {t("vote.by", { name: item.authorName })}
+            </Link>
           </div>
           {user?.id === item.user_id && (
             <button
@@ -105,7 +129,9 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
         </div>
 
         {item.description && (
-          <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <PostText text={item.description} />
+          </p>
         )}
 
         {/* verdict meter */}
@@ -147,6 +173,24 @@ export function ItemCard({ item, onChange }: { item: FeedItem; onChange: () => v
             <Trash2 className="h-4 w-4" /> {t("vote.trash")}
           </Button>
         </div>
+
+        <div className="mt-3">
+          <ItemCardActions
+            itemId={item.id}
+            currentUserId={user?.id}
+            authorId={item.user_id}
+            onCommentClick={() => setCommentsOpen((v) => !v)}
+          />
+        </div>
+
+        {commentsOpen && (
+          <div className="mt-4 border-t border-border pt-4">
+            {!user && (
+              <p className="mb-3 text-sm text-muted-foreground">{t("social.signInToComment")}</p>
+            )}
+            <CommentThread itemId={item.id} currentUserId={user?.id} />
+          </div>
+        )}
       </div>
     </article>
   );
