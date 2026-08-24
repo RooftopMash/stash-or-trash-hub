@@ -101,6 +101,7 @@ function Index() {
           </aside>
         </div>
       </main>
+      </div>
     </div>
   );
 }
