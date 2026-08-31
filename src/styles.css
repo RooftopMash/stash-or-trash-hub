@@ -87,7 +87,33 @@
   --stash-foreground: oklch(0.18 0.03 140);
   --trash: oklch(0.63 0.24 20);
   --trash-foreground: oklch(0.98 0.01 20);
+
+  /* sampled from the SOT logo */
+  --gold: oklch(0.79 0.14 82);
+  --gold-light: oklch(0.9 0.1 92);
+  --gold-dark: oklch(0.62 0.13 70);
+  --chrome: oklch(0.83 0.005 260);
+  --chrome-light: oklch(0.95 0.003 260);
+  --chrome-dark: oklch(0.62 0.008 265);
+  --logo-ink: oklch(0.17 0.01 270);
+  --logo-red: oklch(0.58 0.23 27);
+
+  --gradient-gold: linear-gradient(
+    180deg,
+    var(--gold-light) 0%,
+    var(--gold) 45%,
+    var(--gold-dark) 100%
+  );
+  --gradient-chrome: linear-gradient(
+    180deg,
+    var(--chrome-light) 0%,
+    var(--chrome) 42%,
+    var(--chrome-dark) 100%
+  );
+  --shadow-badge: 0 6px 0 -2px color-mix(in oklab, var(--logo-ink) 85%, transparent),
+    0 10px 20px -8px color-mix(in oklab, var(--logo-ink) 90%, transparent);
 }
+
 
 @layer base {
   * {
