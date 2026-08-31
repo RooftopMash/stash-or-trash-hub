@@ -151,28 +151,33 @@ export function ItemCard({
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <Button
-            variant="outline"
+            variant="stash"
+            size="lg"
             disabled={busy}
             onClick={() => vote("stash")}
             className={cn(
-              "gap-2 border-stash/40 hover:bg-stash/10 hover:text-stash",
-              item.myVerdict === "stash" && "bg-stash text-stash-foreground hover:bg-stash hover:text-stash-foreground",
+              "gap-2",
+              item.myVerdict === "stash" && "verdict-picked",
+              item.myVerdict === "trash" && "verdict-dimmed",
             )}
           >
-            <ThumbsUp className="h-4 w-4" /> {t("vote.stash")}
+            <Coins className="h-4 w-4" /> {t("vote.stash")}
           </Button>
           <Button
-            variant="outline"
+            variant="trash"
+            size="lg"
             disabled={busy}
             onClick={() => vote("trash")}
             className={cn(
-              "gap-2 border-trash/40 hover:bg-trash/10 hover:text-trash",
-              item.myVerdict === "trash" && "bg-trash text-trash-foreground hover:bg-trash hover:text-trash-foreground",
+              "gap-2",
+              item.myVerdict === "trash" && "verdict-picked",
+              item.myVerdict === "stash" && "verdict-dimmed",
             )}
           >
             <Trash2 className="h-4 w-4" /> {t("vote.trash")}
           </Button>
         </div>
+
 
         <div className="mt-3">
           <ItemCardActions
