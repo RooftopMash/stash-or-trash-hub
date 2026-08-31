@@ -4,7 +4,7 @@ import type { FeedItem, Verdict } from "@/lib/stash";
 import { castVote, removeVote, deleteItem } from "@/lib/stash";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ThumbsUp, Trash2, X } from "lucide-react";
+import { Coins, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useState } from "react";
