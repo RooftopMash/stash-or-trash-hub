@@ -37,6 +37,17 @@
   --color-trash: var(--trash);
   --color-trash-foreground: var(--trash-foreground);
 
+  /* Logo-sampled palette (SOT badge: black keyline, red, gold coins, chrome bin) */
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-dark: var(--gold-dark);
+  --color-chrome: var(--chrome);
+  --color-chrome-light: var(--chrome-light);
+  --color-chrome-dark: var(--chrome-dark);
+  --color-logo-ink: var(--logo-ink);
+  --color-logo-red: var(--logo-red);
+
+
   --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 }
