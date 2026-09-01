@@ -12,6 +12,12 @@ import {
   requestVerification,
 } from "@/lib/brands";
 import { fetchFeed } from "@/lib/stash";
+import {
+  followBrand,
+  unfollowBrand,
+  isFollowingBrand,
+  getFollowerCount,
+} from "@/lib/social";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -150,6 +156,32 @@ function BrandPage() {
 
   const isOwner = !!user && brand?.owner_id === user.id;
 
+  const { data: brandFollowers, refetch: refetchBrandFollowers } = useQuery({
+    queryKey: ["brand-followers", brand?.id],
+    queryFn: () => getFollowerCount({ brandId: brand!.id }),
+    enabled: !!brand,
+  });
+
+  const { data: isFollowing, refetch: refetchIsFollowing } = useQuery({
+    queryKey: ["brand-following", user?.id, brand?.id],
+    queryFn: () => (user?.id && brand ? isFollowingBrand(user.id, brand.id) : false),
+    enabled: !!user && !!brand,
+  });
+
+  const toggleBrandFollow = async () => {
+    if (!user || !brand) {
+      toast.info(t("social.signInToFollow"));
+      return;
+    }
+    try {
+      if (isFollowing) await unfollowBrand(user.id, brand.id);
+      else await followBrand(user.id, brand.id);
+      await Promise.all([refetchBrandFollowers(), refetchIsFollowing()]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("social.loadFailed"));
+    }
+  };
+
   const { data: verReq, refetch: refetchVer } = useQuery({
     queryKey: ["brand-verify", brand?.id, user?.id],
     queryFn: () => fetchMyVerificationRequest(brand!.id),
@@ -239,6 +271,9 @@ function BrandPage() {
                     <span className="font-semibold">{brand.trust_score}</span>
                     <span className="text-muted-foreground">/ 100 {t("brand.trustScore").toLowerCase()}</span>
                   </span>
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    {t("social.followers", { count: brandFollowers ?? 0 })}
+                  </span>
                   {brand.website && (
                     <a
                       href={brand.website}
@@ -285,6 +320,15 @@ function BrandPage() {
                     </Button>
                   )}
                   {user && <SubmitDialog defaultBrandId={brand.id} onPosted={() => refetch()} />}
+                  {user && !isOwner && (
+                    <Button
+                      size="sm"
+                      variant={isFollowing ? "outline" : "default"}
+                      onClick={toggleBrandFollow}
+                    >
+                      {isFollowing ? t("social.unfollow") : t("social.follow")}
+                    </Button>
+                  )}
                 </div>
               </div>
             </section>
