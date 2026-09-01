@@ -12,12 +12,16 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/brands/new")({
   component: NewBrandPage,
+  validateSearch: (search: Record<string, unknown>): { name?: string } => ({
+    name: typeof search.name === "string" ? search.name : undefined,
+  }),
 });
 
 function NewBrandPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [name, setName] = useState("");
+  const { name: initialName } = Route.useSearch();
+  const [name, setName] = useState(initialName ?? "");
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
   const [category, setCategory] = useState("");
