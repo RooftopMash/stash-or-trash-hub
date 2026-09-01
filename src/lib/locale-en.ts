@@ -74,6 +74,11 @@ export const en = {
     welcome: "Welcome back!",
     created: "Account created! You're in.",
     googleFailed: "Google sign-in failed.",
+    continueApple: "Continue with Apple",
+    continueMicrosoft: "Continue with Microsoft",
+    continueLinkedIn: "Continue with LinkedIn",
+    continueX: "Continue with X (Twitter)",
+    socialFailed: "Sign-in failed. Is that provider enabled in Supabase?",
   },
   brand: {
     title: "Brands",
