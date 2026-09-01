@@ -7,6 +7,7 @@ import { EngagementBar } from "@/components/EngagementBar";
 import { QuickBrands } from "@/components/QuickBrands";
 import { TrendingHashtags } from "@/components/TrendingHashtags";
 import { SotWordmark } from "@/components/SotWordmark";
+import { BrandSearch } from "@/components/BrandSearch";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchFeed } from "@/lib/stash";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -66,6 +67,9 @@ function Index() {
           <p className="mx-auto mt-2 max-w-md text-sm font-medium text-foreground">
             {t("home.hook")}
           </p>
+          <div className="mx-auto mt-6 max-w-xl">
+            <BrandSearch />
+          </div>
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
