@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
 import { ItemCard } from "@/components/ItemCard";
 import { EngagementBar } from "@/components/EngagementBar";
+import { QuickBrands } from "@/components/QuickBrands";
 import { TrendingHashtags } from "@/components/TrendingHashtags";
 import { SotWordmark } from "@/components/SotWordmark";
 import { useAuth } from "@/hooks/useAuth";
@@ -70,6 +71,8 @@ function Index() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <div>
             <EngagementBar />
+
+            <QuickBrands />
 
             {isLoading ? (
               <div className="space-y-4">
