@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { createItem } from "@/lib/stash";
-import { fetchBrands } from "@/lib/brands";
+import { BrandSearch } from "@/components/BrandSearch";
 import {
   Dialog,
   DialogContent,
@@ -13,13 +12,6 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,12 +37,6 @@ export function SubmitDialog({
   const [brandId, setBrandId] = useState<string>(defaultBrandId ?? NO_BRAND);
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  const { data: brands } = useQuery({
-    queryKey: ["brands-select"],
-    queryFn: fetchBrands,
-    enabled: open && !defaultBrandId,
-  });
 
   const reset = () => {
     setTitle("");
@@ -117,20 +103,16 @@ export function SubmitDialog({
           {!defaultBrandId && (
             <div className="space-y-2">
               <Label>{t("submit.brand")}</Label>
-              <Select value={brandId} onValueChange={setBrandId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("submit.brandPh")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_BRAND}>{t("submit.noBrand")}</SelectItem>
-                  {(brands ?? []).map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.name}
-                      {b.verified ? " ✓" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <BrandSearch
+                onSelectBrand={(b) => setBrandId(b.id)}
+                selectedId={brandId === NO_BRAND ? undefined : brandId}
+                placeholder={t("submit.brandPh")}
+              />
+              {brandId !== NO_BRAND && (
+                <Button type="button" variant="ghost" size="sm" className="h-8 px-2" onClick={() => setBrandId(NO_BRAND)}>
+                  {t("submit.noBrand")}
+                </Button>
+              )}
             </div>
           )}
 
