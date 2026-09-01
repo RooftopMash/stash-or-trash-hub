@@ -206,14 +206,14 @@ export type Database = {
           id: string
         }
         Insert: {
-          brand_id?: string | null
+          audit?: Json | null
           created_at?: string
           followee_id?: string | null
           follower_id: string
           id?: string
         }
         Update: {
-          brand_id?: string | null
+          audit?: Json | null
           created_at?: string
           followee_id?: string | null
           follower_id?: string
@@ -252,32 +252,36 @@ export type Database = {
       }
       items: {
         Row: {
+          audit: Json | null
           brand_id: string | null
           category: string | null
           created_at: string
           description: string | null
           id: string
           image_url: string | null
+          phash: string | null
           title: string
           user_id: string
         }
         Insert: {
-          brand_id?: string | null
+          audit?: Json | null
           category?: string | null
           created_at?: string
           description?: string | null
           id?: string
           image_url?: string | null
+          phash?: string | null
           title: string
           user_id: string
         }
         Update: {
-          brand_id?: string | null
+          audit?: Json | null
           category?: string | null
           created_at?: string
           description?: string | null
           id?: string
           image_url?: string | null
+          phash?: string | null
           title?: string
           user_id?: string
         }
