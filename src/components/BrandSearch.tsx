@@ -1,0 +1,123 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { Check, Plus, Search } from "lucide-react";
+import { searchBrands, type Brand } from "@/lib/brands";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
+export function BrandSearch({
+  onSelectBrand,
+  selectedId,
+  placeholder,
+  className,
+}: {
+  onSelectBrand?: (brand: Brand) => void;
+  selectedId?: string;
+  placeholder?: string;
+  className?: string;
+}) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const { data: results } = useQuery({
+    queryKey: ["brand-search", query],
+    queryFn: () => searchBrands(query),
+    enabled: open && query.trim().length > 0,
+  });
+
+  useEffect(() => {
+    if (selectedId) setOpen(false);
+  }, [selectedId]);
+
+  const q = query.trim();
+
+  const handleSelect = (brand: Brand) => {
+    setOpen(false);
+    setQuery("");
+    if (onSelectBrand) onSelectBrand(brand);
+    else navigate({ to: "/brands/$slug", params: { slug: brand.slug } });
+  };
+
+  const addNew = () => {
+    setOpen(false);
+    setQuery("");
+    navigate({ to: "/brands/new", search: { name: q } });
+  };
+
+  const exactMatch = (results ?? []).some(
+    (b) => b.name.toLowerCase() === q.toLowerCase(),
+  );
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn("w-full justify-start", className)}
+        >
+          <Search className="h-4 w-4 shrink-0 opacity-60" />
+          <span className="truncate text-muted-foreground">
+            {placeholder ?? t("brand.searchPlaceholder")}
+          </span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-80 max-w-[90vw] p-0">
+        <Command shouldFilter={false}>
+          <CommandInput
+            value={query}
+            onValueChange={setQuery}
+            placeholder={placeholder ?? t("brand.searchPlaceholder")}
+          />
+          <CommandList>
+            {results && results.length === 0 && (
+              <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+                {t("brand.searchNoResults")}
+              </div>
+            )}
+            {results && results.length > 0 && (
+              <CommandGroup heading={t("brand.searchResults")}>
+                {results.map((b) => (
+                  <CommandItem key={b.id} value={b.id} onSelect={() => handleSelect(b)}>
+                    <Check className={cn("mr-2 h-4 w-4", selectedId === b.id ? "opacity-100" : "opacity-0")} />
+                    <span className="truncate">{b.name}</span>
+                    {b.country && (
+                      <span className="ml-auto shrink-0 pl-2 text-xs text-muted-foreground">{b.country}</span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {q.length > 0 && !exactMatch && (
+              <CommandGroup>
+                <CommandItem value="__add_new_brand__" onSelect={addNew}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("brand.addNew", { name: q })}
+                </CommandItem>
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
