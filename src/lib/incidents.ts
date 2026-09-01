@@ -99,8 +99,9 @@ export async function createIncident(input: {
 }
 
 export function subscribeToIncidents(onEvent: (payload: any) => void) {
-  return supabase
+  const channel = supabase
     .channel("live-incidents")
     .on("postgres_changes", { event: "*", schema: "public", table: "incidents" }, (payload) => onEvent(payload))
     .subscribe();
+  return () => supabase.removeChannel(channel);
 }
