@@ -103,6 +103,43 @@ export async function fetchBrandBySlug(slug: string): Promise<Brand | null> {
   return (await decorate([data]))[0] ?? null;
 }
 
+
+/** Strip SQL LIKE wildcards so a user's query matches literally. */
+function sanitizeQuery(q: string): string {
+  return q.replace(/[%_]/g, "").trim();
+}
+
+/**
+ * Case-insensitive brand search across name and slug, sanitized against
+ * wildcard injection, de-duplicated, ordered so exact-prefix name matches first.
+ */
+export async function searchBrands(query: string, limit = 8): Promise<Brand[]> {
+  const q = sanitizeQuery(query);
+  if (!q) return [];
+
+  const { data: byName, error: nameErr } = await supabase
+    .from("brands").select("*").ilike("name", `%${q}%`)
+    .order("trust_score", { ascending: false }).limit(limit);
+  if (nameErr) throw nameErr;
+
+  const { data: bySlug, error: slugErr } = await supabase
+    .from("brands").select("*").ilike("slug", `%${q}%`)
+    .order("trust_score", { ascending: false }).limit(limit);
+  if (slugErr) throw slugErr;
+
+  const seen = new Map<string, any>();
+  for (const row of [...(byName ?? []), ...(bySlug ?? [])]) {
+    if (!seen.has(row.id)) seen.set(row.id, row);
+  }
+  const merged = [...seen.values()].sort((a, b) => {
+    const aPre = String(a.name).toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1;
+    const bPre = String(b.name).toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1;
+    if (aPre !== bPre) return aPre - bPre;
+    return (Number(b.trust_score) || 0) - (Number(a.trust_score) || 0);
+  });
+  return decorate(merged.slice(0, limit));
+}
+
 export async function createBrand(input: {
   ownerId: string;
   name: string;
