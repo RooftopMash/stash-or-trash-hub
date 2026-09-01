@@ -41,8 +41,8 @@ export const Route = createFileRoute("/brands/$slug")({
   component: BrandPage,
 });
 
-// Helper to determine Moody's SOT Rating Grade
-function getMoodySotGrade(score: number) {
+// Helper to determine People's SOT Rating Grade
+function getPeoplesSotGrade(score: number) {
   if (score >= 85) {
     return {
       grade: "AAA",
@@ -126,8 +126,8 @@ function BrandPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Active Hub Tab: "feed" | "rewards" | "moodys"
-  const [activeTab, setActiveTab] = useState<"feed" | "rewards" | "moodys">("feed");
+  // Active Hub Tab: "feed" | "rewards" | "people"
+  const [activeTab, setActiveTab] = useState<"feed" | "rewards" | "people">("feed");
 
   // QR Simulator States
   const [qrModalOpen, setQrModalOpen] = useState(false);
@@ -190,7 +190,7 @@ function BrandPage() {
     toast.success(`Coupon ${couponCode} copied to clipboard and social rewards claimed!`);
   };
 
-  // Mock CX/UX Matrix Rating for standard Moody's of brands
+  // Mock CX/UX Matrix Rating for the People's standard of brands
   const mockCXMetrics = {
     customerService: brand ? Math.min(100, Math.max(10, brand.trust_score + 5)) : 75,
     productQuality: brand ? Math.min(100, Math.max(10, brand.trust_score - 2)) : 80,
@@ -224,10 +224,10 @@ function BrandPage() {
                   <h1 className="font-display text-2xl font-extrabold">{brand.name}</h1>
                   {brand.verified && <BadgeCheck className="h-5 w-5 text-primary" />}
 
-                  {/* SOT Moody's Rating Badge */}
-                  <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold border ${getMoodySotGrade(brand.trust_score).color} ${getMoodySotGrade(brand.trust_score).border}`}>
+                  {/* SOT People's Rating Badge */}
+                  <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold border ${getPeoplesSotGrade(brand.trust_score).color} ${getPeoplesSotGrade(brand.trust_score).border}`}>
                     <Award className="h-3 w-3" />
-                    Moody's SOT: {getMoodySotGrade(brand.trust_score).grade}
+                    People's SOT: {getPeoplesSotGrade(brand.trust_score).grade}
                   </div>
                 </div>
                 {brand.category && <p className="text-sm text-muted-foreground mt-0.5">{brand.category}</p>}
@@ -309,9 +309,9 @@ function BrandPage() {
                   <Gift className="h-3.5 w-3.5 text-amber-500 animate-pulse" /> Super Rewards
                 </button>
                 <button
-                  onClick={() => setActiveTab("moodys")}
+                  onClick={() => setActiveTab("people")}
                   className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-lg transition-all ${
-                    activeTab === "moodys" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                    activeTab === "people" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <BarChart3 className="h-3.5 w-3.5 text-blue-500" /> SOT Standard Grade
@@ -454,24 +454,24 @@ function BrandPage() {
                 </div>
               )}
 
-              {/* TAB 3: MOODY'S SOT GRADE INTELLIGENCE */}
-              {activeTab === "moodys" && (
+              {/* TAB 3: PEOPLE'S SOT GRADE INTELLIGENCE */}
+              {activeTab === "people" && (
                 <div className="p-4 space-y-4">
                   <div>
                     <h3 className="font-display font-extrabold text-lg flex items-center gap-1.5 text-foreground">
                       <BarChart3 className="h-5 w-5 text-blue-500" /> SOT Standard Grade Analysis
                     </h3>
-                    <p className="text-xs text-muted-foreground">The Moody's of consumer ratings, scaling credibility via decentralized rater feedback.</p>
+                    <p className="text-xs text-muted-foreground">The People's Standard of consumer ratings, scaling credibility via decentralized rater feedback.</p>
                   </div>
 
                   {/* Rating Grade Callout */}
                   <div className="rounded-xl border border-border bg-secondary/10 p-4 flex flex-col sm:flex-row items-center gap-4">
-                    <div className={`h-16 w-16 rounded-2xl flex items-center justify-center font-display text-2xl font-black shadow-inner shrink-0 ${getMoodySotGrade(brand.trust_score).color}`}>
-                      {getMoodySotGrade(brand.trust_score).grade}
+                    <div className={`h-16 w-16 rounded-2xl flex items-center justify-center font-display text-2xl font-black shadow-inner shrink-0 ${getPeoplesSotGrade(brand.trust_score).color}`}>
+                      {getPeoplesSotGrade(brand.trust_score).grade}
                     </div>
                     <div className="text-center sm:text-left">
-                      <h4 className="font-display font-bold text-base">Current Brand Sovereign Grade: {getMoodySotGrade(brand.trust_score).grade}</h4>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{getMoodySotGrade(brand.trust_score).description}</p>
+                      <h4 className="font-display font-bold text-base">Current Brand Sovereign Grade: {getPeoplesSotGrade(brand.trust_score).grade}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{getPeoplesSotGrade(brand.trust_score).description}</p>
                     </div>
                   </div>
 
