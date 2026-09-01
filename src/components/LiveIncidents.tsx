@@ -47,8 +47,8 @@ export function LiveIncidents() {
   });
 
   useEffect(() => {
-    const channel = subscribeToIncidents(() => refetch());
-    return () => { supabaseRemoveChannel(channel); };
+    const unsubscribe = subscribeToIncidents(() => refetch());
+    return () => { unsubscribe(); };
   }, [refetch]);
 
   return (
@@ -100,9 +100,6 @@ export function LiveIncidents() {
   );
 }
 
-function supabaseRemoveChannel(channel: any) {
-  try { channel && channel.removeChannel?.(); } catch { /* noop */ }
-}
 
 function IncidentComposer({ onPosted }: { onPosted?: () => void }) {
   const { t } = useTranslation();
