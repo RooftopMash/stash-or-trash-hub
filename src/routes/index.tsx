@@ -8,6 +8,7 @@ import { QuickBrands } from "@/components/QuickBrands";
 import { TrendingHashtags } from "@/components/TrendingHashtags";
 import { SotWordmark } from "@/components/SotWordmark";
 import { BrandSearch } from "@/components/BrandSearch";
+import { LiveIncidents } from "@/components/LiveIncidents";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchFeed } from "@/lib/stash";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -76,6 +77,7 @@ function Index() {
           <div>
             <EngagementBar />
 
+            <LiveIncidents />
             <QuickBrands />
 
             {isLoading ? (
