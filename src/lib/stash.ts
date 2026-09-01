@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { analyzeImage, hamming, type MediaAuditReport } from "@/lib/media-forensics";
 
 export type Verdict = "stash" | "trash";
 
@@ -18,9 +19,21 @@ export type FeedItem = {
   trashCount: number;
   myVerdict: Verdict | null;
   signedImageUrl: string | null;
+  audit?: MediaAuditReport | null;
+  phash?: string | null;
 };
 
 export const BUCKET = "item-images";
+
+const ITEM_SELECT =
+  "id, user_id, title, description, image_url, created_at, brand_id, category, audit, phash";
+const ITEM_SELECT_FALLBACK =
+  "id, user_id, title, description, image_url, created_at, brand_id, category";
+
+function colError(e: unknown): boolean {
+  const msg = String((e as { message?: string })?.message ?? "");
+  return /audit|phash|column|42703/i.test(msg);
+}
 
 export async function signImages(paths: (string | null)[]): Promise<Map<string, string>> {
   const unique = [...new Set(paths.filter((p): p is string => !!p))];
@@ -37,12 +50,22 @@ export async function fetchFeed(
   currentUserId: string | null,
   opts?: { brandId?: string },
 ): Promise<FeedItem[]> {
-  let query = supabase
+  const q = supabase
     .from("items")
-    .select("id, user_id, title, description, image_url, created_at, brand_id, category")
+    .select(ITEM_SELECT)
     .order("created_at", { ascending: false });
-  if (opts?.brandId) query = query.eq("brand_id", opts.brandId);
-  const { data: items, error } = await query;
+  const first = await (opts?.brandId ? q.eq("brand_id", opts.brandId) : q);
+  let items: any[] | null = first.data;
+  let error: any = first.error;
+  if (error && colError(error)) {
+    const fb = supabase
+      .from("items")
+      .select(ITEM_SELECT_FALLBACK)
+      .order("created_at", { ascending: false });
+    const second = await (opts?.brandId ? fb.eq("brand_id", opts.brandId) : fb);
+    items = second.data;
+    error = second.error;
+  }
   if (error) throw error;
   if (!items || items.length === 0) return [];
 
@@ -77,6 +100,8 @@ export async function fetchFeed(
           ? (itemVotes.find((v) => v.user_id === currentUserId)?.verdict as Verdict | undefined)
           : undefined) ?? null,
       signedImageUrl: item.image_url ? (signed.get(item.image_url) ?? null) : null,
+      audit: (item.audit as MediaAuditReport | null | undefined) ?? null,
+      phash: (item.phash as string | null | undefined) ?? null,
     };
   });
 }
@@ -102,6 +127,9 @@ export async function createItem(input: {
   category?: string | null;
 }) {
   let imagePath: string | null = null;
+  let audit: MediaAuditReport | null = null;
+  let phash: string | null = null;
+
   if (input.file) {
     const ext = input.file.name.split(".").pop() ?? "jpg";
     const path = `${input.userId}/${crypto.randomUUID()}.${ext}`;
@@ -110,15 +138,51 @@ export async function createItem(input: {
       .upload(path, input.file, { upsert: false });
     if (upErr) throw upErr;
     imagePath = path;
+
+    audit = await analyzeImage(input.file).catch(() => null);
+    phash = audit?.phash ?? null;
+
+    if (phash && audit) {
+      const myPhash: string = phash;
+      const baseAudit = audit;
+      try {
+        const { data: recent } = await supabase
+          .from("items")
+          .select("phash")
+          .not("phash", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(200);
+        const dup = (recent ?? []).find(
+          (r) => typeof r.phash === "string" && hamming(myPhash, r.phash) <= 4,
+        );
+        if (dup) {
+          audit = {
+            ...baseAudit,
+            tier: "reused",
+            flags: [...baseAudit.flags, "Near-duplicate of an existing post detected"],
+          };
+        }
+      } catch {
+        /* dedup is best-effort; never block posting */
+      }
+    }
   }
-  const { error } = await supabase.from("items").insert({
+
+  const base = {
     user_id: input.userId,
     title: input.title.trim(),
     description: input.description.trim() || null,
     image_url: imagePath,
     brand_id: input.brandId || null,
     category: input.category?.trim() || null,
-  });
+  };
+
+  let { error } = await supabase
+    .from("items")
+    .insert({ ...base, audit, phash } as never);
+  if (error && colError(error)) {
+    ({ error } = await supabase.from("items").insert(base as never));
+  }
   if (error) throw error;
 }
 
@@ -132,16 +196,27 @@ export async function fetchItem(
   itemId: string,
   currentUserId: string | null,
 ): Promise<FeedItem | null> {
-  const { data: item, error } = await supabase
+  const q1 = await supabase
     .from("items")
-    .select("id, user_id, title, description, image_url, created_at, brand_id, category")
+    .select(ITEM_SELECT)
     .eq("id", itemId)
     .maybeSingle();
+  let item: any = q1.data;
+  let error: any = q1.error;
+  if (error && colError(error)) {
+    const q2 = await supabase
+      .from("items")
+      .select(ITEM_SELECT_FALLBACK)
+      .eq("id", itemId)
+      .maybeSingle();
+    item = q2.data;
+    error = q2.error;
+  }
   if (error) throw error;
   if (!item) return null;
 
   const [{ data: votes }, { data: profile }, brandRes, signed] = await Promise.all([
-    supabase.from("votes").select("item_id, user_id, verdict").eq("item_id", item.id),
+    supabase.from("votes").select("item_id, user_id, verdict").eq("item_id", itemId),
     supabase.from("profiles").select("id, display_name").eq("id", item.user_id).maybeSingle(),
     item.brand_id
       ? supabase.from("brands").select("id, name, slug").eq("id", item.brand_id).maybeSingle()
@@ -162,6 +237,8 @@ export async function fetchItem(
         ? (itemVotes.find((v) => v.user_id === currentUserId)?.verdict as Verdict | undefined)
         : undefined) ?? null,
     signedImageUrl: item.image_url ? (signed.get(item.image_url) ?? null) : null,
+    audit: (item.audit as MediaAuditReport | null | undefined) ?? null,
+    phash: (item.phash as string | null | undefined) ?? null,
   };
 }
 
