@@ -15,6 +15,7 @@ import { recordVote, emitEngagementChange } from "@/lib/engagement";
 import { ItemCardActions } from "@/components/ItemCardActions";
 import { CommentThread } from "@/components/CommentThread";
 import { PostText } from "@/components/PostText";
+import { AuditBadge } from "@/components/AuditBadge";
 
 export function ItemCard({
   item,
@@ -103,6 +104,7 @@ export function ItemCard({
                     {item.category}
                   </Badge>
                 )}
+                {item.audit && <AuditBadge audit={item.audit} />}
               </div>
             )}
             <h3 className="font-display text-xl font-bold leading-tight">
