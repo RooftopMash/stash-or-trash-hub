@@ -295,6 +295,46 @@ export type Database = {
           },
         ]
       }
+      incidents: {
+        Row: {
+          brand_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          media_type: string | null
+          media_url: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          brand_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          media_type?: string | null
+          media_url?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          brand_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          media_type?: string | null
+          media_url?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+
       messages: {
         Row: {
           body: string
