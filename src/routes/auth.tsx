@@ -59,13 +59,28 @@ function AuthPage() {
     navigate({ to: "/" });
   };
 
-  const google = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) return toast.error(t("auth.googleFailed"));
-    if (result.redirected) return;
-    navigate({ to: "/" });
+  type LovableProvider = "google" | "apple" | "microsoft";
+  type SupabaseProvider = "linkedin" | "twitter";
+
+  const runOAuth = async (provider: LovableProvider | SupabaseProvider) => {
+    try {
+      if (provider === "linkedin" || provider === "twitter") {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: { redirectTo: window.location.origin },
+        });
+        if (error) throw new Error(error.message);
+        return;
+      }
+      const result = await lovable.auth.signInWithOAuth(provider, {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) throw new Error(result.error.message ?? t("auth.socialFailed"));
+      if (result.redirected) return;
+      navigate({ to: "/" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("auth.socialFailed"));
+    }
   };
 
   return (
@@ -82,9 +97,23 @@ function AuthPage() {
         </Link>
 
         <div className="rounded-2xl border border-border bg-card p-6">
-          <Button variant="outline" className="w-full" onClick={google}>
-            {t("auth.continueGoogle")}
-          </Button>
+          <div className="space-y-2">
+            <Button variant="outline" className="w-full" onClick={() => runOAuth("google")}>
+              {t("auth.continueGoogle")}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => runOAuth("apple")}>
+              {t("auth.continueApple")}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => runOAuth("microsoft")}>
+              {t("auth.continueMicrosoft")}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => runOAuth("linkedin")}>
+              {t("auth.continueLinkedIn")}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => runOAuth("twitter")}>
+              {t("auth.continueX")}
+            </Button>
+          </div>
 
           <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
             <div className="h-px flex-1 bg-border" /> {t("auth.or")} <div className="h-px flex-1 bg-border" />
