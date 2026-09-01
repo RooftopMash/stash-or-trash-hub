@@ -11,6 +11,8 @@ import {
   approveBrandCandidate,
   rejectBrandCandidate,
   buildBrandInvitation,
+  publishBrandsFromWikidata,
+  publishPendingCandidates,
 } from "@/lib/wikidata-import";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -64,6 +66,7 @@ function AdminPage() {
   const [limit, setLimit] = useState(50);
   const [importing, setImporting] = useState(false);
   const [invitation, setInvitation] = useState("");
+  const [publishing, setPublishing] = useState(false);
 
   const runImport = async () => {
     setImporting(true);
@@ -78,6 +81,33 @@ function AdminPage() {
     }
   };
 
+  const runPublish = async () => {
+    if (!user) return;
+    setPublishing(true);
+    try {
+      const r = await publishBrandsFromWikidata({ countryCode: country, limit, ownerId: user.id });
+      toast.success("Published " + r.published + " brands (" + r.skipped + " already present).");
+      refetchCand();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Publish failed.");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const publishAll = async () => {
+    if (!user) return;
+    setPublishing(true);
+    try {
+      const r = await publishPendingCandidates(user.id);
+      toast.success("Published " + r.published + " queued brands (" + r.skipped + " skipped).");
+      refetchCand();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Publish failed.");
+    } finally {
+      setPublishing(false);
+    }
+  };
   const review = async (requestId: string, brandId: string, approve: boolean) => {
     if (!user) return;
     try {
@@ -166,6 +196,10 @@ function AdminPage() {
                     <Download className="h-4 w-4" />
                     {importing ? "Importing…" : "Fetch from Wikidata"}
                   </Button>
+                  <Button onClick={runPublish} disabled={publishing || importing} variant="secondary" className="gap-1.5">
+                    <Check className="h-4 w-4" />
+                    {publishing ? "Publishing…" : "Fetch + publish now"}
+                  </Button>
                 </div>
                 {invitation && (
                   <div className="mt-5 space-y-2">
@@ -182,6 +216,14 @@ function AdminPage() {
             </TabsContent>
 
             <TabsContent value="queue" className="mt-6 space-y-2">
+              {candidates?.length ? (
+                <div className="flex justify-end">
+                  <Button size="sm" variant="secondary" onClick={publishAll} disabled={publishing} className="gap-1.5">
+                    <Check className="h-4 w-4" /> Publish all queued
+                  </Button>
+                </div>
+              ) : null}
+
               {!candidates?.length ? (
                 <p className="text-muted-foreground">Queue is empty. Run the importer.</p>
               ) : candidates.map((c) => (
