@@ -332,3 +332,46 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
   if (error) throw error;
   return data ?? null;
 }
+
+export type ProfileStats = {
+  posts: number;
+  stash: number;
+  trash: number;
+  following: number;
+};
+
+/** Public activity counters for a member profile (all from publicly readable tables). */
+export async function getProfileStats(userId: string): Promise<ProfileStats> {
+  const [posts, votes, following] = await Promise.all([
+    supabase.from("items").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("votes").select("verdict").eq("user_id", userId),
+    supabase
+      .from("follows")
+      .select("id", { count: "exact", head: true })
+      .eq("follower_id", userId),
+  ]);
+  const rows = votes.data ?? [];
+  return {
+    posts: posts.count ?? 0,
+    stash: rows.filter((v) => v.verdict === "stash").length,
+    trash: rows.filter((v) => v.verdict === "trash").length,
+    following: following.count ?? 0,
+  };
+}
+
+export async function updateMyProfile(input: {
+  userId: string;
+  display_name: string;
+  bio: string;
+  avatar_url: string;
+}) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      display_name: input.display_name.trim() || "Anonymous",
+      bio: input.bio.trim() || null,
+      avatar_url: input.avatar_url.trim() || null,
+    })
+    .eq("id", input.userId);
+  if (error) throw error;
+}

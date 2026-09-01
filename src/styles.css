@@ -83,9 +83,10 @@
   --input: oklch(0.3 0.02 275);
   --ring: oklch(0.82 0.19 130);
 
-  --stash: oklch(0.82 0.19 130);
-  --stash-foreground: oklch(0.18 0.03 140);
-  --trash: oklch(0.63 0.24 20);
+  /* Stash is always the logo gold; Trash is always the logo red. */
+  --stash: oklch(0.79 0.14 82);
+  --stash-foreground: oklch(0.17 0.01 270);
+  --trash: oklch(0.55 0.22 27);
   --trash-foreground: oklch(0.98 0.01 20);
 
   /* sampled from the SOT logo */

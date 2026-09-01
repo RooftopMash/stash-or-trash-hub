@@ -188,6 +188,7 @@ export async function approveBrandCandidate(id: string, reviewerId: string): Pro
       description: cand.description,
       website: cand.website,
       category: cand.category,
+      country: cand.country,
       logo_url: cand.logo_url,
     })
     .select("id, name, slug, website")
