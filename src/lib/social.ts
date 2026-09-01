@@ -170,7 +170,7 @@ export async function unfollowUser(followerId: string, followeeId: string) {
 export async function followBrand(followerId: string, brandId: string) {
   const { error } = await supabase
     .from("follows")
-    .insert({ follower_id: followerId, brand_id: brandId });
+    .insert({ follower_id: followerId, followee_id: null, brand_id: brandId } as never);
   if (error && error.code !== "23505") throw error;
 }
 
