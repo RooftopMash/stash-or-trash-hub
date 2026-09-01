@@ -10,6 +10,7 @@ export type Brand = {
   logo_url: string | null;
   website: string | null;
   category: string | null;
+  country: string | null;
   verified: boolean;
   trust_score: number;
   created_at: string;
@@ -54,6 +55,35 @@ export async function fetchBrands(): Promise<Brand[]> {
     .order("created_at", { ascending: false });
   if (error) throw error;
   return decorate(data ?? []);
+}
+
+/**
+ * Brands for a visitor's country, highest trust score first. Falls back to the
+ * global leaderboard when the country has no brands yet (or is unknown).
+ */
+export async function fetchLocalBrands(
+  country: string | null,
+  limit = 12,
+): Promise<{ brands: Brand[]; localized: boolean }> {
+  if (country) {
+    const { data, error } = await supabase
+      .from("brands")
+      .select("*")
+      .eq("country", country)
+      .order("trust_score", { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    if (data && data.length > 0) {
+      return { brands: await decorate(data), localized: true };
+    }
+  }
+  const { data, error } = await supabase
+    .from("brands")
+    .select("*")
+    .order("trust_score", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return { brands: await decorate(data ?? []), localized: false };
 }
 
 export async function fetchMyBrands(ownerId: string): Promise<Brand[]> {
