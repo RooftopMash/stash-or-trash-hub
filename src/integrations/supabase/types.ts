@@ -123,6 +123,7 @@ export type Database = {
       brands: {
         Row: {
           category: string | null
+          country: string | null
           created_at: string
           description: string | null
           id: string
@@ -137,6 +138,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          country?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -151,6 +153,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          country?: string | null
           created_at?: string
           description?: string | null
           id?: string
