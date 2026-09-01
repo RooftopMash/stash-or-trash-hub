@@ -211,3 +211,117 @@ export async function rejectBrandCandidate(id: string, reviewerId: string) {
     .eq("id", id);
   if (error) throw error;
 }
+
+
+export type PublishBrandsResult = { published: number; skipped: number };
+
+export async function publishBrandsFromWikidata(input: {
+  countryCode: string;
+  limit: number;
+  ownerId: string;
+}): Promise<PublishBrandsResult> {
+  const countryCode = input.countryCode.toUpperCase();
+  const limit = Math.max(1, Math.min(200, input.limit));
+  const qid = ISO_TO_QID[countryCode];
+  if (!qid) throw new Error("Country " + countryCode + " is not supported yet.");
+
+  const queries: string[] = [];
+  for (const cls of BRAND_CLASSES) {
+    queries.push(buildQuery(cls, qid, "P17", limit));
+    queries.push(buildQuery(cls, qid, "P159/wdt:P17", limit));
+  }
+
+  const settled = await Promise.allSettled(queries.map(runQuery));
+  const bindings = settled.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+  if (!bindings.length) {
+    throw new Error("Wikidata did not respond in time. Please try again with a smaller limit.");
+  }
+
+  const byId = new Map<string, Candidate & { sitelinks: number }>();
+  for (const b of bindings) {
+    const qUrl: string = b.item?.value ?? "";
+    const sourceId = qUrl.split("/").pop() ?? "";
+    const name: string = b.itemLabel?.value ?? "";
+    if (!sourceId || !name || /^Q[0-9]+$/.test(name)) continue;
+    const slug = slugify(name);
+    if (!slug) continue;
+
+    const existing = byId.get(sourceId);
+    if (existing) {
+      existing.category ??= b.industryLabel?.value ?? null;
+      existing.description ??= b.desc?.value ?? null;
+      existing.website ??= b.website?.value ?? null;
+      existing.logo_url ??= b.logo?.value ?? null;
+      continue;
+    }
+    byId.set(sourceId, {
+      source: "wikidata", source_id: sourceId, name, slug,
+      country: countryCode, category: b.industryLabel?.value ?? null,
+      description: b.desc?.value ?? null, website: b.website?.value ?? null,
+      logo_url: b.logo?.value ?? null, status: "approved",
+      sitelinks: Number(b.sitelinks?.value ?? 0),
+    });
+  }
+
+  const candidates = [...byId.values()].sort((a, b) => b.sitelinks - a.sitelinks).slice(0, limit);
+  if (!candidates.length) return { published: 0, skipped: 0 };
+
+  const { data: existingRows, error: existingErr } = await supabase
+    .from("brands").select("slug").in("slug", candidates.map((c) => c.slug));
+  if (existingErr) throw existingErr;
+
+  const used = new Set<string>((existingRows ?? []).map((r) => r.slug));
+  const rows: any[] = [];
+  for (const c of candidates) {
+    let slug = c.slug;
+    for (let i = 0; i < 5; i += 1) {
+      if (!used.has(slug)) break;
+      slug = c.slug + "-" + Math.floor(Math.random() * 10000);
+    }
+    if (used.has(slug)) continue;
+    used.add(slug);
+    rows.push({ owner_id: input.ownerId, name: c.name, slug, description: c.description,
+      website: c.website, category: c.category, country: c.country, logo_url: c.logo_url });
+  }
+
+  if (!rows.length) return { published: 0, skipped: candidates.length };
+  const { data, error } = await supabase.from("brands").insert(rows).select("id");
+  if (error) throw error;
+  return { published: data?.length ?? 0, skipped: rows.length - (data?.length ?? 0) };
+}
+
+export async function publishPendingCandidates(ownerId: string): Promise<PublishBrandsResult> {
+  const { data: pending, error: qErr } = await supabase
+    .from("brand_import_candidates").select("*").eq("status", "pending")
+    .order("created_at", { ascending: true }).limit(500);
+  if (qErr) throw qErr;
+  if (!pending?.length) return { published: 0, skipped: 0 };
+
+  const { data: existingRows, error: existingErr } = await supabase
+    .from("brands").select("slug").in("slug", pending.map((c) => c.slug));
+  if (existingErr) throw existingErr;
+
+  const used = new Set<string>((existingRows ?? []).map((r) => r.slug));
+  const rows: any[] = [];
+  for (const c of pending) {
+    let slug = c.slug;
+    for (let i = 0; i < 5; i += 1) {
+      if (!used.has(slug)) break;
+      slug = c.slug + "-" + Math.floor(Math.random() * 10000);
+    }
+    if (used.has(slug)) continue;
+    used.add(slug);
+    rows.push({ owner_id: ownerId, name: c.name, slug, description: c.description,
+      website: c.website, category: c.category, country: c.country, logo_url: c.logo_url });
+  }
+
+  if (rows.length) {
+    const { error } = await supabase.from("brands").insert(rows);
+    if (error) throw error;
+  }
+  const { error: updErr } = await supabase
+    .from("brand_import_candidates").update({ status: "approved", reviewed_by: ownerId })
+    .in("id", pending.map((c) => c.id));
+  if (updErr) throw updErr;
+  return { published: rows.length, skipped: pending.length - rows.length };
+}
