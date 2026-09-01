@@ -91,6 +91,10 @@ export const en = {
     nearYou: "Brands in {{country}}",
     globalTop: "Top brands worldwide",
     seeAll: "See all",
+    searchPlaceholder: "Search brands...",
+    searchResults: "Brands",
+    searchNoResults: "No brands found.",
+    addNew: "Add \"{{name}}\" as a new brand",
   },
   dashboard: {
     title: "Brand dashboard",
