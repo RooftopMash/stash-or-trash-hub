@@ -375,3 +375,178 @@ export async function updateMyProfile(input: {
     .eq("id", input.userId);
   if (error) throw error;
 }
+
+/* ----------------------------- user media storage ---------------------------- */
+
+export type UserMediaItem = {
+  id: string;
+  user_id: string;
+  media_url: string;
+  media_type: "photo" | "video" | "audio";
+  caption: string | null;
+  created_at: string;
+  signedUrl?: string;
+};
+
+export async function fetchUserMedia(userId: string): Promise<UserMediaItem[]> {
+  const { data, error } = await supabase
+    .from("user_media")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  const rows = (data ?? []) as UserMediaItem[];
+
+  // Sign URLs if stored as relative path
+  const paths = rows.map((r) => r.media_url).filter((u) => !/^https?:\/\//i.test(u));
+  if (paths.length === 0) return rows;
+
+  const { data: signed } = await supabase.storage
+    .from("user-media")
+    .createSignedUrls(paths, 60 * 60 * 24 * 7);
+
+  const signedMap = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
+
+  return rows.map((r) => ({
+    ...r,
+    signedUrl: /^https?:\/\//i.test(r.media_url)
+      ? r.media_url
+      : (signedMap.get(r.media_url) ?? r.media_url),
+  }));
+}
+
+export async function uploadUserMedia(
+  userId: string,
+  file: File,
+  caption?: string,
+): Promise<UserMediaItem> {
+  const ext = file.name.split(".").pop() ?? "file";
+  const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+
+  let mediaType: "photo" | "video" | "audio" = "photo";
+  if (file.type.startsWith("video/")) mediaType = "video";
+  else if (file.type.startsWith("audio/")) mediaType = "audio";
+
+  const { error: upErr } = await supabase.storage
+    .from("user-media")
+    .upload(path, file, { upsert: false });
+
+  if (upErr) throw upErr;
+
+  const { data, error } = await supabase
+    .from("user_media")
+    .insert({
+      user_id: userId,
+      media_url: path,
+      media_type: mediaType,
+      caption: caption?.trim() || null,
+    })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data as UserMediaItem;
+}
+
+export async function deleteUserMedia(mediaId: string): Promise<void> {
+  const { error } = await supabase.from("user_media").delete().eq("id", mediaId);
+  if (error) throw error;
+}
+
+/* ------------------------------- friends system ------------------------------ */
+
+export type FriendRequest = {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  status: "pending" | "accepted" | "declined";
+  created_at: string;
+  profileName?: string;
+  avatarUrl?: string | null;
+};
+
+export async function sendFriendRequest(userId: string, friendId: string): Promise<void> {
+  const { error } = await supabase.from("friends").insert({
+    user_id: userId,
+    friend_id: friendId,
+    status: "pending",
+  });
+  if (error) throw error;
+}
+
+export async function acceptFriendRequest(requestId: string): Promise<void> {
+  const { error } = await supabase
+    .from("friends")
+    .update({ status: "accepted" })
+    .eq("id", requestId);
+  if (error) throw error;
+}
+
+export async function declineFriendRequest(requestId: string): Promise<void> {
+  const { error } = await supabase.from("friends").delete().eq("id", requestId);
+  if (error) throw error;
+}
+
+export async function getFriendshipStatus(
+  userId: string,
+  targetId: string,
+): Promise<{ status: "none" | "pending_sent" | "pending_received" | "friends"; requestId?: string }> {
+  const { data } = await supabase
+    .from("friends")
+    .select("id, user_id, friend_id, status")
+    .or(`and(user_id.eq.${userId},friend_id.eq.${targetId}),and(user_id.eq.${targetId},friend_id.eq.${userId})`)
+    .maybeSingle();
+
+  if (!data) return { status: "none" };
+
+  if (data.status === "accepted") return { status: "friends", requestId: data.id };
+
+  if (data.user_id === userId) return { status: "pending_sent", requestId: data.id };
+  return { status: "pending_received", requestId: data.id };
+}
+
+export async function getFriendsList(userId: string): Promise<PublicProfile[]> {
+  const { data } = await supabase
+    .from("friends")
+    .select("user_id, friend_id")
+    .eq("status", "accepted")
+    .or(`user_id.eq.${userId},friend_id.eq.${userId}`);
+
+  if (!data || data.length === 0) return [];
+
+  const friendUserIds = data.map((r) => (r.user_id === userId ? r.friend_id : r.user_id));
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, display_name, bio, avatar_url, trust_score")
+    .in("id", friendUserIds);
+
+  return profiles ?? [];
+}
+
+export async function getPendingFriendRequests(userId: string): Promise<FriendRequest[]> {
+  const { data, error } = await supabase
+    .from("friends")
+    .select("*")
+    .eq("friend_id", userId)
+    .eq("status", "pending");
+
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  const senderIds = data.map((r) => r.user_id);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, display_name, avatar_url")
+    .in("id", senderIds);
+
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+  return data.map((r) => ({
+    ...r,
+    status: r.status as "pending" | "accepted" | "declined",
+    profileName: profileMap.get(r.user_id)?.display_name ?? "User",
+    avatarUrl: profileMap.get(r.user_id)?.avatar_url ?? null,
+  }));
+}

@@ -17,6 +17,8 @@ import {
   followUser,
   unfollowUser,
 } from "@/lib/social";
+import { UserMediaVault } from "@/components/UserMediaVault";
+import { FriendActionButton, FriendsSection } from "@/components/FriendsManager";
 
 export const Route = createFileRoute("/users/$id")({
   head: () => ({
@@ -124,14 +126,17 @@ function PublicProfilePage() {
                 {profile.bio && <p className="mt-2 text-sm">{profile.bio}</p>}
               </div>
               {user?.id !== id && (
-                <Button
-                  size="sm"
-                  variant={following ? "outline" : "default"}
-                  disabled={busy}
-                  onClick={toggleFollow}
-                >
-                  {following ? t("social.unfollow") : t("social.follow")}
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    size="sm"
+                    variant={following ? "outline" : "default"}
+                    disabled={busy}
+                    onClick={toggleFollow}
+                  >
+                    {following ? t("social.unfollow") : t("social.follow")}
+                  </Button>
+                  {user && <FriendActionButton currentUserId={user.id} targetUserId={id} />}
+                </div>
               )}
             </div>
           </section>
@@ -143,6 +148,12 @@ function PublicProfilePage() {
 
         {profile && (
           <>
+            {/* User Media Storage Vault */}
+            <UserMediaVault userId={id} isOwner={user?.id === id} />
+
+            {/* Friends Section */}
+            <FriendsSection userId={id} isOwner={user?.id === id} />
+
             <h2 className="mb-3 mt-8 font-display text-lg font-bold">
               {t("social.postsBy", { name: profile.display_name })}
             </h2>

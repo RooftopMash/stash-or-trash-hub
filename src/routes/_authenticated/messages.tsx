@@ -14,6 +14,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CallModal } from "@/components/CallModal";
+import { Phone, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -30,6 +32,7 @@ function MessagesPage() {
   const { to } = Route.useSearch();
   const [active, setActive] = useState<string | null>(to ?? null);
   const [body, setBody] = useState("");
+  const [activeCall, setActiveCall] = useState<"audio" | "video" | null>(null);
 
   const { data: inbox, refetch: refetchInbox } = useQuery({
     queryKey: ["inbox", user?.id],
@@ -125,8 +128,26 @@ function MessagesPage() {
             </div>
           ) : (
             <>
-              <div className="border-b border-border px-4 py-3 font-semibold">
-                {activeName ?? t("messages.to")}
+              <div className="flex items-center justify-between border-b border-border px-4 py-3 font-semibold">
+                <span>{activeName ?? t("messages.to")}</span>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setActiveCall("audio")}
+                    className="h-8 gap-1 text-xs text-primary"
+                  >
+                    <Phone className="h-4 w-4" /> Call
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setActiveCall("video")}
+                    className="h-8 gap-1 text-xs text-primary"
+                  >
+                    <Video className="h-4 w-4" /> Video
+                  </Button>
+                </div>
               </div>
               <div className="flex-1 space-y-2 overflow-y-auto p-4">
                 {(thread ?? []).map((m) => (
@@ -158,6 +179,18 @@ function MessagesPage() {
           )}
         </section>
       </main>
+
+      {/* Live WebRTC In-App Call Overlay */}
+      {user && active && activeCall && (
+        <CallModal
+          open={!!activeCall}
+          onClose={() => setActiveCall(null)}
+          partnerName={activeName ?? "User"}
+          callType={activeCall}
+          currentUserId={user.id}
+          partnerId={active}
+        />
+      )}
     </div>
   );
 }

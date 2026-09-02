@@ -115,7 +115,15 @@ function sanitizeQuery(q: string): string {
  */
 export async function searchBrands(query: string, limit = 8): Promise<Brand[]> {
   const q = sanitizeQuery(query);
-  if (!q) return [];
+  if (!q) {
+    const { data, error } = await supabase
+      .from("brands")
+      .select("*")
+      .order("trust_score", { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return decorate(data ?? []);
+  }
 
   const { data: byName, error: nameErr } = await supabase
     .from("brands").select("*").ilike("name", `%${q}%`)
