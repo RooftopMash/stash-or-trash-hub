@@ -24,11 +24,13 @@ import { cn } from "@/lib/utils";
 export function BrandSearch({
   onSelectBrand,
   selectedId,
+  selectedName,
   placeholder,
   className,
 }: {
   onSelectBrand?: (brand: Brand) => void;
   selectedId?: string;
+  selectedName?: string;
   placeholder?: string;
   className?: string;
 }) {
@@ -36,20 +38,28 @@ export function BrandSearch({
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [activeBrandName, setActiveBrandName] = useState<string | undefined>(selectedName);
 
-  const { data: results } = useQuery({
+  const { data: results, isLoading } = useQuery({
     queryKey: ["brand-search", query],
     queryFn: () => searchBrands(query),
-    enabled: open && query.trim().length > 0,
+    enabled: open,
   });
 
   useEffect(() => {
-    if (selectedId) setOpen(false);
+    if (selectedId) {
+      setOpen(false);
+    }
   }, [selectedId]);
+
+  useEffect(() => {
+    if (selectedName) setActiveBrandName(selectedName);
+  }, [selectedName]);
 
   const q = query.trim();
 
   const handleSelect = (brand: Brand) => {
+    setActiveBrandName(brand.name);
     setOpen(false);
     setQuery("");
     if (onSelectBrand) onSelectBrand(brand);
@@ -73,11 +83,11 @@ export function BrandSearch({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-start", className)}
+          className={cn("w-full justify-start text-left font-normal", className)}
         >
-          <Search className="h-4 w-4 shrink-0 opacity-60" />
-          <span className="truncate text-muted-foreground">
-            {placeholder ?? t("brand.searchPlaceholder")}
+          <Search className="h-4 w-4 shrink-0 opacity-60 mr-2" />
+          <span className={cn("truncate", activeBrandName ? "text-foreground font-medium" : "text-muted-foreground")}>
+            {activeBrandName || placeholder || t("brand.searchPlaceholder")}
           </span>
         </Button>
       </PopoverTrigger>
@@ -89,19 +99,24 @@ export function BrandSearch({
             placeholder={placeholder ?? t("brand.searchPlaceholder")}
           />
           <CommandList>
-            {results && results.length === 0 && (
+            {isLoading && (
+              <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                Searching brands...
+              </div>
+            )}
+            {!isLoading && results && results.length === 0 && (
               <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                 {t("brand.searchNoResults")}
               </div>
             )}
-            {results && results.length > 0 && (
-              <CommandGroup heading={t("brand.searchResults")}>
+            {!isLoading && results && results.length > 0 && (
+              <CommandGroup heading={q.length > 0 ? t("brand.searchResults") : "Popular Brands"}>
                 {results.map((b) => (
                   <CommandItem key={b.id} value={b.id} onSelect={() => handleSelect(b)}>
                     <Check className={cn("mr-2 h-4 w-4", selectedId === b.id ? "opacity-100" : "opacity-0")} />
-                    <span className="truncate">{b.name}</span>
-                    {b.country && (
-                      <span className="ml-auto shrink-0 pl-2 text-xs text-muted-foreground">{b.country}</span>
+                    <span className="truncate font-medium">{b.name}</span>
+                    {b.category && (
+                      <span className="ml-auto shrink-0 pl-2 text-xs text-muted-foreground">{b.category}</span>
                     )}
                   </CommandItem>
                 ))}

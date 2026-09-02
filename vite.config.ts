@@ -4,11 +4,4 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
-  nitro: {
-    cloudflare: {
-      wrangler: {
-        name: "stash-or-trash-hub",
-      },
-    },
-  },
 });
