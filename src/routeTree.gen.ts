@@ -22,7 +22,10 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as ApiPublicWebhooksRouteImport } from './routes/api/public/webhooks'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedBrandsNewRouteImport } from './routes/_authenticated/brands.new'
 
 const AwardsRoute = AwardsRouteImport.update({
@@ -90,10 +93,25 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiPublicWebhooksRoute = ApiPublicWebhooksRouteImport.update({
+  id: '/api/public/webhooks',
+  path: '/api/public/webhooks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedBrandsNewRoute = AuthenticatedBrandsNewRouteImport.update({
   id: '/brands/new',
@@ -106,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/awards': typeof AwardsRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
@@ -116,12 +135,15 @@ export interface FileRoutesByFullPath {
   '/users/$id': typeof UsersIdRoute
   '/brands/': typeof BrandsIndexRoute
   '/brands/new': typeof AuthenticatedBrandsNewRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/webhooks': typeof ApiPublicWebhooksRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/awards': typeof AwardsRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
@@ -132,6 +154,8 @@ export interface FileRoutesByTo {
   '/users/$id': typeof UsersIdRoute
   '/brands': typeof BrandsIndexRoute
   '/brands/new': typeof AuthenticatedBrandsNewRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/webhooks': typeof ApiPublicWebhooksRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -140,6 +164,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/awards': typeof AwardsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
@@ -150,6 +175,8 @@ export interface FileRoutesById {
   '/users/$id': typeof UsersIdRoute
   '/brands/': typeof BrandsIndexRoute
   '/_authenticated/brands/new': typeof AuthenticatedBrandsNewRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/webhooks': typeof ApiPublicWebhooksRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -158,6 +185,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/awards'
     | '/admin'
+    | '/analytics'
     | '/dashboard'
     | '/messages'
     | '/notifications'
@@ -168,12 +196,15 @@ export interface FileRouteTypes {
     | '/users/$id'
     | '/brands/'
     | '/brands/new'
+    | '/api/public/health'
+    | '/api/public/webhooks'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/awards'
     | '/admin'
+    | '/analytics'
     | '/dashboard'
     | '/messages'
     | '/notifications'
@@ -184,6 +215,8 @@ export interface FileRouteTypes {
     | '/users/$id'
     | '/brands'
     | '/brands/new'
+    | '/api/public/health'
+    | '/api/public/webhooks'
   id:
     | '__root__'
     | '/'
@@ -191,6 +224,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/awards'
     | '/_authenticated/admin'
+    | '/_authenticated/analytics'
     | '/_authenticated/dashboard'
     | '/_authenticated/messages'
     | '/_authenticated/notifications'
@@ -201,6 +235,8 @@ export interface FileRouteTypes {
     | '/users/$id'
     | '/brands/'
     | '/_authenticated/brands/new'
+    | '/api/public/health'
+    | '/api/public/webhooks'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -213,6 +249,8 @@ export interface RootRouteChildren {
   ItemsIdRoute: typeof ItemsIdRoute
   UsersIdRoute: typeof UsersIdRoute
   BrandsIndexRoute: typeof BrandsIndexRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicWebhooksRoute: typeof ApiPublicWebhooksRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -308,12 +346,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/analytics': {
+      id: '/_authenticated/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/webhooks': {
+      id: '/api/public/webhooks'
+      path: '/api/public/webhooks'
+      fullPath: '/api/public/webhooks'
+      preLoaderRoute: typeof ApiPublicWebhooksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/brands/new': {
       id: '/_authenticated/brands/new'
@@ -327,6 +386,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
@@ -336,6 +396,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
@@ -356,6 +417,8 @@ const rootRouteChildren: RootRouteChildren = {
   ItemsIdRoute: ItemsIdRoute,
   UsersIdRoute: UsersIdRoute,
   BrandsIndexRoute: BrandsIndexRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicWebhooksRoute: ApiPublicWebhooksRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

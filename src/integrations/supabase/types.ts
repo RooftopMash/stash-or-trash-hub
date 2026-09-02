@@ -297,6 +297,165 @@ export type Database = {
           },
         ]
       }
+      brand_members: {
+        Row: {
+          brand_id: string
+          created_at: string
+          email: string | null
+          id: string
+          role: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          role: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          role?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_members_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_responses: {
+        Row: {
+          brand_id: string
+          created_at: string
+          id: string
+          item_id: string
+          response_text: string
+          user_id: string
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          id?: string
+          item_id: string
+          response_text: string
+          user_id: string
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+          response_text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_responses_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_responses_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_webhooks: {
+        Row: {
+          active: boolean
+          brand_id: string
+          created_at: string
+          events: string[]
+          id: string
+          secret: string
+          url: string
+        }
+        Insert: {
+          active?: boolean
+          brand_id: string
+          created_at?: string
+          events?: string[]
+          id?: string
+          secret: string
+          url: string
+        }
+        Update: {
+          active?: boolean
+          brand_id?: string
+          created_at?: string
+          events?: string[]
+          id?: string
+          secret?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_webhooks_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crisis_alerts: {
+        Row: {
+          acknowledged: boolean
+          alert_type: string
+          baseline_share: number
+          brand_id: string
+          created_at: string
+          id: string
+          message: string
+          negative_share: number
+        }
+        Insert: {
+          acknowledged?: boolean
+          alert_type: string
+          baseline_share: number
+          brand_id: string
+          created_at?: string
+          id?: string
+          message: string
+          negative_share: number
+        }
+        Update: {
+          acknowledged?: boolean
+          alert_type?: string
+          baseline_share?: number
+          brand_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          negative_share?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crisis_alerts_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           audit: Json | null
@@ -307,6 +466,8 @@ export type Database = {
           id: string
           image_url: string | null
           phash: string | null
+          responded_at: string | null
+          sentiment: string | null
           title: string
           user_id: string
         }
@@ -319,6 +480,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           phash?: string | null
+          responded_at?: string | null
+          sentiment?: string | null
           title: string
           user_id: string
         }
@@ -331,6 +494,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           phash?: string | null
+          responded_at?: string | null
+          sentiment?: string | null
           title?: string
           user_id?: string
         }

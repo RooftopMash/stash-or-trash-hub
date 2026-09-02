@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeImage, hamming, type MediaAuditReport } from "@/lib/media-forensics";
+import { triggerWebhookDelivery } from "@/lib/webhooks";
 
 export type Verdict = "stash" | "trash";
 
@@ -184,6 +185,14 @@ export async function createItem(input: {
     ({ error } = await supabase.from("items").insert(base as never));
   }
   if (error) throw error;
+
+  if (input.brandId) {
+    void triggerWebhookDelivery(input.brandId, "new_post", {
+      title: input.title,
+      description: input.description,
+      category: base.category,
+    });
+  }
 }
 
 export async function deleteItem(itemId: string) {
