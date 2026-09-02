@@ -13,7 +13,7 @@ import { SotWordmark } from "@/components/SotWordmark";
 
 export function Header({ onPosted }: { onPosted?: () => void }) {
   const { user, loading, signOut } = useAuth();
-  const { isAdmin } = useRoles();
+  const { isAdmin, isBrand } = useRoles();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const unread = useUnreadCount(user?.id);
@@ -52,12 +52,20 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
             >
               {t("nav.awards")}
             </Link>
-            {user && (
+            {user && (isBrand || isAdmin) && (
               <Link
                 to="/dashboard"
                 className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
               >
                 {t("nav.dashboard")}
+              </Link>
+            )}
+            {user && (
+              <Link
+                to="/profile"
+                className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
+              >
+                {t("nav.profile")}
               </Link>
             )}
           </nav>
