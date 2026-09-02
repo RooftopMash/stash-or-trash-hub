@@ -116,6 +116,15 @@ export const en = {
     requestVerification: "Request verification",
     view: "View page",
     manage: "Manage",
+    followers: "Followers",
+  },
+  profile: {
+    title: "Your profile",
+    subtitle: "Your public identity and activity on SOT.",
+    viewPublic: "View public profile",
+    noBio: "No bio yet.",
+    following: "Following",
+    activity: "Your activity",
   },
   awards: {
     title: "The SOT Awards",
