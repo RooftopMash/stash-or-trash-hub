@@ -8,6 +8,8 @@ import { getPublicProfile, getProfileStats, getFollowerCount } from "@/lib/socia
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, ExternalLink, ThumbsUp, ThumbsDown, FileText, UserPlus, Users } from "lucide-react";
+import { UserMediaVault } from "@/components/UserMediaVault";
+import { FriendsSection } from "@/components/FriendsManager";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -86,6 +88,12 @@ function ProfilePage() {
           <Stat icon={ThumbsUp} value={stats?.stash ?? 0} label={t("dashboard.stash")} />
           <Stat icon={ThumbsDown} value={stats?.trash ?? 0} label={t("dashboard.trash")} />
         </div>
+
+        {/* Media Storage Vault */}
+        <UserMediaVault userId={user.id} isOwner={true} />
+
+        {/* Friends Section */}
+        <FriendsSection userId={user.id} isOwner={true} />
       </main>
     </div>
   );
