@@ -1,0 +1,57 @@
+{
+  "name": "Stash Or Trash",
+  "short_name": "SOT",
+  "description": "The unified brand-customer platform. Real-time reputation intelligence for brands, direct customer feedback.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["business", "social"],
+  "screenshots": [
+    {
+      "src": "/screenshot-1.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshot-2.png",
+      "sizes": "1080x1440",
+      "type": "image/png"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/favicon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My Feed",
+      "short_name": "Feed",
+      "description": "View your feed",
+      "url": "/",
+      "icons": [{ "src": "/favicon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Notifications",
+      "short_name": "Alerts",
+      "description": "View notifications",
+      "url": "/notifications",
+      "icons": [{ "src": "/favicon-96x96.png", "sizes": "96x96" }]
+    }
+  ]
+}
