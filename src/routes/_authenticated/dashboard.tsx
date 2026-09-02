@@ -1,15 +1,27 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchMyBrands, fetchBrandStats, requestVerification, type Brand } from "@/lib/brands";
+import { getFollowerCount } from "@/lib/social";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BadgeCheck, MessageSquare, Plus, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) throw redirect({ to: "/auth" });
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user.id);
+    const canManage = (roles ?? []).some((r) => r.role === "brand" || r.role === "admin");
+    if (!canManage) throw redirect({ to: "/profile" });
+  },
   component: DashboardPage,
 });
 
@@ -65,6 +77,11 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
     queryFn: () => fetchBrandStats(brand.id),
   });
 
+  const { data: followers } = useQuery({
+    queryKey: ["brand-followers", brand.id],
+    queryFn: () => getFollowerCount({ brandId: brand.id }),
+  });
+
   const askVerify = async () => {
     if (!user) return;
     try {
@@ -104,11 +121,12 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
           </div>
           {brand.category && <p className="text-sm text-muted-foreground">{brand.category}</p>}
 
-          <div className="mt-4 grid grid-cols-4 gap-3 text-center">
+          <div className="mt-4 grid grid-cols-2 gap-3 text-center sm:grid-cols-5">
             <Stat label={t("dashboard.trustScore")} value={`${brand.trust_score}`} accent />
             <Stat label={t("dashboard.posts")} value={`${stats?.posts ?? 0}`} />
             <Stat label={t("dashboard.stash")} value={`${stats?.stash ?? 0}`} />
             <Stat label={t("dashboard.trash")} value={`${stats?.trash ?? 0}`} />
+            <Stat label={t("dashboard.followers")} value={`${followers ?? 0}`} />
           </div>
 
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
