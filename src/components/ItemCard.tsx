@@ -16,6 +16,7 @@ import { ItemCardActions } from "@/components/ItemCardActions";
 import { CommentThread } from "@/components/CommentThread";
 import { PostText } from "@/components/PostText";
 import { AuditBadge } from "@/components/AuditBadge";
+import { BrandResponses } from "@/components/BrandResponses";
 
 export function ItemCard({
   item,
