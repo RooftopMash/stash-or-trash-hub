@@ -183,6 +183,8 @@ export function ItemCard({
         </div>
 
 
+        <BrandResponses itemId={item.id} brandId={item.brand_id} />
+
         <div className="mt-3">
           <ItemCardActions
             itemId={item.id}
@@ -191,6 +193,7 @@ export function ItemCard({
             onCommentClick={() => setCommentsOpen((v) => !v)}
           />
         </div>
+
 
         {commentsOpen && (
           <div className="mt-4 border-t border-border pt-4">
