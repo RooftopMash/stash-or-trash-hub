@@ -79,6 +79,95 @@ export type Database = {
           },
         ]
       }
+      brand_members: {
+        Row: {
+          accepted_at: string | null
+          brand_id: string
+          created_at: string
+          id: string
+          invited_by: string | null
+          invited_email: string | null
+          role: Database["public"]["Enums"]["brand_role"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          brand_id: string
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          invited_email?: string | null
+          role?: Database["public"]["Enums"]["brand_role"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          brand_id?: string
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          invited_email?: string | null
+          role?: Database["public"]["Enums"]["brand_role"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_members_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_responses: {
+        Row: {
+          body: string
+          brand_id: string
+          created_at: string
+          id: string
+          item_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          brand_id: string
+          created_at?: string
+          id?: string
+          item_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          brand_id?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_responses_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_responses_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_verification_requests: {
         Row: {
           brand_id: string
@@ -307,6 +396,8 @@ export type Database = {
           id: string
           image_url: string | null
           phash: string | null
+          responded_at: string | null
+          sentiment: string
           title: string
           user_id: string
         }
@@ -319,6 +410,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           phash?: string | null
+          responded_at?: string | null
+          sentiment?: string
           title: string
           user_id: string
         }
@@ -331,6 +424,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           phash?: string | null
+          responded_at?: string | null
+          sentiment?: string
           title?: string
           user_id?: string
         }
@@ -640,6 +735,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      brand_kpis: {
+        Args: { _brand_id: string; _days?: number }
+        Returns: {
+          median_response_minutes: number
+          negative: number
+          neutral: number
+          positive: number
+          posts: number
+          stash: number
+          stash_pct: number
+          trash: number
+          unanswered: number
+        }[]
+      }
+      has_brand_role: {
+        Args: {
+          _brand_id: string
+          _min_role?: Database["public"]["Enums"]["brand_role"]
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -662,6 +778,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "brand" | "user"
+      brand_role: "admin" | "analyst" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -790,6 +907,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "brand", "user"],
+      brand_role: ["admin", "analyst", "viewer"],
     },
   },
 } as const
