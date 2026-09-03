@@ -199,3 +199,8 @@ export async function fetchUnansweredPosts(brandId: string, limit = 10) {
   if (error) throw error;
   return data ?? [];
 }
+
+/** Every brand the user can manage: owned brands plus team memberships. */
+export async function fetchAccessibleBrandIds(userId: string): Promise<string[]> {
+  return [...(await fetchManagedBrandIds(userId))];
+}
