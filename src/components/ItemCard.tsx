@@ -16,6 +16,7 @@ import { ItemCardActions } from "@/components/ItemCardActions";
 import { CommentThread } from "@/components/CommentThread";
 import { PostText } from "@/components/PostText";
 import { AuditBadge } from "@/components/AuditBadge";
+import { BrandResponses } from "@/components/BrandResponses";
 
 export function ItemCard({
   item,
@@ -183,6 +184,8 @@ export function ItemCard({
         </div>
 
 
+        <BrandResponses itemId={item.id} brandId={item.brand_id} />
+
         <div className="mt-3">
           <ItemCardActions
             itemId={item.id}
@@ -191,6 +194,7 @@ export function ItemCard({
             onCommentClick={() => setCommentsOpen((v) => !v)}
           />
         </div>
+
 
         {commentsOpen && (
           <div className="mt-4 border-t border-border pt-4">

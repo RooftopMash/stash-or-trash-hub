@@ -15,11 +15,18 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
     if (!data.user) throw redirect({ to: "/auth" });
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", data.user.id);
-    const canManage = (roles ?? []).some((r) => r.role === "brand" || r.role === "admin");
+    const [{ data: roles }, { data: memberships }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", data.user.id),
+      supabase
+        .from("brand_members")
+        .select("id")
+        .eq("user_id", data.user.id)
+        .not("accepted_at", "is", null)
+        .limit(1),
+    ]);
+    const canManage =
+      (roles ?? []).some((r) => r.role === "brand" || r.role === "admin") ||
+      (memberships ?? []).length > 0;
     if (!canManage) throw redirect({ to: "/profile" });
   },
   component: DashboardPage,
@@ -31,8 +38,18 @@ function DashboardPage() {
   const navigate = useNavigate();
 
   const { data: brands, isLoading, refetch } = useQuery({
-    queryKey: ["my-brands", user?.id],
-    queryFn: () => fetchMyBrands(user!.id),
+    queryKey: ["dashboard-brands", user?.id],
+    queryFn: async () => {
+      const owned = await fetchMyBrands(user!.id);
+      const ids = await fetchAccessibleBrandIds(user!.id);
+      const extra = ids.filter((id) => !owned.some((b) => b.id === id));
+      if (!extra.length) return owned;
+      const { data } = await supabase.from("brands").select("*").in("id", extra);
+      const teamBrands = await Promise.all(
+        (data ?? []).map(async (b) => (await fetchMyBrands(b.owner_id)).find((x) => x.id === b.id)!),
+      );
+      return [...owned, ...teamBrands.filter(Boolean)];
+    },
     enabled: !!user,
   });
 
