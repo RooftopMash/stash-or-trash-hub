@@ -276,3 +276,11 @@ export async function fetchBrandStats(brandId: string): Promise<BrandStats> {
   const trash = (votes ?? []).filter((v) => v.verdict === "trash").length;
   return { posts: itemIds.length, stash, trash };
 }
+
+/** Brands by id, decorated the same way as the other fetchers. */
+export async function fetchBrandsByIds(ids: string[]): Promise<Brand[]> {
+  if (!ids.length) return [];
+  const { data, error } = await supabase.from("brands").select("*").in("id", ids);
+  if (error) throw error;
+  return decorate(data ?? []);
+}
