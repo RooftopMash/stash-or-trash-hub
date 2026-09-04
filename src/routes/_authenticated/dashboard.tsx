@@ -4,7 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchMyBrands, fetchBrandStats, requestVerification, type Brand } from "@/lib/brands";
+import {
+  fetchMyBrands,
+  fetchBrandStats,
+  fetchBrandsByIds,
+  requestVerification,
+  type Brand,
+} from "@/lib/brands";
+import { fetchAccessibleBrandIds, fetchBrandKpis } from "@/lib/brand-platform";
+import { BrandTeamDialog } from "@/components/BrandTeamDialog";
 import { getFollowerCount } from "@/lib/social";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,15 +48,13 @@ function DashboardPage() {
   const { data: brands, isLoading, refetch } = useQuery({
     queryKey: ["dashboard-brands", user?.id],
     queryFn: async () => {
-      const owned = await fetchMyBrands(user!.id);
-      const ids = await fetchAccessibleBrandIds(user!.id);
+      const [owned, ids] = await Promise.all([
+        fetchMyBrands(user!.id),
+        fetchAccessibleBrandIds(user!.id),
+      ]);
       const extra = ids.filter((id) => !owned.some((b) => b.id === id));
-      if (!extra.length) return owned;
-      const { data } = await supabase.from("brands").select("*").in("id", extra);
-      const teamBrands = await Promise.all(
-        (data ?? []).map(async (b) => (await fetchMyBrands(b.owner_id)).find((x) => x.id === b.id)!),
-      );
-      return [...owned, ...teamBrands.filter(Boolean)];
+      const team = await fetchBrandsByIds(extra);
+      return [...owned, ...team];
     },
     enabled: !!user,
   });
@@ -97,6 +103,11 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
   const { data: followers } = useQuery({
     queryKey: ["brand-followers", brand.id],
     queryFn: () => getFollowerCount({ brandId: brand.id }),
+  });
+
+  const { data: kpis } = useQuery({
+    queryKey: ["brand-kpis", brand.id],
+    queryFn: () => fetchBrandKpis(brand.id, 30),
   });
 
   const askVerify = async () => {
@@ -150,7 +161,26 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
             <div className="h-full bg-stash transition-all" style={{ width: `${stashPct}%` }} />
           </div>
 
+          {/* Phase A KPIs — 30-day CX signal for this brand */}
+          <div className="mt-4 rounded-xl border border-border p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("brandTeam.kpis")}
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-3 text-center sm:grid-cols-6">
+              <Stat label={t("brandTeam.volume")} value={`${kpis?.posts ?? 0}`} />
+              <Stat label={t("brandTeam.stashPct")} value={`${kpis?.stash_pct ?? 0}%`} accent />
+              <Stat label={t("brandTeam.positive")} value={`${kpis?.positive ?? 0}`} />
+              <Stat label={t("brandTeam.neutral")} value={`${kpis?.neutral ?? 0}`} />
+              <Stat label={t("brandTeam.negative")} value={`${kpis?.negative ?? 0}`} />
+              <Stat label={t("brandTeam.unanswered")} value={`${kpis?.unanswered ?? 0}`} />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t("brandTeam.responseTime")}: {formatReply(kpis?.median_response_minutes ?? 0, t)}
+            </p>
+          </div>
+
           <div className="mt-4 flex flex-wrap gap-2">
+            <BrandTeamDialog brandId={brand.id} brandName={brand.name} />
             <Button asChild size="sm" variant="outline">
               <Link to="/brands/$slug" params={{ slug: brand.slug }}>
                 {t("dashboard.view")}
@@ -183,4 +213,10 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
       <div className="text-[11px] text-muted-foreground">{label}</div>
     </div>
   );
+}
+
+function formatReply(minutes: number, t: (k: string, o?: any) => string): string {
+  if (!minutes) return t("brandTeam.noResponseYet");
+  if (minutes < 90) return t("brandTeam.minutes", { count: minutes });
+  return t("brandTeam.hours", { count: Math.round(minutes / 60) });
 }
