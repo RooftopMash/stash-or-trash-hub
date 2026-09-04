@@ -4,7 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchMyBrands, fetchBrandStats, requestVerification, type Brand } from "@/lib/brands";
+import {
+  fetchMyBrands,
+  fetchBrandStats,
+  fetchBrandsByIds,
+  requestVerification,
+  type Brand,
+} from "@/lib/brands";
+import { fetchAccessibleBrandIds, fetchBrandKpis } from "@/lib/brand-platform";
+import { BrandTeamDialog } from "@/components/BrandTeamDialog";
 import { getFollowerCount } from "@/lib/social";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -95,6 +103,11 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
   const { data: followers } = useQuery({
     queryKey: ["brand-followers", brand.id],
     queryFn: () => getFollowerCount({ brandId: brand.id }),
+  });
+
+  const { data: kpis } = useQuery({
+    queryKey: ["brand-kpis", brand.id],
+    queryFn: () => fetchBrandKpis(brand.id, 30),
   });
 
   const askVerify = async () => {
@@ -200,4 +213,10 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
       <div className="text-[11px] text-muted-foreground">{label}</div>
     </div>
   );
+}
+
+function formatReply(minutes: number, t: (k: string, o?: any) => string): string {
+  if (!minutes) return t("brandTeam.noResponseYet");
+  if (minutes < 90) return t("brandTeam.minutes", { count: minutes });
+  return t("brandTeam.hours", { count: Math.round(minutes / 60) });
 }
