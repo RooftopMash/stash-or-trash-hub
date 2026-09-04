@@ -40,15 +40,13 @@ function DashboardPage() {
   const { data: brands, isLoading, refetch } = useQuery({
     queryKey: ["dashboard-brands", user?.id],
     queryFn: async () => {
-      const owned = await fetchMyBrands(user!.id);
-      const ids = await fetchAccessibleBrandIds(user!.id);
+      const [owned, ids] = await Promise.all([
+        fetchMyBrands(user!.id),
+        fetchAccessibleBrandIds(user!.id),
+      ]);
       const extra = ids.filter((id) => !owned.some((b) => b.id === id));
-      if (!extra.length) return owned;
-      const { data } = await supabase.from("brands").select("*").in("id", extra);
-      const teamBrands = await Promise.all(
-        (data ?? []).map(async (b) => (await fetchMyBrands(b.owner_id)).find((x) => x.id === b.id)!),
-      );
-      return [...owned, ...teamBrands.filter(Boolean)];
+      const team = await fetchBrandsByIds(extra);
+      return [...owned, ...team];
     },
     enabled: !!user,
   });
