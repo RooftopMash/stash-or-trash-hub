@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      brand_crisis_alerts: {
+        Row: {
+          baseline_share: number
+          brand_id: string
+          id: string
+          negative_share: number
+          opened_at: string
+          resolved_at: string | null
+          sample_size: number
+        }
+        Insert: {
+          baseline_share: number
+          brand_id: string
+          id?: string
+          negative_share: number
+          opened_at?: string
+          resolved_at?: string | null
+          sample_size?: number
+        }
+        Update: {
+          baseline_share?: number
+          brand_id?: string
+          id?: string
+          negative_share?: number
+          opened_at?: string
+          resolved_at?: string | null
+          sample_size?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_crisis_alerts_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_import_candidates: {
         Row: {
           category: string | null
@@ -202,6 +240,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "brand_verification_requests_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_votes: {
+        Row: {
+          brand_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          verdict: string
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_votes_brand_id_fkey"
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
@@ -747,6 +820,40 @@ export type Database = {
           stash_pct: number
           trash: number
           unanswered: number
+        }[]
+      }
+      brand_top_voices: {
+        Args: { _brand_id: string; _days?: number; _limit?: number }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          engagement: number
+          followers: number
+          posts: number
+          trust_score: number
+          user_id: string
+        }[]
+      }
+      brand_trend: {
+        Args: { _brand_id: string; _days?: number }
+        Returns: {
+          day: string
+          negative: number
+          neutral: number
+          positive: number
+          posts: number
+          stash: number
+          stash_pct: number
+          trash: number
+        }[]
+      }
+      brand_verdict_summary: {
+        Args: { _brand_id: string }
+        Returns: {
+          stash: number
+          stash_pct: number
+          total: number
+          trash: number
         }[]
       }
       has_brand_role: {
