@@ -148,7 +148,26 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
             <div className="h-full bg-stash transition-all" style={{ width: `${stashPct}%` }} />
           </div>
 
+          {/* Phase A KPIs — 30-day CX signal for this brand */}
+          <div className="mt-4 rounded-xl border border-border p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("brandTeam.kpis")}
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-3 text-center sm:grid-cols-6">
+              <Stat label={t("brandTeam.volume")} value={`${kpis?.posts ?? 0}`} />
+              <Stat label={t("brandTeam.stashPct")} value={`${kpis?.stash_pct ?? 0}%`} accent />
+              <Stat label={t("brandTeam.positive")} value={`${kpis?.positive ?? 0}`} />
+              <Stat label={t("brandTeam.neutral")} value={`${kpis?.neutral ?? 0}`} />
+              <Stat label={t("brandTeam.negative")} value={`${kpis?.negative ?? 0}`} />
+              <Stat label={t("brandTeam.unanswered")} value={`${kpis?.unanswered ?? 0}`} />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t("brandTeam.responseTime")}: {formatReply(kpis?.median_response_minutes ?? 0, t)}
+            </p>
+          </div>
+
           <div className="mt-4 flex flex-wrap gap-2">
+            <BrandTeamDialog brandId={brand.id} brandName={brand.name} />
             <Button asChild size="sm" variant="outline">
               <Link to="/brands/$slug" params={{ slug: brand.slug }}>
                 {t("dashboard.view")}
