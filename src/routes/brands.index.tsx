@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BrandLogo } from "@/components/BrandLogo";
 import { BadgeCheck, Plus, TrendingUp } from "lucide-react";
 
 export const Route = createFileRoute("/brands/")({
@@ -60,13 +61,7 @@ function BrandsPage() {
                 params={{ slug: b.slug }}
                 className="group flex gap-4 rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary/50"
               >
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-secondary text-lg font-bold">
-                  {b.signedLogoUrl ? (
-                    <img src={b.signedLogoUrl} alt={b.name} className="h-full w-full object-cover" />
-                  ) : (
-                    b.name.charAt(0).toUpperCase()
-                  )}
-                </div>
+                <BrandLogo name={b.name} url={b.signedLogoUrl} className="h-14 w-14 rounded-xl text-lg" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <h2 className="truncate font-display text-lg font-bold">{b.name}</h2>

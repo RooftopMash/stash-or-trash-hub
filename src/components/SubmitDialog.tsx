@@ -17,6 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, ImagePlus } from "lucide-react";
+import coinIcon from "@/assets/icon-coin.png";
+import binIcon from "@/assets/icon-bin.png";
+import { cn } from "@/lib/utils";
+import type { Verdict } from "@/lib/stash";
 import { toast } from "sonner";
 
 const NO_BRAND = "__none__";
@@ -36,6 +40,7 @@ export function SubmitDialog({
   const [category, setCategory] = useState("");
   const [brandId, setBrandId] = useState<string>(defaultBrandId ?? NO_BRAND);
   const [file, setFile] = useState<File | null>(null);
+  const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
@@ -44,12 +49,17 @@ export function SubmitDialog({
     setCategory("");
     setBrandId(defaultBrandId ?? NO_BRAND);
     setFile(null);
+    setVerdict(null);
   };
 
   const handleSubmit = async () => {
     if (!user) return;
     if (!title.trim()) {
       toast.error(t("submit.needTitle"));
+      return;
+    }
+    if (!verdict) {
+      toast.error(t("submit.needVerdict"));
       return;
     }
     setSubmitting(true);
@@ -61,6 +71,7 @@ export function SubmitDialog({
         file,
         brandId: brandId === NO_BRAND ? null : brandId,
         category,
+        verdict,
       });
       toast.success(t("submit.posted"));
       reset();
@@ -115,6 +126,30 @@ export function SubmitDialog({
               )}
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label>{t("submit.verdict")}</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant="stash"
+                size="lg"
+                onClick={() => setVerdict("stash")}
+                className={cn("gap-2", verdict === "stash" && "verdict-picked", verdict === "trash" && "verdict-dimmed")}
+              >
+                <img src={coinIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.stash")}
+              </Button>
+              <Button
+                type="button"
+                variant="trash"
+                size="lg"
+                onClick={() => setVerdict("trash")}
+                className={cn("gap-2", verdict === "trash" && "verdict-picked", verdict === "stash" && "verdict-dimmed")}
+              >
+                <img src={binIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.trash")}
+              </Button>
+            </div>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="category">{t("submit.category")}</Label>

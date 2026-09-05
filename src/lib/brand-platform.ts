@@ -204,3 +204,91 @@ export async function fetchUnansweredPosts(brandId: string, limit = 10) {
 export async function fetchAccessibleBrandIds(userId: string): Promise<string[]> {
   return [...(await fetchManagedBrandIds(userId))];
 }
+
+// ---------------- Phase B: CX intelligence ----------------
+
+export type BrandTrendPoint = {
+  day: string;
+  posts: number;
+  stash: number;
+  trash: number;
+  stash_pct: number;
+  positive: number;
+  neutral: number;
+  negative: number;
+};
+
+export async function fetchBrandTrend(brandId: string, days = 30): Promise<BrandTrendPoint[]> {
+  const { data, error } = await supabase.rpc("brand_trend", {
+    _brand_id: brandId,
+    _days: days,
+  });
+  if (error) throw error;
+  return (data ?? []) as BrandTrendPoint[];
+}
+
+export type BrandVoice = {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  trust_score: number | null;
+  posts: number;
+  engagement: number;
+  followers: number;
+};
+
+export async function fetchBrandTopVoices(
+  brandId: string,
+  days = 30,
+  limit = 10,
+): Promise<BrandVoice[]> {
+  const { data, error } = await supabase.rpc("brand_top_voices", {
+    _brand_id: brandId,
+    _days: days,
+    _limit: limit,
+  });
+  if (error) throw error;
+  return (data ?? []) as BrandVoice[];
+}
+
+export type CrisisAlert = {
+  id: string;
+  brand_id: string;
+  negative_share: number;
+  baseline_share: number;
+  sample_size: number;
+  opened_at: string;
+  resolved_at: string | null;
+};
+
+export async function fetchOpenCrisisAlert(brandId: string): Promise<CrisisAlert | null> {
+  const { data, error } = await supabase
+    .from("brand_crisis_alerts")
+    .select("*")
+    .eq("brand_id", brandId)
+    .is("resolved_at", null)
+    .order("opened_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as CrisisAlert | null) ?? null;
+}
+
+export async function resolveCrisisAlert(id: string) {
+  const { error } = await supabase
+    .from("brand_crisis_alerts")
+    .update({ resolved_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** Build a CSV string from the current analytics window. */
+export function trendToCsv(rows: BrandTrendPoint[]): string {
+  const header = "day,posts,stash,trash,stash_pct,positive,neutral,negative";
+  const body = rows
+    .map((r) =>
+      [r.day, r.posts, r.stash, r.trash, r.stash_pct, r.positive, r.neutral, r.negative].join(","),
+    )
+    .join("\n");
+  return `${header}\n${body}\n`;
+}

@@ -284,3 +284,66 @@ export async function fetchBrandsByIds(ids: string[]): Promise<Brand[]> {
   if (error) throw error;
   return decorate(data ?? []);
 }
+
+export type BrandVerdictSummary = {
+  stash: number;
+  trash: number;
+  total: number;
+  stash_pct: number;
+  myVerdict: "stash" | "trash" | null;
+};
+
+/** Community verdict on the brand itself (direct brand votes + votes on its posts). */
+export async function fetchBrandVerdict(
+  brandId: string,
+  userId?: string | null,
+): Promise<BrandVerdictSummary> {
+  const [{ data, error }, mine] = await Promise.all([
+    supabase.rpc("brand_verdict_summary", { _brand_id: brandId }),
+    userId
+      ? supabase
+          .from("brand_votes")
+          .select("verdict")
+          .eq("brand_id", brandId)
+          .eq("user_id", userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { verdict: string } | null }),
+  ]);
+  if (error) throw error;
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { stash: number; trash: number; total: number; stash_pct: number }
+    | undefined;
+  return {
+    stash: row?.stash ?? 0,
+    trash: row?.trash ?? 0,
+    total: row?.total ?? 0,
+    stash_pct: row?.stash_pct ?? 50,
+    myVerdict: ((mine as { data?: { verdict: string } | null })?.data?.verdict as
+      | "stash"
+      | "trash"
+      | undefined) ?? null,
+  };
+}
+
+export async function castBrandVote(
+  brandId: string,
+  userId: string,
+  verdict: "stash" | "trash",
+) {
+  const { error } = await supabase
+    .from("brand_votes")
+    .upsert(
+      { brand_id: brandId, user_id: userId, verdict },
+      { onConflict: "brand_id,user_id" },
+    );
+  if (error) throw error;
+}
+
+export async function removeBrandVote(brandId: string, userId: string) {
+  const { error } = await supabase
+    .from("brand_votes")
+    .delete()
+    .eq("brand_id", brandId)
+    .eq("user_id", userId);
+  if (error) throw error;
+}
