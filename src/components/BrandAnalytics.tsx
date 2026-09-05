@@ -125,7 +125,7 @@ export function BrandAnalytics({ brandId, brandName }: { brandId: string; brandN
                   type="monotone"
                   dataKey="stash_pct"
                   name={t("analytics.stashPct")}
-                  stroke="hsl(var(--stash))"
+                  stroke="var(--stash)"
                   strokeWidth={2}
                   dot={false}
                 />
@@ -148,8 +148,8 @@ export function BrandAnalytics({ brandId, brandName }: { brandId: string; brandN
                   dataKey="positive"
                   name={t("brandTeam.positive")}
                   stackId="1"
-                  stroke="hsl(var(--stash))"
-                  fill="hsl(var(--stash))"
+                  stroke="var(--stash)"
+                  fill="var(--stash)"
                   fillOpacity={0.35}
                 />
                 <Area
@@ -157,8 +157,8 @@ export function BrandAnalytics({ brandId, brandName }: { brandId: string; brandN
                   dataKey="neutral"
                   name={t("brandTeam.neutral")}
                   stackId="1"
-                  stroke="hsl(var(--muted-foreground))"
-                  fill="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
+                  fill="var(--muted-foreground)"
                   fillOpacity={0.25}
                 />
                 <Area
@@ -166,8 +166,8 @@ export function BrandAnalytics({ brandId, brandName }: { brandId: string; brandN
                   dataKey="negative"
                   name={t("brandTeam.negative")}
                   stackId="1"
-                  stroke="hsl(var(--trash))"
-                  fill="hsl(var(--trash))"
+                  stroke="var(--trash)"
+                  fill="var(--trash)"
                   fillOpacity={0.35}
                 />
               </AreaChart>
