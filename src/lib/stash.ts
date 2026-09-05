@@ -238,10 +238,19 @@ export async function fetchItem(
     supabase.from("votes").select("item_id, user_id, verdict").eq("item_id", itemId),
     supabase.from("profiles").select("id, display_name").eq("id", item.user_id).maybeSingle(),
     item.brand_id
-      ? supabase.from("brands").select("id, name, slug").eq("id", item.brand_id).maybeSingle()
-      : Promise.resolve({ data: null as { id: string; name: string; slug: string } | null }),
+      ? supabase.from("brands").select("id, name, slug, logo_url").eq("id", item.brand_id).maybeSingle()
+      : Promise.resolve({
+          data: null as { id: string; name: string; slug: string; logo_url: string | null } | null,
+        }),
     signImages([item.image_url]),
   ]);
+
+  const rawLogo = brandRes.data?.logo_url ?? null;
+  const brandLogoUrl = rawLogo
+    ? /^https?:\/\//i.test(rawLogo)
+      ? rawLogo
+      : ((await signImages([rawLogo])).get(rawLogo) ?? null)
+    : null;
 
   const itemVotes = votes ?? [];
   return {
@@ -249,6 +258,7 @@ export async function fetchItem(
     authorName: profile?.display_name ?? "Anonymous",
     brandName: brandRes.data?.name ?? null,
     brandSlug: brandRes.data?.slug ?? null,
+    brandLogoUrl,
     stashCount: itemVotes.filter((v) => v.verdict === "stash").length,
     trashCount: itemVotes.filter((v) => v.verdict === "trash").length,
     myVerdict:
