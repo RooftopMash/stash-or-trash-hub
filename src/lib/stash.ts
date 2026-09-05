@@ -15,6 +15,7 @@ export type FeedItem = {
   authorName: string;
   brandName: string | null;
   brandSlug: string | null;
+  brandLogoUrl: string | null;
   stashCount: number;
   trashCount: number;
   myVerdict: Verdict | null;
@@ -77,13 +78,18 @@ export async function fetchFeed(
     supabase.from("votes").select("item_id, user_id, verdict").in("item_id", itemIds),
     supabase.from("profiles").select("id, display_name").in("id", authorIds),
     brandIds.length
-      ? supabase.from("brands").select("id, name, slug").in("id", brandIds)
-      : Promise.resolve({ data: [] as { id: string; name: string; slug: string }[] }),
+      ? supabase.from("brands").select("id, name, slug, logo_url").in("id", brandIds)
+      : Promise.resolve({ data: [] as { id: string; name: string; slug: string; logo_url: string | null }[] }),
     signImages(items.map((i) => i.image_url)),
   ]);
 
   const nameById = new Map((profiles ?? []).map((p) => [p.id, p.display_name]));
   const brandById = new Map((brandsRes.data ?? []).map((b) => [b.id, b]));
+  const brandLogos = await signImages(
+    (brandsRes.data ?? [])
+      .map((b) => (b as { logo_url?: string | null }).logo_url ?? null)
+      .filter((u): u is string => !!u && !/^https?:\/\//i.test(u)),
+  );
 
   return items.map((item) => {
     const itemVotes = (votes ?? []).filter((v) => v.item_id === item.id);
@@ -93,6 +99,11 @@ export async function fetchFeed(
       authorName: nameById.get(item.user_id) ?? "Anonymous",
       brandName: brand?.name ?? null,
       brandSlug: brand?.slug ?? null,
+      brandLogoUrl: (() => {
+        const logo = (brand as { logo_url?: string | null } | null)?.logo_url ?? null;
+        if (!logo) return null;
+        return /^https?:\/\//i.test(logo) ? logo : (brandLogos.get(logo) ?? null);
+      })(),
       stashCount: itemVotes.filter((v) => v.verdict === "stash").length,
       trashCount: itemVotes.filter((v) => v.verdict === "trash").length,
       myVerdict:
@@ -125,6 +136,7 @@ export async function createItem(input: {
   file: File | null;
   brandId?: string | null;
   category?: string | null;
+  verdict?: Verdict | null;
 }) {
   let imagePath: string | null = null;
   let audit: MediaAuditReport | null = null;
@@ -177,13 +189,20 @@ export async function createItem(input: {
     category: input.category?.trim() || null,
   };
 
-  let { error } = await supabase
+  let inserted = await supabase
     .from("items")
-    .insert({ ...base, audit, phash } as never);
-  if (error && colError(error)) {
-    ({ error } = await supabase.from("items").insert(base as never));
+    .insert({ ...base, audit, phash } as never)
+    .select("id")
+    .single();
+  if (inserted.error && colError(inserted.error)) {
+    inserted = await supabase.from("items").insert(base as never).select("id").single();
   }
-  if (error) throw error;
+  if (inserted.error) throw inserted.error;
+
+  // The author's own verdict goes on the post immediately, so the meter is never empty.
+  if (input.verdict && inserted.data?.id) {
+    await castVote(inserted.data.id, input.userId, input.verdict).catch(() => undefined);
+  }
 }
 
 export async function deleteItem(itemId: string) {
