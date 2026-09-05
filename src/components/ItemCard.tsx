@@ -75,7 +75,7 @@ export function ItemCard({
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-card">
-      {item.signedImageUrl && (
+      {item.signedImageUrl ? (
         <Link to="/items/$id" params={{ id: item.id }}>
           <img
             src={item.signedImageUrl}
@@ -84,7 +84,20 @@ export function ItemCard({
             loading="lazy"
           />
         </Link>
-      )}
+      ) : item.brandLogoUrl ? (
+        <Link
+          to="/items/$id"
+          params={{ id: item.id }}
+          className="flex aspect-video w-full items-center justify-center bg-secondary/40 p-8"
+        >
+          <img
+            src={item.brandLogoUrl}
+            alt={item.brandName ?? ""}
+            className="max-h-full max-w-[60%] object-contain"
+            loading="lazy"
+          />
+        </Link>
+      ) : null}
 
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">

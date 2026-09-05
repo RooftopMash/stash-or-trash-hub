@@ -13,6 +13,8 @@ import {
 } from "@/lib/brands";
 import { fetchAccessibleBrandIds, fetchBrandKpis } from "@/lib/brand-platform";
 import { BrandTeamDialog } from "@/components/BrandTeamDialog";
+import { BrandAnalytics } from "@/components/BrandAnalytics";
+import { BrandLogo } from "@/components/BrandLogo";
 import { getFollowerCount } from "@/lib/social";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -127,13 +129,7 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="flex items-start gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-secondary text-lg font-bold">
-          {brand.signedLogoUrl ? (
-            <img src={brand.signedLogoUrl} alt={brand.name} className="h-full w-full object-cover" />
-          ) : (
-            brand.name.charAt(0).toUpperCase()
-          )}
-        </div>
+        <BrandLogo name={brand.name} url={brand.signedLogoUrl} className="h-14 w-14 rounded-xl text-lg" />
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h2 className="font-display text-lg font-bold">{brand.name}</h2>
@@ -178,6 +174,8 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
               {t("brandTeam.responseTime")}: {formatReply(kpis?.median_response_minutes ?? 0, t)}
             </p>
           </div>
+
+          <BrandAnalytics brandId={brand.id} brandName={brand.name} />
 
           <div className="mt-4 flex flex-wrap gap-2">
             <BrandTeamDialog brandId={brand.id} brandName={brand.name} />

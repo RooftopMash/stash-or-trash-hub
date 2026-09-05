@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Header } from "@/components/Header";
 import { SubmitDialog } from "@/components/SubmitDialog";
+import { BrandLogo } from "@/components/BrandLogo";
+import { BrandVerdict } from "@/components/BrandVerdict";
 import { ItemCard } from "@/components/ItemCard";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -244,13 +246,11 @@ function BrandPage() {
           <>
             {/* Brand Core Header Card */}
             <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 sm:flex-row shadow-sm">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-secondary text-2xl font-bold border border-border">
-                {brand.signedLogoUrl ? (
-                  <img src={brand.signedLogoUrl} alt={brand.name} className="h-full w-full object-cover" />
-                ) : (
-                  brand.name.charAt(0).toUpperCase()
-                )}
-              </div>
+              <BrandLogo
+                name={brand.name}
+                url={brand.signedLogoUrl}
+                className="h-20 w-20 rounded-2xl border border-border text-2xl"
+              />
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="font-display text-2xl font-extrabold">{brand.name}</h1>
