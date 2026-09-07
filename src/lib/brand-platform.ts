@@ -41,7 +41,7 @@ export type BrandKpis = {
 /** Brands the signed-in user can act on (owned or team membership). */
 export async function fetchManagedBrandIds(userId: string): Promise<Set<string>> {
   const [owned, member] = await Promise.all([
-    supabase.from("brands").select("id").eq("owner_id", userId),
+    supabase.from("brands").select("id").eq("owner_id", userId).limit(5000),
     supabase
       .from("brand_members")
       .select("brand_id, accepted_at, role")
