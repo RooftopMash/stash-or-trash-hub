@@ -333,6 +333,10 @@ function BrandPage() {
               </div>
             </section>
 
+            <BrandVerdict brandId={brand.id} brandName={brand.name} className="mt-6" />
+
+
+
             {/* SUPER APP SPECIAL FEATURES INTERFACE (Interactive Social Hub Tabs) */}
             <section className="mt-6 rounded-2xl border border-border bg-card p-1 shadow-sm overflow-hidden">
               <div className="grid grid-cols-3 bg-secondary/40 p-1 rounded-xl">
