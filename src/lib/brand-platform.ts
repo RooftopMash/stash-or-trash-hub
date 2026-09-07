@@ -41,7 +41,7 @@ export type BrandKpis = {
 /** Brands the signed-in user can act on (owned or team membership). */
 export async function fetchManagedBrandIds(userId: string): Promise<Set<string>> {
   const [owned, member] = await Promise.all([
-    supabase.from("brands").select("id").eq("owner_id", userId),
+    supabase.from("brands").select("id").eq("owner_id", userId).limit(5000),
     supabase
       .from("brand_members")
       .select("brand_id, accepted_at, role")
@@ -291,4 +291,26 @@ export function trendToCsv(rows: BrandTrendPoint[]): string {
     )
     .join("\n");
   return `${header}\n${body}\n`;
+}
+
+/**
+ * Brands the user manages that actually carry community activity (posts).
+ * Keeps the dashboard focused instead of rendering every owned brand.
+ */
+export async function fetchActiveManagedBrandIds(userId: string): Promise<string[]> {
+  const managed = await fetchManagedBrandIds(userId);
+  if (managed.size === 0) return [];
+  const { data, error } = await supabase
+    .from("items")
+    .select("brand_id, created_at")
+    .not("brand_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(2000);
+  if (error) throw error;
+  const seen: string[] = [];
+  for (const row of data ?? []) {
+    const id = row.brand_id as string | null;
+    if (id && managed.has(id) && !seen.includes(id)) seen.push(id);
+  }
+  return seen;
 }

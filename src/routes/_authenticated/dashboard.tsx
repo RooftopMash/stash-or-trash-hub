@@ -46,25 +46,33 @@ function DashboardPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [selected, setSelected] = useState<string | null>(null);
 
   const { data: brands, isLoading, refetch } = useQuery({
     queryKey: ["dashboard-brands", user?.id],
     queryFn: async () => {
-      const [owned, ids] = await Promise.all([
-        fetchMyBrands(user!.id),
-        fetchAccessibleBrandIds(user!.id),
-      ]);
-      const extra = ids.filter((id) => !owned.some((b) => b.id === id));
-      const team = await fetchBrandsByIds(extra);
-      return [...owned, ...team];
+      const ids = await fetchActiveManagedBrandIds(user!.id);
+      if (ids.length > 0) {
+        const list = await fetchBrandsByIds(ids.slice(0, 24));
+        return ids
+          .slice(0, 24)
+          .map((id) => list.find((b) => b.id === id))
+          .filter((b): b is Brand => !!b);
+      }
+      const owned = await fetchMyBrands(user!.id);
+      return owned.slice(0, 12);
     },
     enabled: !!user,
   });
 
+  const list = brands ?? [];
+  const activeId = selected ?? list[0]?.id ?? null;
+  const active = list.find((b) => b.id === activeId) ?? null;
+
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="mx-auto max-w-4xl px-4 py-8">
+      <main className="mx-auto max-w-5xl px-4 py-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="font-display text-3xl font-extrabold">{t("dashboard.title")}</h1>
@@ -75,20 +83,44 @@ function DashboardPage() {
           </Button>
         </div>
 
-        <div className="mt-8 space-y-4">
-          {isLoading ? (
-            [0, 1].map((i) => <Skeleton key={i} className="h-40 w-full rounded-2xl" />)
-          ) : (brands ?? []).length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border py-16 text-center">
-              <p className="font-display text-lg font-semibold">{t("dashboard.noBrands")}</p>
-              <Button className="mt-4 gap-1.5" onClick={() => navigate({ to: "/brands/new" })}>
-                <Plus className="h-4 w-4" /> {t("dashboard.createFirst")}
-              </Button>
+        {isLoading ? (
+          <div className="mt-8 space-y-4">
+            {[0, 1].map((i) => (
+              <Skeleton key={i} className="h-40 w-full rounded-2xl" />
+            ))}
+          </div>
+        ) : list.length === 0 ? (
+          <div className="mt-8 rounded-2xl border border-dashed border-border py-16 text-center">
+            <p className="font-display text-lg font-semibold">{t("dashboard.noBrands")}</p>
+            <Button className="mt-4 gap-1.5" onClick={() => navigate({ to: "/brands/new" })}>
+              <Plus className="h-4 w-4" /> {t("dashboard.createFirst")}
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {list.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => setSelected(b.id)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
+                    b.id === activeId
+                      ? "border-stash bg-stash/10 font-semibold"
+                      : "border-border hover:bg-secondary",
+                  )}
+                >
+                  <BrandLogo name={b.name} url={b.signedLogoUrl} className="h-6 w-6 rounded-md text-[10px]" />
+                  {b.name}
+                </button>
+              ))}
             </div>
-          ) : (
-            (brands ?? []).map((b) => <BrandRow key={b.id} brand={b} onVerify={() => refetch()} />)
-          )}
-        </div>
+
+            <div className="mt-6">
+              {active && <BrandRow key={active.id} brand={active} onVerify={() => refetch()} />}
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
