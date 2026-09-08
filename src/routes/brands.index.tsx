@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BadgeCheck, Plus, Search, TrendingUp } from "lucide-react";
 import { brandCategory, categoryClass, categoryOptions, matchesCategory } from "@/lib/categories";
+import { countryName, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/brands/")({
@@ -33,15 +34,18 @@ function BrandsPage() {
   const { data, isLoading } = useQuery({ queryKey: ["brands"], queryFn: fetchBrands });
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All categories");
-  const categories = useMemo(() => categoryOptions((data ?? []).map((brand) => brandCategory(brand.name, brand.category))), [data]);
+  const [selectedCountry, setSelectedCountry] = useState("ZA");
+  const countries = useMemo(() => Array.from(new Set((data ?? []).map((brand) => normalizeCountryCode(brand.country)).filter(Boolean) as string[])).sort(), [data]);
+  const localBrands = useMemo(() => (data ?? []).filter((brand) => normalizeCountryCode(brand.country) === selectedCountry), [data, selectedCountry]);
+  const categories = useMemo(() => categoryOptions(localBrands.map((brand) => brandCategory(brand.name, brand.category))), [localBrands]);
   const filteredBrands = useMemo(() => {
     const term = query.trim().toLowerCase();
-    return (data ?? []).filter((brand) => {
+    return localBrands.filter((brand) => {
       const normalized = brandCategory(brand.name, brand.category);
       const searchable = `${brand.name} ${brand.country ?? ""} ${brand.category ?? ""} ${normalized}`.toLowerCase();
       return (!term || searchable.includes(term)) && matchesCategory(normalized, selectedCategory);
     });
-  }, [data, query, selectedCategory]);
+  }, [localBrands, query, selectedCategory]);
 
   return (
     <div className="min-h-screen">
@@ -73,13 +77,20 @@ function BrandsPage() {
                 <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search brands or countries" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
               </label>
             </div>
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <label className="sr-only" htmlFor="brand-country">Country</label>
+                <select id="brand-country" value={selectedCountry} onChange={(event) => { setSelectedCountry(event.target.value); setSelectedCategory("All categories"); }} className="h-9 rounded-lg border border-border bg-background px-3 text-sm font-medium outline-none">
+                  {countries.map((code) => <option key={code} value={code}>{countryName(code)}</option>)}
+                </select>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+
               {categories.map((category) => (
                 <button key={category} onClick={() => setSelectedCategory(category)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", selectedCategory === category ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground")}>
                   {category}
                 </button>
-              ))}
-            </div>
+                ))}
+                </div>
+              </div>
           </section>
         )}
 
