@@ -91,9 +91,16 @@ const COUNTRY_ALIASES: Record<string, string> = {
 
 export function normalizeCountryCode(value: string | null | undefined): string | null {
   if (!value?.trim()) return null;
-  const raw = value.trim().toLowerCase();
+  const raw = value.trim().toLowerCase().replace(/[._-]+/g, " ").replace(/\s+/g, " ");
   if (/^[a-z]{2}$/.test(raw)) return raw.toUpperCase();
-  return COUNTRY_ALIASES[raw] ?? null;
+  if (COUNTRY_ALIASES[raw]) return COUNTRY_ALIASES[raw];
+  const byName = Object.entries(NAMES).find(([, name]) => name.toLowerCase() === raw)?.[0];
+  return byName ?? null;
+}
+
+export function countryOptions(values: Array<string | null | undefined>): string[] {
+  return Array.from(new Set(values.map(normalizeCountryCode).filter((value): value is string => Boolean(value))))
+    .sort((a, b) => countryName(a).localeCompare(countryName(b)));
 }
 
 export function countryName(code: string | null, locale?: string): string {

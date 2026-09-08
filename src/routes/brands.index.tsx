@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BadgeCheck, Plus, Search, TrendingUp } from "lucide-react";
 import { brandCategory, categoryClass, categoryOptions, matchesCategory } from "@/lib/categories";
-import { countryName, normalizeCountryCode } from "@/lib/geo";
+import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/brands/")({
@@ -35,7 +35,7 @@ function BrandsPage() {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All categories");
   const [selectedCountry, setSelectedCountry] = useState("ZA");
-  const countries = useMemo(() => Array.from(new Set((data ?? []).map((brand) => normalizeCountryCode(brand.country)).filter(Boolean) as string[])).sort(), [data]);
+  const countries = useMemo(() => countryOptions((data ?? []).map((brand) => brand.country)), [data]);
   const localBrands = useMemo(() => (data ?? []).filter((brand) => normalizeCountryCode(brand.country) === selectedCountry), [data, selectedCountry]);
   const categories = useMemo(() => categoryOptions(localBrands.map((brand) => brandCategory(brand.name, brand.category))), [localBrands]);
   const filteredBrands = useMemo(() => {
@@ -115,11 +115,9 @@ function BrandsPage() {
                     <h2 className="truncate font-display text-lg font-bold">{b.name}</h2>
                     {b.verified && <BadgeCheck className="h-4 w-4 shrink-0 text-primary" />}
                   </div>
-                  {b.category && (
-                    <Badge variant="secondary" className={cn("mt-1 text-[10px]", categoryClass(brandCategory(b.name, b.category)))}>
-                      {brandCategory(b.name, b.category)}
-                    </Badge>
-                  )}
+                  <Badge variant="secondary" className={cn("mt-1 text-[10px]", categoryClass(brandCategory(b.name, b.category)))}>
+                    {brandCategory(b.name, b.category)}
+                  </Badge>
                   <div className="mt-2 flex items-center gap-1.5 text-sm">
                     <TrendingUp className="h-4 w-4 text-stash" />
                     <span className="font-semibold">{b.trust_score}</span>
