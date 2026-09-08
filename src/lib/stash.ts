@@ -16,6 +16,7 @@ export type FeedItem = {
   brandName: string | null;
   brandSlug: string | null;
   brandLogoUrl: string | null;
+  brandCountry: string | null;
   stashCount: number;
   trashCount: number;
   myVerdict: Verdict | null;
@@ -78,7 +79,7 @@ export async function fetchFeed(
     supabase.from("votes").select("item_id, user_id, verdict").in("item_id", itemIds),
     supabase.from("profiles").select("id, display_name").in("id", authorIds),
     brandIds.length
-      ? supabase.from("brands").select("id, name, slug, logo_url").in("id", brandIds)
+      ? supabase.from("brands").select("id, name, slug, logo_url, country").in("id", brandIds)
       : Promise.resolve({ data: [] as { id: string; name: string; slug: string; logo_url: string | null }[] }),
     signImages(items.map((i) => i.image_url)),
   ]);
@@ -99,6 +100,7 @@ export async function fetchFeed(
       authorName: nameById.get(item.user_id) ?? "Anonymous",
       brandName: brand?.name ?? null,
       brandSlug: brand?.slug ?? null,
+      brandCountry: (brand as { country?: string | null } | null)?.country ?? null,
       brandLogoUrl: (() => {
         const logo = (brand as { logo_url?: string | null } | null)?.logo_url ?? null;
         if (!logo) return null;

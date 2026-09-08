@@ -83,6 +83,19 @@ const NAMES: Record<string, string> = {
   AU: "Australia",
 };
 
+const COUNTRY_ALIASES: Record<string, string> = {
+  "south africa": "ZA", "za": "ZA", "nigeria": "NG", "ng": "NG", "kenya": "KE", "ke": "KE",
+  "united states": "US", "us": "US", "united kingdom": "GB", "uk": "GB", "great britain": "GB",
+  "canada": "CA", "ca": "CA", "australia": "AU", "au": "AU", "india": "IN", "in": "IN",
+};
+
+export function normalizeCountryCode(value: string | null | undefined): string | null {
+  if (!value?.trim()) return null;
+  const raw = value.trim().toLowerCase();
+  if (/^[a-z]{2}$/.test(raw)) return raw.toUpperCase();
+  return COUNTRY_ALIASES[raw] ?? null;
+}
+
 export function countryName(code: string | null, locale?: string): string {
   if (!code) return "";
   try {

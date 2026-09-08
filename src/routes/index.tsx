@@ -15,6 +15,7 @@ import { fetchFeed } from "@/lib/stash";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Recycle, Search } from "lucide-react";
 import { categoryOptions, matchesCategory, normalizeCategory } from "@/lib/categories";
+import { countryName, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 import coinsWatermark from "@/assets/watermark-coins.png";
 import binsWatermark from "@/assets/watermark-bins.png";
@@ -28,19 +29,22 @@ function Index() {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All categories");
+  const [selectedCountry, setSelectedCountry] = useState("ZA");
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["feed", user?.id ?? "anon"],
     queryFn: () => fetchFeed(user?.id ?? null),
   });
 
-  const categories = useMemo(() => categoryOptions((data ?? []).map((item) => item.category)), [data]);
+  const countries = useMemo(() => Array.from(new Set((data ?? []).map((item) => normalizeCountryCode(item.brandCountry)).filter(Boolean) as string[])).sort(), [data]);
+  const localFeed = useMemo(() => (data ?? []).filter((item) => normalizeCountryCode(item.brandCountry) === selectedCountry), [data, selectedCountry]);
+  const categories = useMemo(() => categoryOptions(localFeed.map((item) => item.category)), [localFeed]);
   const filteredFeed = useMemo(() => {
     const term = query.trim().toLowerCase();
-    return (data ?? []).filter((item) => {
+    return localFeed.filter((item) => {
       const searchable = `${item.title} ${item.description ?? ""} ${item.brandName ?? ""} ${item.category ?? ""} ${normalizeCategory(item.category)}`.toLowerCase();
       return (!term || searchable.includes(term)) && matchesCategory(item.category, selectedCategory);
     });
-  }, [data, query, selectedCategory]);
+  }, [localFeed, query, selectedCategory]);
 
   return (
     <div className="relative min-h-screen">
@@ -106,12 +110,18 @@ function Index() {
                   <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search posts or brands" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
                 </label>
               </div>
-              <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <label className="sr-only" htmlFor="feed-country">Country</label>
+                <select id="feed-country" value={selectedCountry} onChange={(event) => { setSelectedCountry(event.target.value); setSelectedCategory("All categories"); }} className="h-9 rounded-lg border border-border bg-background px-3 text-sm font-medium outline-none">
+                  {countries.map((code) => <option key={code} value={code}>{countryName(code)}</option>)}
+                </select>
+                <div className="flex gap-2 overflow-x-auto pb-1">
                 {categories.map((category) => (
                   <button key={category} onClick={() => setSelectedCategory(category)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", selectedCategory === category ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground")}>
                     {category}
                   </button>
                 ))}
+                </div>
               </div>
             </section>
 
