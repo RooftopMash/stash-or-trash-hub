@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
@@ -12,7 +13,9 @@ import { LiveIncidents } from "@/components/LiveIncidents";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchFeed } from "@/lib/stash";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Recycle } from "lucide-react";
+import { Recycle, Search } from "lucide-react";
+import { categoryOptions, matchesCategory, normalizeCategory } from "@/lib/categories";
+import { cn } from "@/lib/utils";
 import coinsWatermark from "@/assets/watermark-coins.png";
 import binsWatermark from "@/assets/watermark-bins.png";
 
@@ -23,10 +26,21 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const [query, setQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All categories");
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["feed", user?.id ?? "anon"],
     queryFn: () => fetchFeed(user?.id ?? null),
   });
+
+  const categories = useMemo(() => categoryOptions((data ?? []).map((item) => item.category)), [data]);
+  const filteredFeed = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return (data ?? []).filter((item) => {
+      const searchable = `${item.title} ${item.description ?? ""} ${item.brandName ?? ""} ${item.category ?? ""} ${normalizeCategory(item.category)}`.toLowerCase();
+      return (!term || searchable.includes(term)) && matchesCategory(item.category, selectedCategory);
+    });
+  }, [data, query, selectedCategory]);
 
   return (
     <div className="relative min-h-screen">
@@ -80,6 +94,27 @@ function Index() {
             <LiveIncidents />
             <QuickBrands />
 
+            <section className="mb-5 rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="font-display text-sm font-bold">Browse the conversation</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Filter community posts by brand category.</p>
+                </div>
+                <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-border bg-background px-3 md:max-w-sm">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                  <span className="sr-only">Search feed</span>
+                  <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search posts or brands" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
+                </label>
+              </div>
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                {categories.map((category) => (
+                  <button key={category} onClick={() => setSelectedCategory(category)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", selectedCategory === category ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </section>
+
             {isLoading ? (
               <div className="space-y-4">
                 {[0, 1, 2].map((i) => (
@@ -88,7 +123,7 @@ function Index() {
               </div>
             ) : data && data.length > 0 ? (
               <div className="space-y-4">
-                {data.map((item) => (
+                {filteredFeed.map((item) => (
                   <ItemCard key={item.id} item={item} onChange={() => refetch()} />
                 ))}
               </div>

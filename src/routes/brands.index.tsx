@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useMemo, useState } from "react";
 import { Header } from "@/components/Header";
 import { fetchBrands } from "@/lib/brands";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BrandLogo } from "@/components/BrandLogo";
-import { BadgeCheck, Plus, TrendingUp } from "lucide-react";
+import { BadgeCheck, Plus, Search, TrendingUp } from "lucide-react";
+import { brandCategory, categoryClass, categoryOptions, matchesCategory } from "@/lib/categories";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/brands/")({
   head: () => ({
@@ -28,6 +31,17 @@ function BrandsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data, isLoading } = useQuery({ queryKey: ["brands"], queryFn: fetchBrands });
+  const [query, setQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All categories");
+  const categories = useMemo(() => categoryOptions((data ?? []).map((brand) => brandCategory(brand.name, brand.category))), [data]);
+  const filteredBrands = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return (data ?? []).filter((brand) => {
+      const normalized = brandCategory(brand.name, brand.category);
+      const searchable = `${brand.name} ${brand.country ?? ""} ${brand.category ?? ""} ${normalized}`.toLowerCase();
+      return (!term || searchable.includes(term)) && matchesCategory(normalized, selectedCategory);
+    });
+  }, [data, query, selectedCategory]);
 
   return (
     <div className="min-h-screen">
@@ -46,6 +60,29 @@ function BrandsPage() {
           </Button>
         </div>
 
+        {!isLoading && data && data.length > 0 && (
+          <section className="mb-6 rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="font-display text-sm font-bold">Explore by category</p>
+                <p className="mt-1 text-xs text-muted-foreground">{filteredBrands.length} brands in your current view</p>
+              </div>
+              <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-border bg-background px-3 md:max-w-sm">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <span className="sr-only">Search brands</span>
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search brands or countries" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
+              </label>
+            </div>
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              {categories.map((category) => (
+                <button key={category} onClick={() => setSelectedCategory(category)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", selectedCategory === category ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                  {category}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2">
             {[0, 1, 2, 3].map((i) => (
@@ -54,7 +91,7 @@ function BrandsPage() {
           </div>
         ) : data && data.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            {data.map((b) => (
+            {filteredBrands.map((b) => (
               <Link
                 key={b.id}
                 to="/brands/$slug"
@@ -68,8 +105,8 @@ function BrandsPage() {
                     {b.verified && <BadgeCheck className="h-4 w-4 shrink-0 text-primary" />}
                   </div>
                   {b.category && (
-                    <Badge variant="secondary" className="mt-1 text-[10px]">
-                      {b.category}
+                    <Badge variant="secondary" className={cn("mt-1 text-[10px]", categoryClass(brandCategory(b.name, b.category)))}>
+                      {brandCategory(b.name, b.category)}
                     </Badge>
                   )}
                   <div className="mt-2 flex items-center gap-1.5 text-sm">

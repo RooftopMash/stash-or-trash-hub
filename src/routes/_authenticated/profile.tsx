@@ -8,6 +8,7 @@ import { getPublicProfile, getProfileStats, getFollowerCount } from "@/lib/socia
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, ExternalLink, ThumbsUp, ThumbsDown, FileText, UserPlus, Users } from "lucide-react";
+import { SocialConnectionsPanel } from "@/components/SocialConnectionsPanel";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -77,6 +78,8 @@ function ProfilePage() {
             </div>
           </section>
         )}
+
+        <SocialConnectionsPanel userId={user.id} />
 
         <h2 className="mb-3 mt-8 font-display text-lg font-bold">{t("profile.activity")}</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
