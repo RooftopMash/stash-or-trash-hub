@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -11,15 +12,16 @@ import {
   requestVerification,
   type Brand,
 } from "@/lib/brands";
-import { fetchAccessibleBrandIds, fetchBrandKpis } from "@/lib/brand-platform";
+import { fetchBrandKpis } from "@/lib/brand-platform";
 import { BrandTeamDialog } from "@/components/BrandTeamDialog";
 import { BrandAnalytics } from "@/components/BrandAnalytics";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getFollowerCount } from "@/lib/social";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BadgeCheck, MessageSquare, Plus, TrendingUp } from "lucide-react";
+import { BadgeCheck, ChevronDown, MessageSquare, Plus, Search, SlidersHorizontal, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   beforeLoad: async () => {
@@ -47,6 +49,8 @@ function DashboardPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All brands");
 
   const { data: brands, isLoading, refetch } = useQuery({
     queryKey: ["dashboard-brands", user?.id],
@@ -66,8 +70,22 @@ function DashboardPage() {
   });
 
   const list = brands ?? [];
-  const activeId = selected ?? list[0]?.id ?? null;
-  const active = list.find((b) => b.id === activeId) ?? null;
+  const categories = useMemo(() => {
+    const values = new Set(list.map((brand) => normalizeCategory(brand.category)));
+    return ["All brands", ...Array.from(values).sort((a, b) => a.localeCompare(b))];
+  }, [list]);
+  const filteredBrands = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return list.filter((brand) => {
+      const matchesSearch = !query || `${brand.name} ${brand.category ?? ""} ${brand.country ?? ""}`.toLowerCase().includes(query);
+      const matchesCategory = category === "All brands" || normalizeCategory(brand.category) === category;
+      return matchesSearch && matchesCategory;
+    });
+  }, [category, list, search]);
+  const activeId = selected && filteredBrands.some((brand) => brand.id === selected)
+    ? selected
+    : filteredBrands[0]?.id ?? null;
+  const active = filteredBrands.find((b) => b.id === activeId) ?? null;
 
   return (
     <div className="min-h-screen">
@@ -98,23 +116,68 @@ function DashboardPage() {
           </div>
         ) : (
           <>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {list.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => setSelected(b.id)}
-                  className={cn(
-                    "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
-                    b.id === activeId
-                      ? "border-stash bg-stash/10 font-semibold"
-                      : "border-border hover:bg-secondary",
-                  )}
-                >
-                  <BrandLogo name={b.name} url={b.signedLogoUrl} className="h-6 w-6 rounded-md text-[10px]" />
-                  {b.name}
-                </button>
-              ))}
-            </div>
+            <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <SlidersHorizontal className="h-4 w-4 text-stash" />
+                    <h2 className="font-display text-sm font-bold">Your brand portfolio</h2>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Search and filter your active brands without loading the full catalog.
+                  </p>
+                </div>
+                <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-border bg-background px-3 lg:max-w-xs">
+                  <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="sr-only">Search brands</span>
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search brands, categories, countries"
+                    className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  />
+                </label>
+              </div>
+              <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1">
+                <span className="mr-1 flex shrink-0 items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Category <ChevronDown className="h-3 w-3" />
+                </span>
+                {categories.map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => setCategory(item)}
+                    className={cn(
+                      "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                      category === item
+                        ? "border-stash bg-stash/10 text-foreground"
+                        : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground",
+                    )}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {filteredBrands.map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => setSelected(b.id)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
+                      b.id === activeId
+                        ? "border-stash bg-stash/10 font-semibold"
+                        : "border-border hover:bg-secondary",
+                    )}
+                  >
+                    <BrandLogo name={b.name} url={b.signedLogoUrl} className="h-6 w-6 rounded-md text-[10px]" />
+                    <span>{b.name}</span>
+                  </button>
+                ))}
+                {filteredBrands.length === 0 && (
+                  <p className="py-3 text-sm text-muted-foreground">No brands match those filters.</p>
+                )}
+              </div>
+            </section>
 
             <div className="mt-6">
               {active && <BrandRow key={active.id} brand={active} onVerify={() => refetch()} />}
@@ -243,6 +306,20 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
       <div className="text-[11px] text-muted-foreground">{label}</div>
     </div>
   );
+}
+
+function normalizeCategory(category: string | null): string {
+  if (!category?.trim()) return "Uncategorized";
+  const value = category.trim().toLowerCase();
+  const groups: Array<[string[], string]> = [
+    [["fast food", "fast-food", "restaurant", "restaurants", "food"], "Food & Fast Food"],
+    [["fashion", "clothing", "apparel", "beauty"], "Fashion & Beauty"],
+    [["telecom", "technology", "tech", "software", "electronics"], "Technology & Telecom"],
+    [["bank", "banking", "finance", "financial"], "Finance & Banking"],
+    [["retail", "shopping", "supermarket", "grocery"], "Retail & Groceries"],
+    [["travel", "airline", "hotel", "hospitality"], "Travel & Hospitality"],
+  ];
+  return groups.find(([keywords]) => keywords.some((keyword) => value.includes(keyword)))?.[1] ?? category.trim();
 }
 
 function formatReply(minutes: number, t: (k: string, o?: any) => string): string {
