@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { BadgeCheck, MapPin, Globe2, ChevronRight } from "lucide-react";
@@ -7,12 +6,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { fetchLocalBrands } from "@/lib/brands";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BrandVerdict } from "@/components/BrandVerdict";
-import { detectCountry, countryName } from "@/lib/geo";
+import { countryName } from "@/lib/geo";
+
+type QuickBrandsProps = { country?: string | null };
 
 /** Horizontal quick-access rail of brands near the visitor, for one-tap judging. */
-export function QuickBrands() {
+export function QuickBrands({ country = null }: QuickBrandsProps) {
   const { t, i18n } = useTranslation();
-  const country = useMemo(() => detectCountry(), []);
   const { data, isLoading } = useQuery({
     queryKey: ["local-brands", country ?? "global"],
     queryFn: () => fetchLocalBrands(country),

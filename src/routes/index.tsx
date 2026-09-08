@@ -10,12 +10,13 @@ import { TrendingHashtags } from "@/components/TrendingHashtags";
 import { SotWordmark } from "@/components/SotWordmark";
 import { BrandSearch } from "@/components/BrandSearch";
 import { LiveIncidents } from "@/components/LiveIncidents";
+import { LocationAwareFeed } from "@/components/LocationAwareFeed";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchFeed } from "@/lib/stash";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Recycle, Search } from "lucide-react";
 import { categoryOptions, matchesCategory, normalizeCategory } from "@/lib/categories";
-import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
+import { countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 import coinsWatermark from "@/assets/watermark-coins.png";
 import binsWatermark from "@/assets/watermark-bins.png";
@@ -96,7 +97,7 @@ function Index() {
             <EngagementBar />
 
             <LiveIncidents />
-            <QuickBrands />
+            <QuickBrands country={selectedCountry} />
 
             <section className="mb-5 rounded-2xl border border-border bg-card p-4 shadow-sm">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -111,10 +112,11 @@ function Index() {
                 </label>
               </div>
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                <label className="sr-only" htmlFor="feed-country">Country</label>
-                <select id="feed-country" value={selectedCountry} onChange={(event) => { setSelectedCountry(event.target.value); setSelectedCategory("All categories"); }} className="h-9 rounded-lg border border-border bg-background px-3 text-sm font-medium outline-none">
-                  {countries.map((code) => <option key={code} value={code}>{countryName(code)}</option>)}
-                </select>
+                <LocationAwareFeed
+                  selectedCountry={selectedCountry}
+                  availableCountries={countries}
+                  onCountryChange={(country) => { setSelectedCountry(country); setSelectedCategory("All categories"); }}
+                />
                 <div className="flex gap-2 overflow-x-auto pb-1">
                 {categories.map((category) => (
                   <button key={category} onClick={() => setSelectedCategory(category)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", selectedCategory === category ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground")}>
