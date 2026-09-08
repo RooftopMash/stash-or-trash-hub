@@ -35,7 +35,10 @@ function BrandsPage() {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All categories");
   const [selectedCountry, setSelectedCountry] = useState("ZA");
-  const countries = useMemo(() => countryOptions((data ?? []).map((brand) => brand.country)), [data]);
+  const countries = useMemo(() => {
+    const available = countryOptions((data ?? []).map((brand) => brand.country));
+    return available.includes("ZA") ? available : ["ZA", ...available];
+  }, [data]);
   const localBrands = useMemo(() => (data ?? []).filter((brand) => normalizeCountryCode(brand.country) === selectedCountry), [data, selectedCountry]);
   const categories = useMemo(() => categoryOptions(localBrands.map((brand) => brandCategory(brand.name, brand.category))), [localBrands]);
   const filteredBrands = useMemo(() => {
@@ -100,7 +103,7 @@ function BrandsPage() {
               <Skeleton key={i} className="h-32 w-full rounded-2xl" />
             ))}
           </div>
-        ) : data && data.length > 0 ? (
+        ) : filteredBrands.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2">
             {filteredBrands.map((b) => (
               <Link
@@ -129,7 +132,8 @@ function BrandsPage() {
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-border py-16 text-center text-muted-foreground">
-            {t("brand.noBrands")}
+            <p className="font-display font-semibold">No brands match these filters</p>
+            <p className="mt-1 text-sm">Try another country, category, or search term.</p>
           </div>
         )}
       </main>

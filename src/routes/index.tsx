@@ -10,12 +10,13 @@ import { TrendingHashtags } from "@/components/TrendingHashtags";
 import { SotWordmark } from "@/components/SotWordmark";
 import { BrandSearch } from "@/components/BrandSearch";
 import { LiveIncidents } from "@/components/LiveIncidents";
+import { LocationAwareFeed } from "@/components/LocationAwareFeed";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchFeed } from "@/lib/stash";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Recycle, Search } from "lucide-react";
-import { categoryOptions, matchesCategory, normalizeCategory } from "@/lib/categories";
-import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
+import { brandCategory, categoryOptions, matchesCategory } from "@/lib/categories";
+import { countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 import coinsWatermark from "@/assets/watermark-coins.png";
 import binsWatermark from "@/assets/watermark-bins.png";
@@ -37,12 +38,13 @@ function Index() {
 
   const countries = useMemo(() => countryOptions((data ?? []).map((item) => item.brandCountry)), [data]);
   const localFeed = useMemo(() => (data ?? []).filter((item) => normalizeCountryCode(item.brandCountry) === selectedCountry), [data, selectedCountry]);
-  const categories = useMemo(() => categoryOptions(localFeed.map((item) => item.category)), [localFeed]);
+  const categories = useMemo(() => categoryOptions(localFeed.map((item) => brandCategory(item.brandName, item.category))), [localFeed]);
   const filteredFeed = useMemo(() => {
     const term = query.trim().toLowerCase();
     return localFeed.filter((item) => {
-      const searchable = `${item.title} ${item.description ?? ""} ${item.brandName ?? ""} ${item.category ?? ""} ${normalizeCategory(item.category)}`.toLowerCase();
-      return (!term || searchable.includes(term)) && matchesCategory(item.category, selectedCategory);
+      const normalizedCategory = brandCategory(item.brandName, item.category);
+      const searchable = `${item.title} ${item.description ?? ""} ${item.brandName ?? ""} ${item.category ?? ""} ${normalizedCategory}`.toLowerCase();
+      return (!term || searchable.includes(term)) && matchesCategory(normalizedCategory, selectedCategory);
     });
   }, [localFeed, query, selectedCategory]);
 
@@ -89,6 +91,17 @@ function Index() {
           <div className="mx-auto mt-6 max-w-xl">
             <BrandSearch />
           </div>
+          <div className="mx-auto mt-4 max-w-4xl rounded-2xl border border-border/70 bg-card/90 p-3 text-left shadow-sm backdrop-blur">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              <span className="shrink-0 text-xs font-bold uppercase tracking-wide text-muted-foreground">Categories</span>
+              {categories.map((category) => (
+                <button key={`hero-${category}`} onClick={() => setSelectedCategory(category)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", selectedCategory === category ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                  {category}
+                </button>
+              ))}
+              {categories.length <= 1 && <span className="text-xs text-muted-foreground">Local categories will appear as activity is added.</span>}
+            </div>
+          </div>
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
@@ -96,13 +109,13 @@ function Index() {
             <EngagementBar />
 
             <LiveIncidents />
-            <QuickBrands />
+            <QuickBrands country={selectedCountry} />
 
             <section className="mb-5 rounded-2xl border border-border bg-card p-4 shadow-sm">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="font-display text-sm font-bold">Browse the conversation</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Filter community posts by brand category.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{categories.length > 1 ? "Filter community posts by brand category." : "Categories will appear as local brand activity is added."}</p>
                 </div>
                 <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-border bg-background px-3 md:max-w-sm">
                   <Search className="h-4 w-4 text-muted-foreground" />
@@ -111,10 +124,11 @@ function Index() {
                 </label>
               </div>
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                <label className="sr-only" htmlFor="feed-country">Country</label>
-                <select id="feed-country" value={selectedCountry} onChange={(event) => { setSelectedCountry(event.target.value); setSelectedCategory("All categories"); }} className="h-9 rounded-lg border border-border bg-background px-3 text-sm font-medium outline-none">
-                  {countries.map((code) => <option key={code} value={code}>{countryName(code)}</option>)}
-                </select>
+                <LocationAwareFeed
+                  selectedCountry={selectedCountry}
+                  availableCountries={countries}
+                  onCountryChange={(country) => { setSelectedCountry(country); setSelectedCategory("All categories"); }}
+                />
                 <div className="flex gap-2 overflow-x-auto pb-1">
                 {categories.map((category) => (
                   <button key={category} onClick={() => setSelectedCategory(category)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", selectedCategory === category ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground")}>
