@@ -15,7 +15,7 @@ import { fetchFeed } from "@/lib/stash";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Recycle, Search } from "lucide-react";
 import { categoryOptions, matchesCategory, normalizeCategory } from "@/lib/categories";
-import { countryName, normalizeCountryCode } from "@/lib/geo";
+import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 import coinsWatermark from "@/assets/watermark-coins.png";
 import binsWatermark from "@/assets/watermark-bins.png";
@@ -35,7 +35,7 @@ function Index() {
     queryFn: () => fetchFeed(user?.id ?? null),
   });
 
-  const countries = useMemo(() => Array.from(new Set((data ?? []).map((item) => normalizeCountryCode(item.brandCountry)).filter(Boolean) as string[])).sort(), [data]);
+  const countries = useMemo(() => countryOptions((data ?? []).map((item) => item.brandCountry)), [data]);
   const localFeed = useMemo(() => (data ?? []).filter((item) => normalizeCountryCode(item.brandCountry) === selectedCountry), [data, selectedCountry]);
   const categories = useMemo(() => categoryOptions(localFeed.map((item) => item.category)), [localFeed]);
   const filteredFeed = useMemo(() => {
@@ -131,7 +131,7 @@ function Index() {
                   <Skeleton key={i} className="h-64 w-full rounded-2xl" />
                 ))}
               </div>
-            ) : data && data.length > 0 ? (
+            ) : filteredFeed.length > 0 ? (
               <div className="space-y-4">
                 {filteredFeed.map((item) => (
                   <ItemCard key={item.id} item={item} onChange={() => refetch()} />
@@ -140,9 +140,9 @@ function Index() {
             ) : (
               <div className="rounded-2xl border border-dashed border-border py-16 text-center">
                 <Recycle className="mx-auto h-10 w-10 text-muted-foreground" />
-                <p className="mt-4 font-display text-lg font-semibold">{t("home.emptyTitle")}</p>
+                <p className="mt-4 font-display text-lg font-semibold">{data && data.length > 0 ? "No local conversations yet" : t("home.emptyTitle")}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {user ? t("home.emptyBodyUser") : t("home.emptyBodyGuest")}
+                  {data && data.length > 0 ? "Try another country or category, or start the first conversation for this market." : user ? t("home.emptyBodyUser") : t("home.emptyBodyGuest")}
                 </p>
               </div>
             )}
