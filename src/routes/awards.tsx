@@ -1,10 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useMemo, useState } from "react";
 import { Header } from "@/components/Header";
 import { fetchBrands } from "@/lib/brands";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Award, Crown, Heart, Sparkles, TrendingUp, Trophy } from "lucide-react";
+import { Award, Crown, Filter, Heart, Map, Search, Sparkles, TrendingUp, Trophy } from "lucide-react";
+import { brandCategory, categoryOptions } from "@/lib/categories";
+import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/awards")({
   head: () => ({
@@ -35,10 +39,26 @@ function AwardsPage() {
     queryFn: fetchBrands,
   });
 
-  const top = (brands ?? []).slice(0, 10);
-  const medals = ["🥇", "🥈", "🥉"];
+  const [country, setCountry] = useState("All countries");
+  const [category, setCategory] = useState("All categories");
+  const [query, setQuery] = useState("");
+  const countries = useMemo(() => ["All countries", ...countryOptions((brands ?? []).map((brand) => brand.country))], [brands]);
+  const categories = useMemo(() => categoryOptions((brands ?? []).map((brand) => brandCategory(brand.name, brand.category))), [brands]);
+  const filteredBrands = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return (brands ?? []).filter((brand) => {
+      const normalizedCountry = normalizeCountryCode(brand.country);
+      const normalizedCategory = brandCategory(brand.name, brand.category);
+      const searchable = `${brand.name} ${countryName(normalizedCountry)} ${normalizedCategory}`.toLowerCase();
+      return (country === "All countries" || normalizedCountry === country)
+        && (category === "All categories" || normalizedCategory === category)
+        && (!term || searchable.includes(term));
+    }).sort((a, b) => (Number(b.trust_score) || 0) - (Number(a.trust_score) || 0));
+  }, [brands, category, country, query]);
+  const top = filteredBrands.slice(0, 10);
+  const regionLabel = country === "All countries" ? "Global awards" : `${countryName(country)} awards`;
 
-  const categories = [
+  const awardTypes = [
     { icon: Crown, title: t("awards.cat1"), desc: t("awards.cat1d") },
     { icon: Heart, title: t("awards.cat2"), desc: t("awards.cat2d") },
     { icon: TrendingUp, title: t("awards.cat3"), desc: t("awards.cat3d") },
@@ -59,8 +79,33 @@ function AwardsPage() {
 
         {/* Leaderboard */}
         <section className="mt-10">
-          <h2 className="font-display text-2xl font-bold">{t("awards.leaderboard")}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t("awards.leaderboardNote")}</p>
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="font-display text-2xl font-bold">{t("awards.leaderboard")}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{t("awards.leaderboardNote")} Rankings stay inside the selected market and category.</p>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-primary"><Map className="h-4 w-4" />{regionLabel}</div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="flex flex-col gap-3 lg:flex-row">
+              <label className="flex h-10 flex-1 items-center gap-2 rounded-xl border border-border bg-background px-3">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <span className="sr-only">Search awards</span>
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search brands or markets" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
+              </label>
+              <label className="flex h-10 items-center gap-2 rounded-xl border border-border bg-background px-3">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="sr-only">Award country</span>
+                <select value={country} onChange={(event) => setCountry(event.target.value)} className="bg-transparent text-sm font-medium outline-none">
+                  {countries.map((item) => <option key={item} value={item}>{item === "All countries" ? item : countryName(item)}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              {categories.map((item) => <button key={item} onClick={() => setCategory(item)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", category === item ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground")}>{item}</button>)}
+            </div>
+          </div>
 
           <div className="mt-4 overflow-hidden rounded-2xl border border-border">
             {isLoading ? (
@@ -80,7 +125,7 @@ function AwardsPage() {
                   className="flex items-center gap-4 border-b border-border bg-card px-4 py-3 transition-colors last:border-0 hover:bg-secondary/50"
                 >
                   <span className="w-8 text-center font-display text-lg font-extrabold text-muted-foreground">
-                    {medals[i] ?? i + 1}
+                    {i < 3 ? ["1st", "2nd", "3rd"][i] : i + 1}
                   </span>
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary text-sm font-bold">
                     {b.signedLogoUrl ? (
@@ -89,7 +134,7 @@ function AwardsPage() {
                       b.name.charAt(0).toUpperCase()
                     )}
                   </div>
-                  <span className="flex-1 truncate font-semibold">{b.name}</span>
+                  <span className="flex-1 truncate font-semibold"><span className="block">{b.name}</span><span className="text-xs font-normal text-muted-foreground">{countryName(normalizeCountryCode(b.country))} · {brandCategory(b.name, b.category)}</span></span>
                   <span className="flex items-center gap-1.5 font-display font-extrabold text-stash">
                     <TrendingUp className="h-4 w-4" />
                     {b.trust_score}
@@ -98,13 +143,15 @@ function AwardsPage() {
               ))
             )}
           </div>
+          {top.length === 0 && !isLoading && <p className="mt-4 rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No brands match this award market and category yet. Expand the filters to explore more nominees.</p>}
+          <p className="mt-3 text-xs text-muted-foreground">Live eligibility: every listed brand may appear. Final ceremony editions will publish a timestamped snapshot of these country and category rankings.</p>
         </section>
 
         {/* Categories */}
         <section className="mt-10">
           <h2 className="font-display text-2xl font-bold">{t("awards.categoryTitle")}</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {categories.map((c) => (
+            {awardTypes.map((c) => (
               <div key={c.title} className="rounded-2xl border border-border bg-card p-5">
                 <c.icon className="h-7 w-7 text-primary" />
                 <h3 className="mt-3 font-display text-lg font-bold">{c.title}</h3>
