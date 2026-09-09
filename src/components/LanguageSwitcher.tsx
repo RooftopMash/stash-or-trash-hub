@@ -13,15 +13,16 @@ import { Globe } from "lucide-react";
 export function LanguageSwitcher() {
   const { i18n } = useTranslation();
   const [query, setQuery] = useState("");
-  const current = LANGUAGES.find((l) => l.code === i18n.language) ?? LANGUAGES[0];
+  const current = LANGUAGES.find((l) => l.code === i18n.language || l.code === i18n.language.split("-")[0]) ?? LANGUAGES[0];
   const filteredLanguages = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return LANGUAGES;
-    return LANGUAGES.filter((language) => `${language.label} ${language.code}`.toLowerCase().includes(normalized));
+    return LANGUAGES.filter((language) => `${language.label} ${language.native ?? ""} ${language.code}`.toLowerCase().includes(normalized));
   }, [query]);
 
   const change = (code: string) => {
-    i18n.changeLanguage(code);
+    void i18n.changeLanguage(code);
+    if (typeof window !== "undefined") window.localStorage.setItem("sot-lang", code);
     if (typeof document !== "undefined") {
       document.documentElement.lang = code;
       document.documentElement.dir = RTL_LANGUAGES.includes(code) ? "rtl" : "ltr";
@@ -50,7 +51,7 @@ export function LanguageSwitcher() {
               className={l.code === current.code ? "font-semibold text-primary" : "justify-between"}
               dir={RTL_LANGUAGES.includes(l.code) ? "rtl" : "ltr"}
             >
-              <span>{l.label}</span><span className="text-xs text-muted-foreground">{l.code}</span>
+              <span>{l.native ?? l.label}</span><span className="text-xs text-muted-foreground">{l.code}</span>
             </DropdownMenuItem>
           ))}
           {filteredLanguages.length === 0 && <p className="px-2 py-3 text-sm text-muted-foreground">No matching language.</p>}

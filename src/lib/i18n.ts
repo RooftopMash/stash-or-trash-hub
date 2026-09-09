@@ -59,6 +59,7 @@ export const LANGUAGES: { code: string; label: string; native?: string; directio
   { code: "ig", label: "Igbo" },
   { code: "nso", label: "Sepedi" },
   { code: "sk", label: "Slovenčina" },
+  { code: "bg", label: "Български" },
 ];
 
 export const RTL_LANGUAGES = ["ar", "he", "fa", "ur"];
@@ -82,6 +83,14 @@ for (const code of codes) {
 // while remaining separately selectable for future region-specific translations.
 resources["zh-CN"] = resources.zh ?? { translation: en };
 resources["zh-TW"] = resources["zh-TW"] ?? resources.zh ?? { translation: en };
+resources.nso = {
+  translation: {
+    ...en,
+    nav: { ...en.nav, feed: "Dikagare", brands: "Mabrande", awards: "Difofane", signIn: "Tsena" },
+    vote: { ...en.vote, stash: "Boloka", trash: "Lahla", signInPrompt: "Tsena go fana ka kahlolo ya gago." },
+    auth: { ...en.auth, signIn: "Tsena", signUp: "Ingwadise", email: "Imeile", password: "Phasewete", continueGoogle: "Tsena ka Google" },
+  } as typeof en,
+};
 
 if (!i18n.isInitialized) {
   i18n
