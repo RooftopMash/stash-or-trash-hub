@@ -12,14 +12,14 @@ export function SotWordmark({
   className?: string;
   size?: "sm" | "md" | "lg";
 }) {
-  const cap =
-    size === "lg" ? "text-[1.15em]" : size === "sm" ? "text-[1.08em]" : "text-[1.1em]";
+  const sizeClass = size === "lg" ? "text-lg" : size === "sm" ? "text-sm" : "text-base";
 
   return (
-    <span className={cn("font-display font-extrabold tracking-tight", className)}>
-      <span className={cn(cap, "text-stash")}>S</span>tash{" "}
-      <span className={cn(cap, "text-foreground")}>O</span>r{" "}
-      <span className={cn(cap, "text-trash")}>T</span>rash
+    <span
+      aria-label="Stash Or Trash"
+      className={cn("font-display font-extrabold tracking-tight text-foreground", sizeClass, className)}
+    >
+      <span className="text-stash">S</span><span>tash </span><span className="text-foreground">O</span><span>r </span><span className="text-trash">T</span><span>rash</span>
     </span>
   );
 }
