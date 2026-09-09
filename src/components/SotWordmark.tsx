@@ -17,9 +17,9 @@ export function SotWordmark({
 
   return (
     <span className={cn("font-display font-extrabold tracking-tight", className)}>
-      <span className={cn(cap, "text-stash")}>S</span>tash{" "}
-      <span className={cn(cap, "text-foreground")}>O</span>r{" "}
-      <span className={cn(cap, "text-trash")}>T</span>rash
+      <span className={cn(cap, "text-stash")}>S</span><span>tash</span>{" "}
+      <span className={cn(cap, "text-foreground")}>O</span><span>r</span>{" "}
+      <span className={cn(cap, "text-trash")}>T</span><span>rash</span>
     </span>
   );
 }
