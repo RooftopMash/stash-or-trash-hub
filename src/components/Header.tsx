@@ -27,7 +27,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               aria-label="SOrT — Stash Or Trash logo"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foreground text-sm font-extrabold tracking-[-0.12em] text-background shadow-sm transition-transform group-hover:scale-110 group-hover:rotate-3"
             >
-              <span className="text-stash">S</span><span>O</span><span className="text-trash">rT</span>
+              <span className="text-stash">S</span><span>O</span><span className="text-trash">r</span><span>T</span>
             </span>
             <span className="hidden sm:inline">
               <SotWordmark className="text-xl" />
