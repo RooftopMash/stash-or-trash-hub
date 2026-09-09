@@ -14,7 +14,7 @@ import { LocationAwareFeed } from "@/components/LocationAwareFeed";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchFeed } from "@/lib/stash";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Recycle, Search } from "lucide-react";
+import { ArrowRight, BarChart3, BriefcaseBusiness, Recycle, Search, Users } from "lucide-react";
 import { brandCategory, categoryOptions, matchesCategory } from "@/lib/categories";
 import { countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
@@ -222,6 +222,46 @@ function Index() {
               </div>
             </aside>
           </div>
+
+          <section className="mt-10 overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+            <div className="border-b border-border bg-secondary/40 px-6 py-8 sm:px-8">
+              <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+                <div className="max-w-2xl">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-stash">Business model</p>
+                  <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+                    SaaS &amp; Enterprise Data Subscriptions
+                  </h2>
+                  <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+                    A two-sided platform: free, high-engagement consumer participation creates the live CX signal that brands and enterprise teams subscribe to understand.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+                  <span className="rounded-full bg-foreground px-3 py-1.5 text-background">Built for scale</span>
+                  <ArrowRight className="h-4 w-4 text-trash" aria-hidden="true" />
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-px bg-border md:grid-cols-3">
+              <article className="bg-card p-6 sm:p-7">
+                <BriefcaseBusiness className="h-6 w-6 text-stash" aria-hidden="true" />
+                <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.16em] text-muted-foreground">01 · B2B SaaS platform</p>
+                <h3 className="mt-2 font-display text-xl font-bold text-foreground">Campaign valuation intelligence</h3>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">Monthly and annual tiers help brands run active campaign valuations, measure reputation movement, and turn customer verdicts into action.</p>
+              </article>
+              <article className="bg-card p-6 sm:p-7">
+                <BarChart3 className="h-6 w-6 text-trash" aria-hidden="true" />
+                <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.16em] text-muted-foreground">02 · Custom CX intelligence</p>
+                <h3 className="mt-2 font-display text-xl font-bold text-foreground">Premium reports for enterprise</h3>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">Benchmarking and real-time sentiment diagnostics give corporate clients a sharper view of service quality, demand, and emerging risk.</p>
+              </article>
+              <article className="bg-card p-6 sm:p-7">
+                <Users className="h-6 w-6 text-foreground" aria-hidden="true" />
+                <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.16em] text-muted-foreground">03 · Free consumer access</p>
+                <h3 className="mt-2 font-display text-xl font-bold text-foreground">A network people want to use</h3>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">Everyday users get a free, gamified entry point to voice real opinions on service quality—fueling the data layer without putting participation behind a paywall.</p>
+              </article>
+            </div>
+          </section>
         </main>
       </div>
     </div>
