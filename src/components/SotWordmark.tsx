@@ -1,9 +1,8 @@
 import { cn } from "@/lib/utils";
 
 /**
- * The SOT brand wordmark. The capitals S · O · T are always emphasised so the
- * eye reads the acronym "SOT" out of "Stash Or Trash" — building instant brand
- * recall. Never render these letters in lowercase.
+ * The SOrT wordmark makes the product promise visible: people sort what to
+ * stash and what to trash. The capital S, O and T preserve the brand signal.
  */
 export function SotWordmark({
   className,
@@ -17,9 +16,9 @@ export function SotWordmark({
 
   return (
     <span className={cn("font-display font-extrabold tracking-tight", className)}>
-      <span className={cn(cap, "text-stash")}>S</span>tash{" "}
-      <span className={cn(cap, "text-foreground")}>O</span>r{" "}
-      <span className={cn(cap, "text-trash")}>T</span>rash
+      <span className={cn(cap, "text-stash")}>S</span>
+      <span className={cn(cap, "text-foreground")}>O</span>
+      <span className={cn(cap, "text-trash")}>rT</span>
     </span>
   );
 }
