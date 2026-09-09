@@ -7,7 +7,7 @@ import { socialTranslations } from "./locale-social";
 
 // Full list of selectable languages (native names). UI strings fall back to
 // English until a full translation bundle exists for a given code.
-export const LANGUAGES: { code: string; label: string }[] = [
+export const LANGUAGES: { code: string; label: string; native?: string; direction?: "ltr" | "rtl" }[] = [
   { code: "en", label: "English" },
   { code: "es", label: "Español" },
   { code: "fr", label: "Français" },
@@ -22,18 +22,10 @@ export const LANGUAGES: { code: string; label: string }[] = [
   { code: "da", label: "Dansk" },
   { code: "fi", label: "Suomi" },
   { code: "cs", label: "Čeština" },
-  { code: "sk", label: "Slovenčina" },
   { code: "hu", label: "Magyar" },
   { code: "el", label: "Ελληνικά" },
-  { code: "bg", label: "Български" },
   { code: "uk", label: "Українська" },
   { code: "ru", label: "Русский" },
-  { code: "sr", label: "Српски" },
-  { code: "hr", label: "Hrvatski" },
-  { code: "sl", label: "Slovenščina" },
-  { code: "lt", label: "Lietuvių" },
-  { code: "lv", label: "Latviešu" },
-  { code: "et", label: "Eesti" },
   { code: "tr", label: "Türkçe" },
   { code: "ar", label: "العربية" },
   { code: "he", label: "עברית" },
@@ -51,7 +43,6 @@ export const LANGUAGES: { code: string; label: string }[] = [
   { code: "id", label: "Bahasa Indonesia" },
   { code: "ms", label: "Bahasa Melayu" },
   { code: "fil", label: "Filipino" },
-  { code: "zh", label: "简体中文" },
   { code: "zh-CN", label: "简体中文（中国大陆）" },
   { code: "zh-TW", label: "繁體中文（台灣）" },
   { code: "ja", label: "日本語" },
@@ -66,9 +57,13 @@ export const LANGUAGES: { code: string; label: string }[] = [
   { code: "ha", label: "Hausa" },
   { code: "yo", label: "Yorùbá" },
   { code: "ig", label: "Igbo" },
+  { code: "nso", label: "Sepedi" },
+  { code: "sk", label: "Slovenčina" },
 ];
 
 export const RTL_LANGUAGES = ["ar", "he", "fa", "ur"];
+
+export const LANGUAGE_COUNT = LANGUAGES.length;
 
 const resources: Record<string, { translation: typeof en }> = { en: { translation: en } };
 const codes = new Set([...Object.keys(translations), ...Object.keys(socialTranslations)]);
