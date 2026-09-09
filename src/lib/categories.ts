@@ -167,7 +167,10 @@ export function categoryLabel(value: string | null | undefined): BrandCategory {
   return normalizeCategory(value);
 }
 
-export function brandCategory(name: string | null | undefined, value: string | null | undefined): BrandCategory {
+export function brandCategory(
+  name: string | null | undefined,
+  value: string | null | undefined,
+): BrandCategory {
   const override = name && brandNameOverrides[name.trim().toLowerCase()];
   return override ?? normalizeCategory(value);
 }
