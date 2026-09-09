@@ -17,9 +17,7 @@ export function SotWordmark({
 
   return (
     <span suppressHydrationWarning className={cn("font-display font-extrabold tracking-tight", className)}>
-      <span className={cn(cap, "text-stash")}>S</span><span>tash</span><span aria-hidden="true"> </span>
-      <span className={cn(cap, "text-foreground")}>O</span><span>r</span><span aria-hidden="true"> </span>
-      <span className={cn(cap, "text-trash")}>T</span><span>rash</span>
+      <span className={cn(cap, "text-stash")}>S</span><span>tash</span><span className={cn("ml-1", cap, "text-foreground")}>O</span><span>r</span><span className={cn("ml-1", cap, "text-trash")}>T</span><span>rash</span>
     </span>
   );
 }
