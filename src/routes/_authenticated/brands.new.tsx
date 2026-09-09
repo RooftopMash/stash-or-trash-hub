@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { createBrand } from "@/lib/brands";
+import { createBrand, searchBrands } from "@/lib/brands";
 import { BRAND_CATEGORIES } from "@/lib/categories";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,25 @@ function NewBrandPage() {
   const [country, setCountry] = useState("ZA");
   const [logo, setLogo] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [duplicate, setDuplicate] = useState<string | null>(null);
+  const [checkingName, setCheckingName] = useState(false);
+
+  const checkForDuplicate = async () => {
+    if (!name.trim()) {
+      setDuplicate(null);
+      return;
+    }
+    setCheckingName(true);
+    try {
+      const matches = await searchBrands(name.trim(), 3);
+      setDuplicate(
+        matches.find((match) => match.name.trim().toLowerCase() === name.trim().toLowerCase())
+          ?.name ?? null,
+      );
+    } finally {
+      setCheckingName(false);
+    }
+  };
 
   const submit = async () => {
     if (!user) return;
@@ -67,9 +86,22 @@ function NewBrandPage() {
             <Input
               id="name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setDuplicate(null);
+              }}
+              onBlur={checkForDuplicate}
               maxLength={80}
             />
+            {checkingName && (
+              <p className="text-xs text-muted-foreground">Checking the global brand directory…</p>
+            )}
+            {duplicate && (
+              <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700">
+                A brand named “{duplicate}” already exists. Check its page before creating a
+                duplicate.
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="cat">Category</Label>
@@ -131,8 +163,12 @@ function NewBrandPage() {
               onChange={(e) => setLogo(e.target.files?.[0] ?? null)}
             />
           </div>
-          <Button className="w-full" onClick={submit} disabled={busy}>
-            {busy ? "Creating…" : "Create brand"}
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            New brand pages are community-submitted and may be reviewed for duplicates, ownership,
+            category, country, and source accuracy before verification.
+          </p>
+          <Button className="w-full" onClick={submit} disabled={busy || checkingName}>
+            {busy ? "Submitting…" : "Submit brand for review"}
           </Button>
         </div>
       </main>
