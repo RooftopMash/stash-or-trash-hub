@@ -131,6 +131,19 @@ function Index() {
             </div>
           </section>
 
+          <section className="mb-8 overflow-hidden rounded-3xl border-2 border-foreground/10 bg-card shadow-md">
+            <div className="bg-foreground px-6 py-5 text-background sm:px-8">
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-stash">For brands, enterprises &amp; investors</p>
+              <h2 className="mt-2 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">SaaS &amp; Enterprise Data Subscriptions</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-background/75">Free consumer participation powers a subscription data business for brands that need campaign valuation, CX benchmarking, and real-time sentiment intelligence.</p>
+            </div>
+            <div className="grid gap-px bg-border md:grid-cols-3">
+              <div className="bg-card p-5"><p className="text-xs font-extrabold uppercase tracking-wider text-stash">01 · B2B SaaS</p><p className="mt-2 font-display font-bold text-foreground">Monthly &amp; annual campaign valuation tiers</p></div>
+              <div className="bg-card p-5"><p className="text-xs font-extrabold uppercase tracking-wider text-trash">02 · Enterprise intelligence</p><p className="mt-2 font-display font-bold text-foreground">Custom CX reports and live sentiment diagnostics</p></div>
+              <div className="bg-card p-5"><p className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">03 · Free consumers</p><p className="mt-2 font-display font-bold text-foreground">Gamified opinions that create the live data layer</p></div>
+            </div>
+          </section>
+
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
             <div>
               <EngagementBar />
