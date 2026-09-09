@@ -73,7 +73,7 @@ function AuthPage() {
         return;
       }
       const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: `${window.location.origin}/auth/callback`,
+        redirect_uri: `${window.location.origin}/auth`,
       });
       if (result.error) throw new Error(result.error.message ?? t("auth.socialFailed"));
       if (result.redirected) return;
