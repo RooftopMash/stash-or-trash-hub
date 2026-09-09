@@ -18,6 +18,7 @@ import { Route as UsersIdRouteImport } from './routes/users.$id'
 import { Route as ItemsIdRouteImport } from './routes/items.$id'
 import { Route as HashtagsTagRouteImport } from './routes/hashtags.$tag'
 import { Route as BrandsSlugRouteImport } from './routes/brands.$slug'
+import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
@@ -69,6 +70,11 @@ const BrandsSlugRoute = BrandsSlugRouteImport.update({
   path: '/brands/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth_/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/messages': typeof AuthenticatedMessagesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
   '/items/$id': typeof ItemsIdRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/messages': typeof AuthenticatedMessagesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
   '/items/$id': typeof ItemsIdRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/auth_/callback': typeof AuthCallbackRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
   '/items/$id': typeof ItemsIdRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/notifications'
     | '/profile'
+    | '/auth/callback'
     | '/brands/$slug'
     | '/hashtags/$tag'
     | '/items/$id'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/notifications'
     | '/profile'
+    | '/auth/callback'
     | '/brands/$slug'
     | '/hashtags/$tag'
     | '/items/$id'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/_authenticated/messages'
     | '/_authenticated/notifications'
     | '/_authenticated/profile'
+    | '/auth_/callback'
     | '/brands/$slug'
     | '/hashtags/$tag'
     | '/items/$id'
@@ -208,6 +220,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   AwardsRoute: typeof AwardsRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   BrandsSlugRoute: typeof BrandsSlugRoute
   HashtagsTagRoute: typeof HashtagsTagRoute
   ItemsIdRoute: typeof ItemsIdRoute
@@ -278,6 +291,13 @@ declare module '@tanstack/react-router' {
       path: '/brands/$slug'
       fullPath: '/brands/$slug'
       preLoaderRoute: typeof BrandsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/callback': {
+      id: '/auth_/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/profile': {
@@ -351,6 +371,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   AwardsRoute: AwardsRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   BrandsSlugRoute: BrandsSlugRoute,
   HashtagsTagRoute: HashtagsTagRoute,
   ItemsIdRoute: ItemsIdRoute,
