@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { SubmitDialog } from "@/components/SubmitDialog";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Bell, MessageCircle, Shield } from "lucide-react";
-import sotLogo from "@/assets/sot-logo.png.asset.json";
 import { SotWordmark } from "@/components/SotWordmark";
 
 export function Header({ onPosted }: { onPosted?: () => void }) {
@@ -20,15 +19,16 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
   const unreadNotifs = useUnreadNotifications(user?.id);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
+    <header suppressHydrationWarning className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link to="/" className="group flex items-center gap-2">
-            <img
-              src={sotLogo.url}
-              alt="SOT — Stash Or Trash logo"
-              className="h-10 w-10 rounded-lg object-contain transition-transform group-hover:scale-110 group-hover:rotate-3"
-            />
+            <span
+              aria-label="SOT — Stash Or Trash logo"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foreground text-sm font-extrabold tracking-[-0.12em] text-background shadow-sm transition-transform group-hover:scale-110 group-hover:rotate-3"
+            >
+              <span className="text-stash">S</span><span>O</span><span className="text-trash">T</span>
+            </span>
             <span className="hidden sm:inline">
               <SotWordmark className="text-xl" />
             </span>
