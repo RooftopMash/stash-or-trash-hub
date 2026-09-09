@@ -51,8 +51,9 @@ export const LANGUAGES: { code: string; label: string }[] = [
   { code: "id", label: "Bahasa Indonesia" },
   { code: "ms", label: "Bahasa Melayu" },
   { code: "fil", label: "Filipino" },
-  { code: "zh", label: "中文" },
-  { code: "zh-TW", label: "繁體中文" },
+  { code: "zh", label: "简体中文" },
+  { code: "zh-CN", label: "简体中文（中国大陆）" },
+  { code: "zh-TW", label: "繁體中文（台灣）" },
   { code: "ja", label: "日本語" },
   { code: "ko", label: "한국어" },
   { code: "sw", label: "Kiswahili" },
@@ -81,6 +82,11 @@ for (const code of codes) {
   }
   resources[code] = { translation: merged as typeof en };
 }
+
+// Regional Chinese variants share the complete Simplified/Traditional UI bundles
+// while remaining separately selectable for future region-specific translations.
+resources["zh-CN"] = resources.zh ?? { translation: en };
+resources["zh-TW"] = resources["zh-TW"] ?? resources.zh ?? { translation: en };
 
 if (!i18n.isInitialized) {
   i18n

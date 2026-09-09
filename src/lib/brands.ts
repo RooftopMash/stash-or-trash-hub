@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { BUCKET, signImages } from "@/lib/stash";
+import { SOUTH_AFRICAN_SEED_BRANDS } from "@/lib/seed-brands";
 
 export type Brand = {
   id: string;
@@ -54,7 +55,9 @@ export async function fetchBrands(): Promise<Brand[]> {
     .order("trust_score", { ascending: false })
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return decorate(data ?? []);
+  const live = await decorate(data ?? []);
+  const names = new Set(live.map((brand) => brand.name.trim().toLowerCase()));
+  return [...live, ...SOUTH_AFRICAN_SEED_BRANDS.filter((brand) => !names.has(brand.name.trim().toLowerCase()))];
 }
 
 /**
@@ -74,8 +77,12 @@ export async function fetchLocalBrands(
       .limit(limit);
     if (error) throw error;
     if (data && data.length > 0) {
-      return { brands: await decorate(data), localized: true };
+      const live = await decorate(data);
+      const names = new Set(live.map((brand) => brand.name.trim().toLowerCase()));
+      const seeds = country === "ZA" ? SOUTH_AFRICAN_SEED_BRANDS.filter((brand) => !names.has(brand.name.trim().toLowerCase())).slice(0, Math.max(0, limit - live.length)) : [];
+      return { brands: [...live, ...seeds].slice(0, limit), localized: true };
     }
+    if (country === "ZA") return { brands: SOUTH_AFRICAN_SEED_BRANDS.slice(0, limit), localized: true };
   }
   const { data, error } = await supabase
     .from("brands")
@@ -99,7 +106,7 @@ export async function fetchMyBrands(ownerId: string): Promise<Brand[]> {
 export async function fetchBrandBySlug(slug: string): Promise<Brand | null> {
   const { data, error } = await supabase.from("brands").select("*").eq("slug", slug).maybeSingle();
   if (error) throw error;
-  if (!data) return null;
+  if (!data) return SOUTH_AFRICAN_SEED_BRANDS.find((brand) => brand.slug === slug) ?? null;
   return (await decorate([data]))[0] ?? null;
 }
 
@@ -146,6 +153,7 @@ export async function createBrand(input: {
   description: string;
   website: string;
   category: string;
+  country?: string;
   logo: File | null;
 }): Promise<Brand> {
   let logoPath: string | null = null;
@@ -175,6 +183,7 @@ export async function createBrand(input: {
       description: input.description.trim() || null,
       website: input.website.trim() || null,
       category: input.category.trim() || null,
+      country: input.country?.trim().toUpperCase() || null,
       logo_url: logoPath,
     })
     .select("*")

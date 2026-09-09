@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { createBrand } from "@/lib/brands";
+import { BRAND_CATEGORIES } from "@/lib/categories";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ function NewBrandPage() {
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
   const [category, setCategory] = useState("");
+  const [country, setCountry] = useState("ZA");
   const [logo, setLogo] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -39,6 +41,7 @@ function NewBrandPage() {
         description,
         website,
         category,
+        country,
         logo,
       });
       toast.success("Brand created!");
@@ -65,13 +68,15 @@ function NewBrandPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="cat">Category</Label>
-            <Input
-              id="cat"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="Fashion, tech, food…"
-              maxLength={40}
-            />
+            <select id="cat" value={category} onChange={(e) => setCategory(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="">Select the closest category</option>
+              {BRAND_CATEGORIES.filter((item) => item !== "All categories").map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="country">Country</Label>
+            <Input id="country" value={country} onChange={(e) => setCountry(e.target.value.toUpperCase().slice(0, 2))} placeholder="ZA" maxLength={2} />
+            <p className="text-xs text-muted-foreground">Use the ISO country code where the brand operates or is headquartered.</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="web">Website</Label>
