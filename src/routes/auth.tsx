@@ -49,7 +49,7 @@ function AuthPage() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: { display_name: displayName || email.split("@")[0] },
       },
     });
@@ -67,13 +67,13 @@ function AuthPage() {
       if (provider === "linkedin" || provider === "twitter") {
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
-          options: { redirectTo: `${window.location.origin}/auth` },
+          options: { redirectTo: `${window.location.origin}/auth/callback` },
         });
         if (error) throw new Error(error.message);
         return;
       }
       const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: `${window.location.origin}/auth`,
+        redirect_uri: `${window.location.origin}/auth/callback`,
       });
       if (result.error) throw new Error(result.error.message ?? t("auth.socialFailed"));
       if (result.redirected) return;

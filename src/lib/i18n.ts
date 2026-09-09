@@ -82,6 +82,15 @@ for (const code of codes) {
 // while remaining separately selectable for future region-specific translations.
 resources["zh-CN"] = resources.zh ?? { translation: en };
 resources["zh-TW"] = resources["zh-TW"] ?? resources.zh ?? { translation: en };
+resources.nso = {
+  translation: {
+    ...en,
+    nav: { ...en.nav, feed: "Phepo", brands: "Dibraende", signIn: "Tsena" },
+    home: { ...en.home, subtitle: "Sekala sa Dibraende. Abelana maikutlo a gago ka braende gomme setšhaba se nee kahlolo ya sona ka nako ya nnete." },
+    auth: { ...en.auth, signIn: "Tsena", signUp: "Ngwadiša", email: "Imeile", password: "Phasewete", continueGoogle: "Tšwela pele ka Google" },
+    brand: { ...en.brand, title: "Dibraende", create: "Hlama braende", verified: "Netefaditšwe", noBrands: "Ga go na dibraende. Eba wa mathomo go tsenya e tee." },
+  } as typeof en,
+};
 
 if (!i18n.isInitialized) {
   i18n
