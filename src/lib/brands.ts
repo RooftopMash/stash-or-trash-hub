@@ -42,7 +42,9 @@ async function decorate(rows: any[]): Promise<Brand[]> {
   return rows.map((b) => ({
     ...b,
     signedLogoUrl: b.logo_url
-      ? (/^https?:\/\//i.test(b.logo_url) ? b.logo_url : (signed.get(b.logo_url) ?? null))
+      ? /^https?:\/\//i.test(b.logo_url)
+        ? b.logo_url
+        : (signed.get(b.logo_url) ?? null)
       : null,
     ownerName: nameById.get(b.owner_id) ?? null,
   }));
@@ -57,7 +59,10 @@ export async function fetchBrands(): Promise<Brand[]> {
   if (error) throw error;
   const live = await decorate(data ?? []);
   const names = new Set(live.map((brand) => brand.name.trim().toLowerCase()));
-  return [...live, ...SOUTH_AFRICAN_SEED_BRANDS.filter((brand) => !names.has(brand.name.trim().toLowerCase()))];
+  return [
+    ...live,
+    ...SOUTH_AFRICAN_SEED_BRANDS.filter((brand) => !names.has(brand.name.trim().toLowerCase())),
+  ];
 }
 
 /**
@@ -79,10 +84,16 @@ export async function fetchLocalBrands(
     if (data && data.length > 0) {
       const live = await decorate(data);
       const names = new Set(live.map((brand) => brand.name.trim().toLowerCase()));
-      const seeds = country === "ZA" ? SOUTH_AFRICAN_SEED_BRANDS.filter((brand) => !names.has(brand.name.trim().toLowerCase())).slice(0, Math.max(0, limit - live.length)) : [];
+      const seeds =
+        country === "ZA"
+          ? SOUTH_AFRICAN_SEED_BRANDS.filter(
+              (brand) => !names.has(brand.name.trim().toLowerCase()),
+            ).slice(0, Math.max(0, limit - live.length))
+          : [];
       return { brands: [...live, ...seeds].slice(0, limit), localized: true };
     }
-    if (country === "ZA") return { brands: SOUTH_AFRICAN_SEED_BRANDS.slice(0, limit), localized: true };
+    if (country === "ZA")
+      return { brands: SOUTH_AFRICAN_SEED_BRANDS.slice(0, limit), localized: true };
   }
   const { data, error } = await supabase
     .from("brands")
@@ -110,7 +121,6 @@ export async function fetchBrandBySlug(slug: string): Promise<Brand | null> {
   return (await decorate([data]))[0] ?? null;
 }
 
-
 /** Strip SQL LIKE wildcards so a user's query matches literally. */
 function sanitizeQuery(q: string): string {
   return q.replace(/[%_]/g, "").trim();
@@ -125,13 +135,19 @@ export async function searchBrands(query: string, limit = 8): Promise<Brand[]> {
   if (!q) return [];
 
   const { data: byName, error: nameErr } = await supabase
-    .from("brands").select("*").ilike("name", `%${q}%`)
-    .order("trust_score", { ascending: false }).limit(limit);
+    .from("brands")
+    .select("*")
+    .ilike("name", `%${q}%`)
+    .order("trust_score", { ascending: false })
+    .limit(limit);
   if (nameErr) throw nameErr;
 
   const { data: bySlug, error: slugErr } = await supabase
-    .from("brands").select("*").ilike("slug", `%${q}%`)
-    .order("trust_score", { ascending: false }).limit(limit);
+    .from("brands")
+    .select("*")
+    .ilike("slug", `%${q}%`)
+    .order("trust_score", { ascending: false })
+    .limit(limit);
   if (slugErr) throw slugErr;
 
   const seen = new Map<string, any>();
@@ -169,7 +185,11 @@ export async function createBrand(input: {
   const base = slugify(input.name) || "brand";
   let slug = base;
   for (let i = 0; i < 5; i++) {
-    const { data: existing } = await supabase.from("brands").select("id").eq("slug", slug).maybeSingle();
+    const { data: existing } = await supabase
+      .from("brands")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
     if (!existing) break;
     slug = `${base}-${Math.floor(Math.random() * 10000)}`;
   }
@@ -183,7 +203,6 @@ export async function createBrand(input: {
       description: input.description.trim() || null,
       website: input.website.trim() || null,
       category: input.category.trim() || null,
-      country: input.country?.trim().toUpperCase() || null,
       logo_url: logoPath,
     })
     .select("*")
@@ -201,7 +220,9 @@ export type VerificationRequest = {
   created_at: string;
 };
 
-export async function fetchMyVerificationRequest(brandId: string): Promise<VerificationRequest | null> {
+export async function fetchMyVerificationRequest(
+  brandId: string,
+): Promise<VerificationRequest | null> {
   const { data, error } = await supabase
     .from("brand_verification_requests")
     .select("*")
@@ -241,7 +262,10 @@ export async function fetchPendingVerifications(): Promise<PendingVerification[]
   const rows = data ?? [];
   if (!rows.length) return [];
   const brandIds = [...new Set(rows.map((r) => r.brand_id))];
-  const { data: brands } = await supabase.from("brands").select("id, name, slug").in("id", brandIds);
+  const { data: brands } = await supabase
+    .from("brands")
+    .select("id, name, slug")
+    .in("id", brandIds);
   const byId = new Map((brands ?? []).map((b) => [b.id, b]));
   return rows.map((r) => ({
     ...r,
@@ -265,7 +289,10 @@ export async function reviewVerification(input: {
     .eq("id", input.requestId);
   if (error) throw error;
   if (input.approve) {
-    const { error: bErr } = await supabase.from("brands").update({ verified: true }).eq("id", input.brandId);
+    const { error: bErr } = await supabase
+      .from("brands")
+      .update({ verified: true })
+      .eq("id", input.brandId);
     if (bErr) throw bErr;
   }
 }
@@ -320,31 +347,22 @@ export async function fetchBrandVerdict(
   ]);
   if (error) throw error;
   const row = (Array.isArray(data) ? data[0] : data) as
-    | { stash: number; trash: number; total: number; stash_pct: number }
-    | undefined;
+    { stash: number; trash: number; total: number; stash_pct: number } | undefined;
   return {
     stash: row?.stash ?? 0,
     trash: row?.trash ?? 0,
     total: row?.total ?? 0,
     stash_pct: row?.stash_pct ?? 50,
-    myVerdict: ((mine as { data?: { verdict: string } | null })?.data?.verdict as
-      | "stash"
-      | "trash"
-      | undefined) ?? null,
+    myVerdict:
+      ((mine as { data?: { verdict: string } | null })?.data?.verdict as
+        "stash" | "trash" | undefined) ?? null,
   };
 }
 
-export async function castBrandVote(
-  brandId: string,
-  userId: string,
-  verdict: "stash" | "trash",
-) {
+export async function castBrandVote(brandId: string, userId: string, verdict: "stash" | "trash") {
   const { error } = await supabase
     .from("brand_votes")
-    .upsert(
-      { brand_id: brandId, user_id: userId, verdict },
-      { onConflict: "brand_id,user_id" },
-    );
+    .upsert({ brand_id: brandId, user_id: userId, verdict }, { onConflict: "brand_id,user_id" });
   if (error) throw error;
 }
 

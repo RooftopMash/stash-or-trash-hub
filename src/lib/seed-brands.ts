@@ -65,22 +65,27 @@ const entries = [
 ] as const;
 
 function slugifySeed(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
-export const SOUTH_AFRICAN_SEED_BRANDS: Brand[] = entries.map(([name, descriptor, category], index) => ({
-  id: `seed-za-${index + 1}`,
-  owner_id: "seed-catalog",
-  name,
-  slug: `${slugifySeed(name)}-za`,
-  description: `${descriptor} brand catalogued for South Africa. Community verification is still open.`,
-  logo_url: null,
-  website: null,
-  category,
-  country: "ZA",
-  verified: false,
-  trust_score: 0,
-  created_at: "2026-09-09T00:00:00.000Z",
-  signedLogoUrl: null,
-  ownerName: "SOT catalog",
-}));
+export const SOUTH_AFRICAN_SEED_BRANDS: Brand[] = entries.map(
+  ([name, descriptor, category], index) => ({
+    id: `seed-za-${index + 1}`,
+    owner_id: "seed-catalog",
+    name,
+    slug: `${slugifySeed(name)}-za`,
+    description: `${descriptor} brand catalogued for South Africa. Community verification is still open.`,
+    logo_url: null,
+    website: null,
+    category,
+    country: "ZA",
+    verified: false,
+    trust_score: 0,
+    created_at: "2026-09-09T00:00:00.000Z",
+    signedLogoUrl: null,
+    ownerName: "SOT catalog",
+  }),
+);
