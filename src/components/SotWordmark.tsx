@@ -19,7 +19,7 @@ export function SotWordmark({
       aria-label="Stash Or Trash"
       className={cn("font-display font-extrabold tracking-tight text-foreground", sizeClass, className)}
     >
-      Stash Or Trash
+      <span className="text-stash">S</span><span>tash </span><span className="text-foreground">O</span><span>r </span><span className="text-trash">T</span><span>rash</span>
     </span>
   );
 }
