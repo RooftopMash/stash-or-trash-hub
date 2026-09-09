@@ -58,6 +58,7 @@ export const LANGUAGES: { code: string; label: string; native?: string; directio
   { code: "yo", label: "Yorùbá" },
   { code: "ig", label: "Igbo" },
   { code: "nso", label: "Sepedi" },
+  { code: "ts", label: "itsonga" },
   { code: "sk", label: "Slovenčina" },
 ];
 
