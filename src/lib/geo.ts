@@ -105,7 +105,7 @@ export const WORLD_COUNTRY_CODES = `AF AX AL DZ AS AD AO AI AQ AG AR AM AW AU AT
 export function countryOptions(values: Array<string | null | undefined>): string[] {
   const supplied = values.map(normalizeCountryCode).filter((value): value is string => Boolean(value));
   return Array.from(new Set([...WORLD_COUNTRY_CODES, ...supplied]))
-    .sort((a, b) => countryName(a).localeCompare(countryName(b)));
+    .sort((a, b) => a.localeCompare(b));
 }
 
 export function countryFlag(code: string | null): string {

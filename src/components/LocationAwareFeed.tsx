@@ -52,7 +52,7 @@ export function LocationAwareFeed({ selectedCountry, onCountryChange, availableC
       </div>
       <label className="sr-only" htmlFor="feed-country">Choose country</label>
       <select id="feed-country" value={selectedCountry} onChange={(event) => { setState("manual"); onCountryChange(event.target.value); }} className={cn("h-9 rounded-lg border border-border bg-card px-3 text-sm font-medium outline-none", "sm:w-44")}>
-        {availableCountries.map((code) => <option key={code} value={code}>{countryLabel(code)}</option>)}
+        {availableCountries.map((code) => <option key={code} value={code} suppressHydrationWarning>{countryLabel(code)}</option>)}
       </select>
     </div>
   );
