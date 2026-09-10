@@ -102,6 +102,7 @@ if (!i18n.isInitialized) {
       supportedLngs: LANGUAGES.map((l) => l.code),
       nonExplicitSupportedLngs: true,
       interpolation: { escapeValue: false },
+      initImmediate: false,
       detection: {
         order: ["localStorage", "navigator"],
         caches: ["localStorage"],
