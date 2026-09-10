@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SecureConnectionsPanel } from "@/components/SecureConnectionsPanel";
 import { BrandAICopilot } from "@/components/BrandAICopilot";
+import { ContentSafetyGate } from "@/components/ContentSafetyGate";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   beforeLoad: async () => {
@@ -105,6 +106,7 @@ function DashboardPage() {
 
         {user && <SecureConnectionsPanel userId={user.id} />}
         <BrandAICopilot />
+        <ContentSafetyGate />
 
         {isLoading ? (
           <div className="mt-8 space-y-4">
