@@ -2,11 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import { ArrowLeft, ShieldCheck, LockKeyhole, Eye, Send } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { ItemCard } from "@/components/ItemCard";
-import { SubmitDialog } from "@/components/SubmitDialog";
+import { ProfileWall } from "@/components/ProfileWall";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
@@ -142,26 +142,7 @@ function PublicProfilePage() {
           </div>
         )}
 
-        {profile && (
-          <>
-            <section className="mt-5 rounded-2xl border border-stash/25 bg-stash/5 p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-stash">Public wall</p>
-                  <h2 className="mt-1 font-display text-xl font-extrabold">Experiences, ideas and inventions</h2>
-                  <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">A direct channel to brands. Every post is time-stamped, visible to the public, and available for CX and reputation analysis.</p>
-                  <p className="mt-2 text-xs font-semibold text-foreground/70">Evidence-led, transparent, and independently reviewable — built to earn Moody&apos;s-level trust without gatekeepers.</p>
-                </div>
-                {user?.id === id && <SubmitDialog onPosted={() => refetch()} />}
-              </div>
-              <div className="mt-4 grid gap-3 border-t border-stash/15 pt-4 text-xs text-muted-foreground sm:grid-cols-3">
-                <span className="flex items-center gap-2"><Eye className="h-4 w-4 text-stash" /> Public accountability</span>
-                <span className="flex items-center gap-2"><Send className="h-4 w-4 text-trash" /> Direct to brands</span>
-                <span className="flex items-center gap-2"><LockKeyhole className="h-4 w-4 text-foreground" /> Secure data trail</span>
-              </div>
-            </section>
-          </>
-        )}
+        {profile && <ProfileWall profileId={id} isOwner={user?.id === id} />}
 
         {profile && (
           <>
