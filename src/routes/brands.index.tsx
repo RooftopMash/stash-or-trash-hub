@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BadgeCheck, Plus, Search, TrendingUp } from "lucide-react";
 import { brandCategory, categoryClass, categoryOptions, matchesCategory } from "@/lib/categories";
-import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
+import { countryLabel, countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/brands/")({
@@ -79,9 +79,9 @@ function BrandsPage() {
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="font-display text-sm font-bold">Explore by category</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {filteredBrands.length} brands in your current view
-                </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {filteredBrands.length} brands in {countryLabel(selectedCountry)} · target 100 verified brands per country
+                  </p>
               </div>
               <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-border bg-background px-3 md:max-w-sm">
                 <Search className="h-4 w-4 text-muted-foreground" />
@@ -109,7 +109,7 @@ function BrandsPage() {
               >
                 {countries.map((code) => (
                   <option key={code} value={code}>
-                    {countryName(code)}
+                    {countryLabel(code)}
                   </option>
                 ))}
               </select>

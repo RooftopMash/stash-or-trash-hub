@@ -16,7 +16,7 @@ import { fetchFeed } from "@/lib/stash";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, BarChart3, BriefcaseBusiness, Recycle, Search, Users } from "lucide-react";
 import { brandCategory, categoryOptions, matchesCategory } from "@/lib/categories";
-import { countryOptions, normalizeCountryCode } from "@/lib/geo";
+import { countryLabel, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 import coinsWatermark from "@/assets/watermark-coins.png";
 import binsWatermark from "@/assets/watermark-bins.png";

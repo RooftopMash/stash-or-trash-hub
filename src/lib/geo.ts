@@ -98,9 +98,29 @@ export function normalizeCountryCode(value: string | null | undefined): string |
   return byName ?? null;
 }
 
+// ISO 3166-1 alpha-2 coverage for the complete country selector. Keeping the
+// registry here means markets with no imported brands are still discoverable.
+export const WORLD_COUNTRY_CODES = `AF AX AL DZ AS AD AO AI AQ AG AR AM AW AU AT AZ BS BH BD BB BY BE BZ BJ BM BT BO BQ BA BW BV BR IO BN BG BF BI CV KH CM CA KY CF TD CL CN CX CC CO KM CG CD CK CR CI HR CU CW CY CZ DK DJ DM DO EC EG SV GQ ER EE SZ ET FK FO FJ FI FR GF PF TF GA GM GE DE GH GI GR GL GD GP GU GT GG GN GW GY HT HM VA HN HK HU IS IN ID IR IQ IE IM IL IT JM JP JE JO KZ KE KI KP KR KW KG LA LV LB LS LR LY LI LT LU MO MG MW MY MV ML MT MH MQ MR MU YT MX FM MD MC MN ME MS MA MZ MM NA NR NP NL NC NZ NI NE NG NU NF MK MP NO OM PK PW PS PA PG PY PE PH PN PL PT PR QA RE RO RU RW BL SH KN LC MF PM VC WS SM ST SA SN RS SC SL SG SX SK SI SB SO ZA GS SS ES LK SD SR SJ SE CH SY TW TJ TZ TH TL TG TK TO TT TN TR TM TC TV UG UA AE GB US UM UY UZ VU VE VN VG VI WF EH YE ZM ZW`.split(" ");
+
 export function countryOptions(values: Array<string | null | undefined>): string[] {
-  return Array.from(new Set(values.map(normalizeCountryCode).filter((value): value is string => Boolean(value))))
+  const supplied = values.map(normalizeCountryCode).filter((value): value is string => Boolean(value));
+  return Array.from(new Set([...WORLD_COUNTRY_CODES, ...supplied]))
     .sort((a, b) => countryName(a).localeCompare(countryName(b)));
+}
+
+export function countryFlag(code: string | null): string {
+  const normalized = normalizeCountryCode(code);
+  if (!normalized) return "";
+  return normalized
+    .split("")
+    .map((letter) => String.fromCodePoint(127397 + letter.charCodeAt(0)))
+    .join("");
+}
+
+export function countryLabel(code: string | null, locale?: string): string {
+  const normalized = normalizeCountryCode(code);
+  if (!normalized) return "";
+  return `${countryFlag(normalized)} ${countryName(normalized, locale)}`;
 }
 
 export function countryName(code: string | null, locale?: string): string {

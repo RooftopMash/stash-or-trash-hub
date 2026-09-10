@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { LocateFixed, MapPin, ShieldCheck } from "lucide-react";
-import { countryName, detectCountry, normalizeCountryCode } from "@/lib/geo";
+import { countryLabel, detectCountry, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
 type LocationAwareFeedProps = {
@@ -43,7 +43,7 @@ export function LocationAwareFeed({ selectedCountry, onCountryChange, availableC
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {state === "gps" ? <LocateFixed className="h-4 w-4 shrink-0 text-stash" /> : <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />}
         <div className="min-w-0">
-          <p className="truncate text-xs font-semibold">Local feed: {countryName(selectedCountry)}</p>
+          <p className="truncate text-xs font-semibold">Local feed: {countryLabel(selectedCountry)}</p>
           <p className="text-[11px] text-muted-foreground">
             {state === "gps" ? "Location permission granted; coordinates are not stored." : state === "detecting" ? "Checking your location preference…" : "Using your profile, locale, or timezone country."}
           </p>
@@ -52,7 +52,7 @@ export function LocationAwareFeed({ selectedCountry, onCountryChange, availableC
       </div>
       <label className="sr-only" htmlFor="feed-country">Choose country</label>
       <select id="feed-country" value={selectedCountry} onChange={(event) => { setState("manual"); onCountryChange(event.target.value); }} className={cn("h-9 rounded-lg border border-border bg-card px-3 text-sm font-medium outline-none", "sm:w-44")}>
-        {availableCountries.map((code) => <option key={code} value={code}>{countryName(code)}</option>)}
+        {availableCountries.map((code) => <option key={code} value={code}>{countryLabel(code)}</option>)}
       </select>
     </div>
   );

@@ -77,17 +77,33 @@ function buildQuery(cls: string, qid: string, path: "P17" | "P159/wdt:P17", limi
   `;
 }
 
-async function runQuery(query: string): Promise<any[]> {
+async function runQuery(query: string, attempts = 3): Promise<any[]> {
   const url = `${SPARQL_ENDPOINT}?origin=*&format=json&query=${encodeURIComponent(query)}`;
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/sparql-results+json",
-      "Api-User-Agent": "StashOrTrashHub/1.0 (https://stash-or-trash-hub.lovable.app; contact@stash-or-trash-hub.lovable.app)",
-    },
-  });
-  if (!res.ok) throw new Error(`Wikidata returned ${res.status}`);
-  const json = (await res.json()) as { results?: { bindings?: any[] } };
-  return json.results?.bindings ?? [];
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Accept: "application/sparql-results+json",
+          "Api-User-Agent": "StashOrTrashHub/1.0 (https://stash-or-trash-hub.lovable.app; contact@stash-or-trash-hub.lovable.app)",
+        },
+      });
+      if (!res.ok) throw new Error(`Wikidata returned ${res.status}`);
+      const json = (await res.json()) as { results?: { bindings?: any[] } };
+      return json.results?.bindings ?? [];
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Wikidata request failed");
+}
+
+async function resolveCountryQid(countryCode: string): Promise<string | null> {
+  const known = ISO_TO_QID[countryCode];
+  if (known) return known;
+  const bindings = await runQuery(`SELECT ?country WHERE { ?country wdt:P297 "${countryCode}". } LIMIT 1`);
+  return bindings[0]?.country?.value?.split("/").pop() ?? null;
 }
 
 export async function importBrandsFromWikidata(input: {
@@ -96,8 +112,8 @@ export async function importBrandsFromWikidata(input: {
 }): Promise<WikidataImportResult> {
   const countryCode = input.countryCode.toUpperCase();
   const limit = Math.max(1, Math.min(200, input.limit));
-  const qid = ISO_TO_QID[countryCode];
-  if (!qid) throw new Error(`Country ${countryCode} is not supported yet.`);
+  const qid = await resolveCountryQid(countryCode);
+  if (!qid) throw new Error(`Country ${countryCode} could not be resolved by ISO code.`);
 
   const queries: string[] = [];
   for (const cls of BRAND_CLASSES) {
