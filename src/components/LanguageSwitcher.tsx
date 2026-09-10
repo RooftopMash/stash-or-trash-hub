@@ -20,8 +20,8 @@ export function LanguageSwitcher() {
     return LANGUAGES.filter((language) => `${language.label} ${language.native ?? ""} ${language.code}`.toLowerCase().includes(normalized));
   }, [query]);
 
-  const change = (code: string) => {
-    void i18n.changeLanguage(code);
+  const change = async (code: string) => {
+    await i18n.changeLanguage(code);
     if (typeof window !== "undefined") window.localStorage.setItem("sot-lang", code);
     if (typeof document !== "undefined") {
       document.documentElement.lang = code;
