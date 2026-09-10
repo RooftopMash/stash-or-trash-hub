@@ -108,6 +108,21 @@ export function countryOptions(values: Array<string | null | undefined>): string
     .sort((a, b) => countryName(a).localeCompare(countryName(b)));
 }
 
+export function countryFlag(code: string | null): string {
+  const normalized = normalizeCountryCode(code);
+  if (!normalized) return "";
+  return normalized
+    .split("")
+    .map((letter) => String.fromCodePoint(127397 + letter.charCodeAt(0)))
+    .join("");
+}
+
+export function countryLabel(code: string | null, locale?: string): string {
+  const normalized = normalizeCountryCode(code);
+  if (!normalized) return "";
+  return `${countryFlag(normalized)} ${countryName(normalized, locale)}`;
+}
+
 export function countryName(code: string | null, locale?: string): string {
   if (!code) return "";
   try {
