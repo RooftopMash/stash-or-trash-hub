@@ -22,6 +22,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BadgeCheck, ChevronDown, MessageSquare, Plus, Search, SlidersHorizontal, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { SecureConnectionsPanel } from "@/components/SecureConnectionsPanel";
+import { BrandAICopilot } from "@/components/BrandAICopilot";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   beforeLoad: async () => {
@@ -100,6 +102,9 @@ function DashboardPage() {
             <Plus className="h-4 w-4" /> {t("dashboard.newBrand")}
           </Button>
         </div>
+
+        {user && <SecureConnectionsPanel userId={user.id} />}
+        <BrandAICopilot />
 
         {isLoading ? (
           <div className="mt-8 space-y-4">
