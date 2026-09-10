@@ -108,7 +108,7 @@ function BrandsPage() {
                 className="h-9 rounded-lg border border-border bg-background px-3 text-sm font-medium outline-none"
               >
                 {countries.map((code) => (
-                  <option key={code} value={code}>
+                  <option key={code} value={code} suppressHydrationWarning>
                     {countryLabel(code)}
                   </option>
                 ))}
