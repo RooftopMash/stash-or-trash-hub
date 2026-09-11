@@ -1,11 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Lightbulb, LockKeyhole, Send } from "lucide-react";
+import { Eye, Lightbulb, LockKeyhole, Send, Flag } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { createProfileWallPost, fetchProfileWallPosts, type WallPostType } from "@/lib/profile-wall";
+import { reportUGC } from "@/components/ReleaseSafetyControls";
 
 const types: Array<{ value: WallPostType; label: string }> = [
   { value: "experience", label: "Experience" },
@@ -60,7 +61,7 @@ export function ProfileWall({ profileId, isOwner }: { profileId: string; isOwner
         </div>
       </div>
       <div className="divide-y divide-border">
-        {query.isLoading ? <p className="p-5 text-sm text-muted-foreground">Loading wall...</p> : query.data?.length ? query.data.map((post) => <article key={post.id} className="p-5"><div className="flex items-center justify-between gap-3"><span className="text-xs font-extrabold uppercase tracking-wider text-stash">{post.post_type}</span><time className="text-xs text-muted-foreground" dateTime={post.created_at}>{post.created_at.slice(0, 10)}</time></div><p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-foreground">{post.body}</p></article>) : <p className="p-5 text-sm text-muted-foreground">No public posts yet. This wall is ready for the first experience or idea.</p>}
+        {query.isLoading ? <p className="p-5 text-sm text-muted-foreground">Loading wall...</p> : query.data?.length ? query.data.map((post) => <article key={post.id} className="p-5"><div className="flex items-center justify-between gap-3"><span className="text-xs font-extrabold uppercase tracking-wider text-stash">{post.post_type}</span><time className="text-xs text-muted-foreground" dateTime={post.created_at}>{post.created_at.slice(0, 10)}</time></div><p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-foreground">{post.body}</p><div className="mt-3 flex justify-end"><Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={async () => { if (!user) return; const result = await reportUGC(user.id, "wall_post", post.id, "community report"); if (result.error) toast.error("Could not submit report"); else toast.success("Report submitted for review"); }}><Flag className="mr-1.5 h-3.5 w-3.5" /> Report</Button></div></article>) : <p className="p-5 text-sm text-muted-foreground">No public posts yet. This wall is ready for the first experience or idea.</p>}
       </div>
     </section>
   );
