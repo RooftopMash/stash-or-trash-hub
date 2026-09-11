@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ShieldCheck, ExternalLink, ThumbsUp, ThumbsDown, FileText, UserPlus, Users } from "lucide-react";
 import { SocialConnectionsPanel } from "@/components/SocialConnectionsPanel";
 import { ProfileWall } from "@/components/ProfileWall";
+import { ReleaseSafetyControls } from "@/components/ReleaseSafetyControls";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -83,6 +84,7 @@ function ProfilePage() {
         <SocialConnectionsPanel userId={user.id} />
 
         <ProfileWall profileId={user.id} isOwner />
+        <ReleaseSafetyControls userId={user.id} />
 
         <h2 className="mb-3 mt-8 font-display text-lg font-bold">{t("profile.activity")}</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">

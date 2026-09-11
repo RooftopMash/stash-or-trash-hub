@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Download, Check, X, Globe, Copy } from "lucide-react";
+import { AdminAppealsQueue } from "@/components/AdminAppealsQueue";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
@@ -161,6 +162,7 @@ function AdminPage() {
               <TabsTrigger value="verifications">
                 Verifications{verifications?.length ? ` (${verifications.length})` : ""}
               </TabsTrigger>
+              <TabsTrigger value="appeals">Appeals</TabsTrigger>
             </TabsList>
 
             <TabsContent value="importer" className="mt-6 space-y-4">
@@ -258,6 +260,13 @@ function AdminPage() {
                   <Button size="sm" variant="outline" onClick={() => rejectCandidate(c.id)} className="gap-1"><X className="h-4 w-4" />Reject</Button>
                 </div>
               ))}
+            </TabsContent>
+
+            <TabsContent value="appeals" className="mt-6">
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <h2 className="mb-4 font-display text-lg font-bold">Human content appeals</h2>
+                <AdminAppealsQueue />
+              </div>
             </TabsContent>
 
             <TabsContent value="verifications" className="mt-6 space-y-3">

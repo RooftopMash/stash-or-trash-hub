@@ -14,6 +14,8 @@ import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/hooks/useAuth";
+import { OfflineStatus } from "@/components/OfflineStatus";
+import { ProductionMonitoring } from "@/components/ProductionMonitoring";
 import "@/lib/i18n";
 
 function NotFoundComponent() {
@@ -142,6 +144,8 @@ function RootComponent() {
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
         <Toaster position="top-center" richColors />
+        <OfflineStatus />
+        <ProductionMonitoring />
       </AuthProvider>
     </QueryClientProvider>
   );
