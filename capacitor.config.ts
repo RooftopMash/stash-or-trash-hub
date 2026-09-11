@@ -7,6 +7,8 @@ const config: CapacitorConfig = {
   bundledWebRuntime: false,
   server: {
     androidScheme: "https",
+    url: process.env.CAPACITOR_SERVER_URL,
+    cleartext: false,
   },
 };
 

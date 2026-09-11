@@ -1,16 +1,22 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { CloudOff } from "lucide-react";
 
 export function OfflineStatus() {
   const [offline, setOffline] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const update = () => setOffline(!navigator.onLine);
     update();
-    window.addEventListener("online", update);
+    const handleOnline = () => {
+      update();
+      void queryClient.refetchQueries({ type: "active" });
+    };
+    window.addEventListener("online", handleOnline);
     window.addEventListener("offline", update);
     return () => {
-      window.removeEventListener("online", update);
+      window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", update);
     };
   }, []);
