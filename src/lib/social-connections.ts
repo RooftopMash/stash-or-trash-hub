@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { OAUTH_PROVIDERS, getOAuthCallbackUrl, assertOAuthState, type OAuthProvider } from "@/lib/oauth-contracts";
 
 export type SocialProvider = "facebook" | "linkedin" | "youtube";
 
@@ -27,6 +28,15 @@ export async function prepareSocialConnection(userId: string, provider: SocialPr
     { onConflict: "user_id,provider" },
   );
   if (error) throw error;
+}
+
+export function getProviderCallbackConfig(provider: OAuthProvider, origin: string) {
+  const config = OAUTH_PROVIDERS[provider];
+  return { provider, label: config.label, scopes: [...config.scopes], callbackUrl: getOAuthCallbackUrl(provider, origin), credentialKeys: [...config.credentialKeys] };
+}
+
+export function validateProviderCallbackState(expectedState: string | null, receivedState: string | null) {
+  assertOAuthState(expectedState, receivedState);
 }
 
 export async function disconnectSocialConnection(userId: string, provider: SocialProvider) {
