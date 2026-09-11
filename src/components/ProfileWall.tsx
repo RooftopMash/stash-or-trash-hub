@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { createProfileWallPost, fetchProfileWallPosts, type WallPostType } from "@/lib/profile-wall";
 import { reportUGC } from "@/components/ReleaseSafetyControls";
+import { reviewBeforePublish } from "@/lib/publish-review-client";
 
 const types: Array<{ value: WallPostType; label: string }> = [
   { value: "experience", label: "Experience" },
@@ -28,6 +29,11 @@ export function ProfileWall({ profileId, isOwner }: { profileId: string; isOwner
     if (!user || !body.trim()) return;
     setSubmitting(true);
     try {
+      const review = await reviewBeforePublish({ assetType: "text", content: body.trim() });
+      if (review.error) throw new Error("Your post could not be reviewed. Please try again when the safety service is available.");
+      if (review.data.decision !== "approved") {
+        throw new Error(review.data.decision === "blocked" ? "This post cannot be published because it failed the safety review." : "This post needs human review before it can be published.");
+      }
       await createProfileWallPost({ authorId: user.id, body, postType });
       setBody("");
       await queryClient.invalidateQueries({ queryKey: ["profile-wall", profileId] });
