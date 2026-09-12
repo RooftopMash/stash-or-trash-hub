@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useRoles } from "@/hooks/useRoles";
+import { LiveCollaborationPanel } from "@/components/LiveCollaborationPanel";
 
 export const Route = createFileRoute("/_authenticated/messages")({
   validateSearch: (search: Record<string, unknown>): { to?: string } => ({
@@ -27,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/messages")({
 function MessagesPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { isBrand } = useRoles();
   const { to } = Route.useSearch();
   const [active, setActive] = useState<string | null>(to ?? null);
   const [body, setBody] = useState("");
@@ -90,6 +93,10 @@ function MessagesPage() {
     <div className="min-h-screen">
       <Header />
       <main className="mx-auto grid max-w-4xl gap-4 px-4 py-8 sm:grid-cols-[260px_1fr]">
+        <div className="sm:col-span-2 rounded-2xl border border-stash/20 bg-stash/5 px-4 py-3 text-sm">
+          <p className="font-semibold">{isBrand ? "Brand workspace" : "People workspace"}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{isBrand ? "Your brand identity, conversations, pitches, and collaboration tools stay separate from personal profiles." : "Your personal identity, conversations, and community work stay separate from brand workspaces."}</p>
+        </div>
         <aside className="rounded-2xl border border-border bg-card p-2">
           <h1 className="px-3 py-2 font-display text-lg font-bold">{t("messages.title")}</h1>
           {conversations.length === 0 ? (
@@ -128,6 +135,7 @@ function MessagesPage() {
               <div className="border-b border-border px-4 py-3 font-semibold">
                 {activeName ?? t("messages.to")}
               </div>
+              <LiveCollaborationPanel partnerName={activeName ?? "your collaborator"} isBrandWorkspace={isBrand} />
               <div className="flex-1 space-y-2 overflow-y-auto p-4">
                 {(thread ?? []).map((m) => (
                   <div
