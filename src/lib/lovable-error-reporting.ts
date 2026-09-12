@@ -43,4 +43,3 @@ export function reportLovableError(error: unknown, context: Record<string, unkno
 export function installSentryBridge(bridge: SentryBridge) {
   if (typeof window !== "undefined") window.__sentryBridge = bridge;
 }
-EOF
