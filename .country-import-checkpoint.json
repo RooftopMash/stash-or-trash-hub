@@ -29,8 +29,7 @@
   },
   "AI": {
     "code": "AI",
-    "inserted": 0,
-    "error": "duplicate key value violates unique constraint \"brand_import_candidates_source_key\""
+    "inserted": 40
   },
   "AQ": {
     "code": "AQ",
@@ -315,8 +314,7 @@
   },
   "PF": {
     "code": "PF",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 6
   },
   "TF": {
     "code": "TF",
@@ -364,8 +362,7 @@
   },
   "GU": {
     "code": "GU",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 12
   },
   "GT": {
     "code": "GT",
@@ -573,8 +570,7 @@
   },
   "YT": {
     "code": "YT",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 11
   },
   "MX": {
     "code": "MX",
@@ -666,8 +662,7 @@
   },
   "MP": {
     "code": "MP",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 1
   },
   "NO": {
     "code": "NO",
@@ -984,8 +979,7 @@
   },
   "WF": {
     "code": "WF",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 3
   },
   "EH": {
     "code": "EH",

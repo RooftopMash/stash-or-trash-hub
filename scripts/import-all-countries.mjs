@@ -54,7 +54,7 @@ async function importCountryUnbounded(code, country) {
     current.category ||= row.industryLabel?.value ?? null; current.description ||= row.desc?.value ?? null; current.website ||= row.website?.value ?? null; current.logo_url ||= row.logo?.value ?? null; entities.set(sourceId, current);
   }
   if (!entities.size) {
-    const fallback = `SELECT ?item ?itemLabel ?desc ?logo ?website ?sitelinks WHERE { ?item wdt:P17 wd:${country}; wikibase:sitelinks ?sitelinks . OPTIONAL { ?item wdt:P154 ?logo } OPTIONAL { ?item wdt:P856 ?website } OPTIONAL { ?item schema:description ?desc FILTER(LANG(?desc)="en") } SERVICE wikibase:label { bd:serviceParam wikibase:language "en" } } ORDER BY DESC(?sitelinks) LIMIT 50`;
+    const fallback = `SELECT DISTINCT ?item ?itemLabel ?desc ?logo ?website ?sitelinks WHERE { { ?item wdt:P17 wd:${country} } UNION { ?item wdt:P159/wdt:P17 wd:${country} } UNION { ?item wdt:P495 wd:${country} } ?item wikibase:sitelinks ?sitelinks . OPTIONAL { ?item wdt:P154 ?logo } OPTIONAL { ?item wdt:P856 ?website } OPTIONAL { ?item schema:description ?desc FILTER(LANG(?desc)="en") } SERVICE wikibase:label { bd:serviceParam wikibase:language "en" } } ORDER BY DESC(?sitelinks) LIMIT 50`;
     const fallbackRows = await queryWikidata(fallback).catch(() => []);
     for (const row of fallbackRows) {
       const sourceId = row.item?.value?.split("/").pop(); const name = row.itemLabel?.value;
@@ -65,8 +65,13 @@ async function importCountryUnbounded(code, country) {
   const rows = [...entities.values()].filter((row) => row.slug).slice(0, 100);
   if (!rows.length) return { code, inserted: 0, error: "no candidates" };
   const { data, error } = await supabase.from("brand_import_candidates").upsert(rows, { onConflict: "source,source_id", ignoreDuplicates: true }).select("id");
-  if (error) return { code, inserted: 0, error: error.message };
-  return { code, inserted: data?.length ?? 0 };
+  if (!error) return { code, inserted: data?.length ?? 0 };
+  let inserted = 0;
+  for (const row of rows) {
+    const result = await supabase.from("brand_import_candidates").upsert(row, { onConflict: "source,source_id", ignoreDuplicates: true }).select("id").maybeSingle();
+    if (!result.error && result.data) inserted += 1;
+  }
+  return inserted ? { code, inserted } : { code, inserted: 0, error: error.message };
 }
 
 const results = [];
