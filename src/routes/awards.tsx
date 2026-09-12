@@ -164,6 +164,15 @@ function AwardsPage() {
           </div>
           {top.length === 0 && !isLoading && <p className="mt-4 rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No brands match this award market and category yet. Expand the filters to explore more nominees.</p>}
           <p className="mt-3 text-xs text-muted-foreground">Live eligibility: every listed brand may appear. Final ceremony editions will publish a timestamped snapshot of these country and category rankings.</p>
+          <div className="mt-6 rounded-2xl border border-stash/20 bg-stash/5 p-5">
+            <h3 className="font-display text-lg font-bold">Our fairness and accuracy standard</h3>
+            <div className="mt-3 grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
+              <p><strong className="text-foreground">Comparable scope.</strong> Rankings are calculated only within the selected country and category, so smaller markets are not silently compared with global totals.</p>
+              <p><strong className="text-foreground">Evidence before authority.</strong> A score is a community signal, not a government or regulatory finding. Published evidence, methodology version, and timestamp remain visible.</p>
+              <p><strong className="text-foreground">Coverage is not performance.</strong> Countries and brands without enough data remain discoverable but are not penalized for missing participation.</p>
+              <p><strong className="text-foreground">Review and correction.</strong> Conflicts, manipulation reports, and material corrections should create a review record rather than silently changing history.</p>
+            </div>
+          </div>
         </section>
 
         <section className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-sm">
