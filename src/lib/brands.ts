@@ -51,19 +51,29 @@ async function decorate(rows: any[]): Promise<Brand[]> {
 }
 
 export async function fetchBrands(): Promise<Brand[]> {
+  const fallback = [...INTERNATIONAL_SEED_BRANDS, ...SOUTH_AFRICAN_SEED_BRANDS];
   const { data, error } = await supabase
     .from("brands")
     .select("*")
     .order("trust_score", { ascending: false })
     .order("created_at", { ascending: false });
-  if (error) throw error;
-  const live = await decorate(data ?? []);
-  const names = new Set(live.map((brand) => brand.name.trim().toLowerCase()));
-  return [
-    ...live,
-    ...INTERNATIONAL_SEED_BRANDS.filter((brand) => !names.has(brand.name.trim().toLowerCase())),
-    ...SOUTH_AFRICAN_SEED_BRANDS.filter((brand) => !names.has(brand.name.trim().toLowerCase())),
-  ];
+
+  if (error) {
+    console.warn("Brand directory using fallback catalog:", error.message);
+    return fallback;
+  }
+
+  try {
+    const live = await decorate(data ?? []);
+    const names = new Set(live.map((brand) => brand.name.trim().toLowerCase()));
+    return [
+      ...live,
+      ...fallback.filter((brand) => !names.has(brand.name.trim().toLowerCase())),
+    ];
+  } catch (error) {
+    console.warn("Brand directory fallback decoration failed:", error);
+    return fallback;
+  }
 }
 
 /**
