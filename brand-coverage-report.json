@@ -1,0 +1,9 @@
+{
+  "source": "Wikidata",
+  "countriesProcessed": 249,
+  "candidatesInserted": 97,
+  "noCandidateCountries": 34,
+  "timeouts": ["NU", "NF"],
+  "generatedAt": "2026-09-12",
+  "status": "partial-coverage"
+}

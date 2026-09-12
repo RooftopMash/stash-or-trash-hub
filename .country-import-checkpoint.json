@@ -1,0 +1,1033 @@
+{
+  "AF": {
+    "code": "AF",
+    "inserted": 0
+  },
+  "AX": {
+    "code": "AX",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "AL": {
+    "code": "AL",
+    "inserted": 0
+  },
+  "DZ": {
+    "code": "DZ",
+    "inserted": 1
+  },
+  "AS": {
+    "code": "AS",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "AD": {
+    "code": "AD",
+    "inserted": 0
+  },
+  "AO": {
+    "code": "AO",
+    "inserted": 0
+  },
+  "AI": {
+    "code": "AI",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "AQ": {
+    "code": "AQ",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "AG": {
+    "code": "AG",
+    "inserted": 0
+  },
+  "AR": {
+    "code": "AR",
+    "inserted": 0
+  },
+  "AM": {
+    "code": "AM",
+    "inserted": 0
+  },
+  "AW": {
+    "code": "AW",
+    "inserted": 0
+  },
+  "AU": {
+    "code": "AU",
+    "inserted": 1
+  },
+  "AT": {
+    "code": "AT",
+    "inserted": 1
+  },
+  "AZ": {
+    "code": "AZ",
+    "inserted": 3
+  },
+  "BS": {
+    "code": "BS",
+    "inserted": 0
+  },
+  "BH": {
+    "code": "BH",
+    "inserted": 0
+  },
+  "BD": {
+    "code": "BD",
+    "inserted": 1
+  },
+  "BB": {
+    "code": "BB",
+    "inserted": 0
+  },
+  "BY": {
+    "code": "BY",
+    "inserted": 4
+  },
+  "BE": {
+    "code": "BE",
+    "inserted": 0
+  },
+  "BZ": {
+    "code": "BZ",
+    "inserted": 0
+  },
+  "BJ": {
+    "code": "BJ",
+    "inserted": 0
+  },
+  "BM": {
+    "code": "BM",
+    "inserted": 0
+  },
+  "BT": {
+    "code": "BT",
+    "inserted": 0
+  },
+  "BO": {
+    "code": "BO",
+    "inserted": 0
+  },
+  "BQ": {
+    "code": "BQ",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "BA": {
+    "code": "BA",
+    "inserted": 0
+  },
+  "BW": {
+    "code": "BW",
+    "inserted": 49
+  },
+  "BV": {
+    "code": "BV",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "BR": {
+    "code": "BR",
+    "inserted": 0
+  },
+  "IO": {
+    "code": "IO",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "BN": {
+    "code": "BN",
+    "inserted": 0
+  },
+  "BG": {
+    "code": "BG",
+    "inserted": 0
+  },
+  "BF": {
+    "code": "BF",
+    "inserted": 0
+  },
+  "BI": {
+    "code": "BI",
+    "inserted": 0
+  },
+  "CV": {
+    "code": "CV",
+    "inserted": 0
+  },
+  "KH": {
+    "code": "KH",
+    "inserted": 0
+  },
+  "CM": {
+    "code": "CM",
+    "inserted": 0
+  },
+  "CA": {
+    "code": "CA",
+    "inserted": 0
+  },
+  "KY": {
+    "code": "KY",
+    "inserted": 0
+  },
+  "CF": {
+    "code": "CF",
+    "inserted": 0
+  },
+  "TD": {
+    "code": "TD",
+    "inserted": 0
+  },
+  "CL": {
+    "code": "CL",
+    "inserted": 0
+  },
+  "CN": {
+    "code": "CN",
+    "inserted": 0
+  },
+  "CX": {
+    "code": "CX",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "CC": {
+    "code": "CC",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "CO": {
+    "code": "CO",
+    "inserted": 0
+  },
+  "KM": {
+    "code": "KM",
+    "inserted": 0
+  },
+  "CG": {
+    "code": "CG",
+    "inserted": 0
+  },
+  "CD": {
+    "code": "CD",
+    "inserted": 0
+  },
+  "CK": {
+    "code": "CK",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "CR": {
+    "code": "CR",
+    "inserted": 0
+  },
+  "CI": {
+    "code": "CI",
+    "inserted": 0
+  },
+  "HR": {
+    "code": "HR",
+    "inserted": 0
+  },
+  "CU": {
+    "code": "CU",
+    "inserted": 0
+  },
+  "CW": {
+    "code": "CW",
+    "inserted": 0
+  },
+  "CY": {
+    "code": "CY",
+    "inserted": 0
+  },
+  "CZ": {
+    "code": "CZ",
+    "inserted": 0
+  },
+  "DK": {
+    "code": "DK",
+    "inserted": 0
+  },
+  "DJ": {
+    "code": "DJ",
+    "inserted": 0
+  },
+  "DM": {
+    "code": "DM",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "DO": {
+    "code": "DO",
+    "inserted": 0
+  },
+  "EC": {
+    "code": "EC",
+    "inserted": 0
+  },
+  "EG": {
+    "code": "EG",
+    "inserted": 0
+  },
+  "SV": {
+    "code": "SV",
+    "inserted": 0
+  },
+  "GQ": {
+    "code": "GQ",
+    "inserted": 0
+  },
+  "ER": {
+    "code": "ER",
+    "inserted": 0
+  },
+  "EE": {
+    "code": "EE",
+    "inserted": 0
+  },
+  "SZ": {
+    "code": "SZ",
+    "inserted": 0
+  },
+  "ET": {
+    "code": "ET",
+    "inserted": 0
+  },
+  "FK": {
+    "code": "FK",
+    "inserted": 0
+  },
+  "FO": {
+    "code": "FO",
+    "inserted": 0
+  },
+  "FJ": {
+    "code": "FJ",
+    "inserted": 0
+  },
+  "FI": {
+    "code": "FI",
+    "inserted": 0
+  },
+  "FR": {
+    "code": "FR",
+    "inserted": 0
+  },
+  "GF": {
+    "code": "GF",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "PF": {
+    "code": "PF",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "TF": {
+    "code": "TF",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "GA": {
+    "code": "GA",
+    "inserted": 0
+  },
+  "GM": {
+    "code": "GM",
+    "inserted": 0
+  },
+  "GE": {
+    "code": "GE",
+    "inserted": 0
+  },
+  "DE": {
+    "code": "DE",
+    "inserted": 0
+  },
+  "GH": {
+    "code": "GH",
+    "inserted": 0
+  },
+  "GI": {
+    "code": "GI",
+    "inserted": 0
+  },
+  "GR": {
+    "code": "GR",
+    "inserted": 0
+  },
+  "GL": {
+    "code": "GL",
+    "inserted": 0
+  },
+  "GD": {
+    "code": "GD",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "GP": {
+    "code": "GP",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "GU": {
+    "code": "GU",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "GT": {
+    "code": "GT",
+    "inserted": 0
+  },
+  "GG": {
+    "code": "GG",
+    "inserted": 0
+  },
+  "GN": {
+    "code": "GN",
+    "inserted": 0
+  },
+  "GW": {
+    "code": "GW",
+    "inserted": 0
+  },
+  "GY": {
+    "code": "GY",
+    "inserted": 0
+  },
+  "HT": {
+    "code": "HT",
+    "inserted": 0
+  },
+  "HM": {
+    "code": "HM",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "VA": {
+    "code": "VA",
+    "inserted": 0
+  },
+  "HN": {
+    "code": "HN",
+    "inserted": 0
+  },
+  "HK": {
+    "code": "HK",
+    "inserted": 0
+  },
+  "HU": {
+    "code": "HU",
+    "inserted": 0
+  },
+  "IS": {
+    "code": "IS",
+    "inserted": 0
+  },
+  "IN": {
+    "code": "IN",
+    "inserted": 0
+  },
+  "ID": {
+    "code": "ID",
+    "inserted": 2
+  },
+  "IR": {
+    "code": "IR",
+    "inserted": 0
+  },
+  "IQ": {
+    "code": "IQ",
+    "inserted": 0
+  },
+  "IE": {
+    "code": "IE",
+    "inserted": 0
+  },
+  "IM": {
+    "code": "IM",
+    "inserted": 0
+  },
+  "IL": {
+    "code": "IL",
+    "inserted": 0
+  },
+  "IT": {
+    "code": "IT",
+    "inserted": 0
+  },
+  "JM": {
+    "code": "JM",
+    "inserted": 0
+  },
+  "JP": {
+    "code": "JP",
+    "inserted": 0
+  },
+  "JE": {
+    "code": "JE",
+    "inserted": 0
+  },
+  "JO": {
+    "code": "JO",
+    "inserted": 0
+  },
+  "KZ": {
+    "code": "KZ",
+    "inserted": 0
+  },
+  "KE": {
+    "code": "KE",
+    "inserted": 0
+  },
+  "KI": {
+    "code": "KI",
+    "inserted": 0
+  },
+  "KP": {
+    "code": "KP",
+    "inserted": 0
+  },
+  "KR": {
+    "code": "KR",
+    "inserted": 0
+  },
+  "KW": {
+    "code": "KW",
+    "inserted": 0
+  },
+  "KG": {
+    "code": "KG",
+    "inserted": 0
+  },
+  "LA": {
+    "code": "LA",
+    "inserted": 0
+  },
+  "LV": {
+    "code": "LV",
+    "inserted": 0
+  },
+  "LB": {
+    "code": "LB",
+    "inserted": 0
+  },
+  "LS": {
+    "code": "LS",
+    "inserted": 0
+  },
+  "LR": {
+    "code": "LR",
+    "inserted": 0
+  },
+  "LY": {
+    "code": "LY",
+    "inserted": 0
+  },
+  "LI": {
+    "code": "LI",
+    "inserted": 0
+  },
+  "LT": {
+    "code": "LT",
+    "inserted": 1
+  },
+  "LU": {
+    "code": "LU",
+    "inserted": 0
+  },
+  "MO": {
+    "code": "MO",
+    "inserted": 0
+  },
+  "MG": {
+    "code": "MG",
+    "inserted": 0
+  },
+  "MW": {
+    "code": "MW",
+    "inserted": 0
+  },
+  "MY": {
+    "code": "MY",
+    "inserted": 0
+  },
+  "MV": {
+    "code": "MV",
+    "inserted": 0
+  },
+  "ML": {
+    "code": "ML",
+    "inserted": 0
+  },
+  "MT": {
+    "code": "MT",
+    "inserted": 7
+  },
+  "MH": {
+    "code": "MH",
+    "inserted": 0
+  },
+  "MQ": {
+    "code": "MQ",
+    "inserted": 0
+  },
+  "MR": {
+    "code": "MR",
+    "inserted": 0
+  },
+  "MU": {
+    "code": "MU",
+    "inserted": 0
+  },
+  "YT": {
+    "code": "YT",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "MX": {
+    "code": "MX",
+    "inserted": 0
+  },
+  "FM": {
+    "code": "FM",
+    "inserted": 0
+  },
+  "MD": {
+    "code": "MD",
+    "inserted": 0
+  },
+  "MC": {
+    "code": "MC",
+    "inserted": 0
+  },
+  "MN": {
+    "code": "MN",
+    "inserted": 0
+  },
+  "ME": {
+    "code": "ME",
+    "inserted": 0
+  },
+  "MS": {
+    "code": "MS",
+    "inserted": 0
+  },
+  "MA": {
+    "code": "MA",
+    "inserted": 0
+  },
+  "MZ": {
+    "code": "MZ",
+    "inserted": 0
+  },
+  "MM": {
+    "code": "MM",
+    "inserted": 0
+  },
+  "NA": {
+    "code": "NA",
+    "inserted": 0
+  },
+  "NR": {
+    "code": "NR",
+    "inserted": 0
+  },
+  "NP": {
+    "code": "NP",
+    "inserted": 0
+  },
+  "NL": {
+    "code": "NL",
+    "inserted": 0
+  },
+  "NC": {
+    "code": "NC",
+    "inserted": 0
+  },
+  "NZ": {
+    "code": "NZ",
+    "inserted": 0
+  },
+  "NI": {
+    "code": "NI",
+    "inserted": 0
+  },
+  "NE": {
+    "code": "NE",
+    "inserted": 0
+  },
+  "NG": {
+    "code": "NG",
+    "inserted": 0
+  },
+  "NU": {
+    "code": "NU",
+    "inserted": 0,
+    "error": "country timeout"
+  },
+  "NF": {
+    "code": "NF",
+    "inserted": 0,
+    "error": "country timeout"
+  },
+  "MK": {
+    "code": "MK",
+    "inserted": 0
+  },
+  "MP": {
+    "code": "MP",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "NO": {
+    "code": "NO",
+    "inserted": 1
+  },
+  "OM": {
+    "code": "OM",
+    "inserted": 1
+  },
+  "PK": {
+    "code": "PK",
+    "inserted": 0
+  },
+  "PW": {
+    "code": "PW",
+    "inserted": 0
+  },
+  "PS": {
+    "code": "PS",
+    "inserted": 0
+  },
+  "PA": {
+    "code": "PA",
+    "inserted": 0
+  },
+  "PG": {
+    "code": "PG",
+    "inserted": 0
+  },
+  "PY": {
+    "code": "PY",
+    "inserted": 0
+  },
+  "PE": {
+    "code": "PE",
+    "inserted": 0
+  },
+  "PH": {
+    "code": "PH",
+    "inserted": 1
+  },
+  "PN": {
+    "code": "PN",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "PL": {
+    "code": "PL",
+    "inserted": 0
+  },
+  "PT": {
+    "code": "PT",
+    "inserted": 1
+  },
+  "PR": {
+    "code": "PR",
+    "inserted": 0
+  },
+  "QA": {
+    "code": "QA",
+    "inserted": 8
+  },
+  "RE": {
+    "code": "RE",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "RO": {
+    "code": "RO",
+    "inserted": 0
+  },
+  "RU": {
+    "code": "RU",
+    "inserted": 0
+  },
+  "RW": {
+    "code": "RW",
+    "inserted": 0
+  },
+  "BL": {
+    "code": "BL",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "SH": {
+    "code": "SH",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "KN": {
+    "code": "KN",
+    "inserted": 0
+  },
+  "LC": {
+    "code": "LC",
+    "inserted": 0
+  },
+  "MF": {
+    "code": "MF",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "PM": {
+    "code": "PM",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "VC": {
+    "code": "VC",
+    "inserted": 0
+  },
+  "WS": {
+    "code": "WS",
+    "inserted": 0
+  },
+  "SM": {
+    "code": "SM",
+    "inserted": 0
+  },
+  "ST": {
+    "code": "ST",
+    "inserted": 0
+  },
+  "SA": {
+    "code": "SA",
+    "inserted": 0
+  },
+  "SN": {
+    "code": "SN",
+    "inserted": 0
+  },
+  "RS": {
+    "code": "RS",
+    "inserted": 1
+  },
+  "SC": {
+    "code": "SC",
+    "inserted": 0
+  },
+  "SL": {
+    "code": "SL",
+    "inserted": 0
+  },
+  "SG": {
+    "code": "SG",
+    "inserted": 1
+  },
+  "SX": {
+    "code": "SX",
+    "inserted": 0
+  },
+  "SK": {
+    "code": "SK",
+    "inserted": 0
+  },
+  "SI": {
+    "code": "SI",
+    "inserted": 2
+  },
+  "SB": {
+    "code": "SB",
+    "inserted": 0
+  },
+  "SO": {
+    "code": "SO",
+    "inserted": 0
+  },
+  "ZA": {
+    "code": "ZA",
+    "inserted": 0
+  },
+  "GS": {
+    "code": "GS",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "SS": {
+    "code": "SS",
+    "inserted": 0
+  },
+  "ES": {
+    "code": "ES",
+    "inserted": 0
+  },
+  "LK": {
+    "code": "LK",
+    "inserted": 0
+  },
+  "SD": {
+    "code": "SD",
+    "inserted": 0
+  },
+  "SR": {
+    "code": "SR",
+    "inserted": 0
+  },
+  "SJ": {
+    "code": "SJ",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "SE": {
+    "code": "SE",
+    "inserted": 0
+  },
+  "CH": {
+    "code": "CH",
+    "inserted": 4
+  },
+  "SY": {
+    "code": "SY",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "TW": {
+    "code": "TW",
+    "inserted": 7
+  },
+  "TJ": {
+    "code": "TJ",
+    "inserted": 0
+  },
+  "TZ": {
+    "code": "TZ",
+    "inserted": 0
+  },
+  "TH": {
+    "code": "TH",
+    "inserted": 0
+  },
+  "TL": {
+    "code": "TL",
+    "inserted": 0
+  },
+  "TG": {
+    "code": "TG",
+    "inserted": 0
+  },
+  "TK": {
+    "code": "TK",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "TO": {
+    "code": "TO",
+    "inserted": 0
+  },
+  "TT": {
+    "code": "TT",
+    "inserted": 0
+  },
+  "TN": {
+    "code": "TN",
+    "inserted": 0
+  },
+  "TR": {
+    "code": "TR",
+    "inserted": 0
+  },
+  "TM": {
+    "code": "TM",
+    "inserted": 0
+  },
+  "TC": {
+    "code": "TC",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "TV": {
+    "code": "TV",
+    "inserted": 0
+  },
+  "UG": {
+    "code": "UG",
+    "inserted": 0
+  },
+  "UA": {
+    "code": "UA",
+    "inserted": 0
+  },
+  "AE": {
+    "code": "AE",
+    "inserted": 0
+  },
+  "GB": {
+    "code": "GB",
+    "inserted": 0
+  },
+  "US": {
+    "code": "US",
+    "inserted": 0
+  },
+  "UM": {
+    "code": "UM",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "UY": {
+    "code": "UY",
+    "inserted": 0
+  },
+  "UZ": {
+    "code": "UZ",
+    "inserted": 0
+  },
+  "VU": {
+    "code": "VU",
+    "inserted": 0
+  },
+  "VE": {
+    "code": "VE",
+    "inserted": 0
+  },
+  "VN": {
+    "code": "VN",
+    "inserted": 0
+  },
+  "VG": {
+    "code": "VG",
+    "inserted": 0
+  },
+  "VI": {
+    "code": "VI",
+    "inserted": 0
+  },
+  "WF": {
+    "code": "WF",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "EH": {
+    "code": "EH",
+    "inserted": 0
+  },
+  "YE": {
+    "code": "YE",
+    "inserted": 0
+  },
+  "ZM": {
+    "code": "ZM",
+    "inserted": 0
+  },
+  "ZW": {
+    "code": "ZW",
+    "inserted": 0
+  }
+}
