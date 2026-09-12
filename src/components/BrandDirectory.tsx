@@ -29,8 +29,10 @@ async function fetchCountries(): Promise<Country[]> {
 }
 
 function Flag({ country, className }: { country?: Country; className?: string }) {
-  if (!country?.flags.png && !country?.flags.svg) return <span aria-hidden="true" className={cn("text-lg", className)}>🌐</span>;
-  return <img src={country.flags.svg ?? country.flags.png} alt="" className={cn("size-6 rounded-sm object-cover", className)} onError={(event) => { event.currentTarget.style.display = "none"; }} />;
+  const flags = country?.flags;
+  const source = flags?.svg ?? flags?.png;
+  if (!source) return <span aria-hidden="true" className={cn("text-lg", className)}>🌐</span>;
+  return <img src={source} alt="" className={cn("size-6 rounded-sm object-cover", className)} onError={(event) => { event.currentTarget.style.display = "none"; }} />;
 }
 
 function logoDomain(brand: Brand) {
