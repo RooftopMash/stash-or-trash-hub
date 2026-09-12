@@ -71,6 +71,14 @@ function slugifySeed(value: string) {
     .replace(/^-|-$/g, "");
 }
 
+const internationalEntries = [
+  ["Dangote", "Conglomerate", "Business & Finance", "NG"], ["Jumia", "E-commerce", "Retail & E-commerce", "NG"], ["Safaricom", "Telecommunications", "Technology & Telecom", "KE"], ["M-PESA", "Mobile payments", "Technology & Telecom", "KE"], ["MTN", "Telecommunications", "Technology & Telecom", "GH"], ["Ethiopian Airlines", "Airline", "Travel, Tourism & Hospitality", "ET"], ["Emirates", "Airline", "Travel, Tourism & Hospitality", "AE"], ["Tata", "Conglomerate", "Business & Finance", "IN"], ["Infosys", "Technology services", "Technology & Telecom", "IN"], ["Toyota", "Automotive", "Automotive & Mobility", "JP"], ["Sony", "Electronics", "Technology & Telecom", "JP"], ["Samsung", "Electronics", "Technology & Telecom", "KR"], ["Alibaba", "E-commerce", "Retail & E-commerce", "CN"], ["L&apos;Oréal", "Beauty", "Beauty & Personal Care", "FR"], ["IKEA", "Furniture", "Home, Furniture & Living", "SE"], ["Adidas", "Sportswear", "Fashion & Apparel", "DE"], ["LEGO", "Toys", "Consumer Goods", "DK"], ["Spotify", "Music streaming", "Media & Entertainment", "SE"], ["Natura", "Beauty", "Beauty & Personal Care", "BR"], ["Mercado Libre", "E-commerce", "Retail & E-commerce", "AR"], ["Coca-Cola", "Beverages", "Agriculture & Food Production", "US"], ["Microsoft", "Software", "Technology & Telecom", "US"], ["Shopify", "E-commerce software", "Technology & Telecom", "CA"], ["Canva", "Design software", "Technology & Telecom", "AU"], ["Zara", "Fashion retail", "Fashion & Apparel", "ES"], ["Nestlé", "Food & Beverage", "Agriculture & Food Production", "CH"], ["LVMH", "Luxury goods", "Luxury & Premium", "FR"], ["Heineken", "Beverages", "Consumer Goods", "NL"], ["Mercadona", "Supermarkets", "Retail & E-commerce", "ES"], ["Beko", "Home appliances", "Home, Furniture & Living", "TR"],
+] as const;
+
+export const INTERNATIONAL_SEED_BRANDS: Brand[] = internationalEntries.map(([name, descriptor, category, country], index) => ({
+  id: `seed-global-${index + 1}`, owner_id: "seed-catalog", name, slug: `${slugifySeed(name)}-${country.toLowerCase()}`, description: `${descriptor} brand from ${country}. Community verification is still open.`, logo_url: null, website: null, category, country, verified: false, trust_score: 0, created_at: "2026-09-09T00:00:00.000Z", signedLogoUrl: null, ownerName: "SOT catalog",
+}));
+
 export const SOUTH_AFRICAN_SEED_BRANDS: Brand[] = entries.map(
   ([name, descriptor, category], index) => ({
     id: `seed-za-${index + 1}`,

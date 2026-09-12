@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { BUCKET, signImages } from "@/lib/stash";
-import { SOUTH_AFRICAN_SEED_BRANDS } from "@/lib/seed-brands";
+import { INTERNATIONAL_SEED_BRANDS, SOUTH_AFRICAN_SEED_BRANDS } from "@/lib/seed-brands";
 
 export type Brand = {
   id: string;
@@ -61,6 +61,7 @@ export async function fetchBrands(): Promise<Brand[]> {
   const names = new Set(live.map((brand) => brand.name.trim().toLowerCase()));
   return [
     ...live,
+    ...INTERNATIONAL_SEED_BRANDS.filter((brand) => !names.has(brand.name.trim().toLowerCase())),
     ...SOUTH_AFRICAN_SEED_BRANDS.filter((brand) => !names.has(brand.name.trim().toLowerCase())),
   ];
 }
