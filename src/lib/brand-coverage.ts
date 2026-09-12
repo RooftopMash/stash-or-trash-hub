@@ -3,6 +3,9 @@ import { WORLD_COUNTRY_CODES, countryLabel } from "@/lib/geo";
 
 export type CountryCoverage = { code: string; label: string; count: number; remaining: number };
 
+/** Territories with no Wikidata brand candidates after the expanded import pass. */
+export const NO_CANDIDATE_COUNTRIES = ["BV"] as const;
+
 export async function fetchCountryCoverage(target = 100): Promise<CountryCoverage[]> {
   const { data, error } = await supabase.from("brands").select("country");
   if (error) throw error;

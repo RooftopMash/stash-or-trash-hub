@@ -5,8 +5,7 @@
   },
   "AX": {
     "code": "AX",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 6
   },
   "AL": {
     "code": "AL",
@@ -18,8 +17,7 @@
   },
   "AS": {
     "code": "AS",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 50
   },
   "AD": {
     "code": "AD",
@@ -31,13 +29,11 @@
   },
   "AI": {
     "code": "AI",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 40
   },
   "AQ": {
     "code": "AQ",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 3
   },
   "AG": {
     "code": "AG",
@@ -113,8 +109,7 @@
   },
   "BQ": {
     "code": "BQ",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 9
   },
   "BA": {
     "code": "BA",
@@ -135,8 +130,7 @@
   },
   "IO": {
     "code": "IO",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 43
   },
   "BN": {
     "code": "BN",
@@ -192,13 +186,11 @@
   },
   "CX": {
     "code": "CX",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 4
   },
   "CC": {
     "code": "CC",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 8
   },
   "CO": {
     "code": "CO",
@@ -218,8 +210,7 @@
   },
   "CK": {
     "code": "CK",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 48
   },
   "CR": {
     "code": "CR",
@@ -259,8 +250,7 @@
   },
   "DM": {
     "code": "DM",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 49
   },
   "DO": {
     "code": "DO",
@@ -320,18 +310,15 @@
   },
   "GF": {
     "code": "GF",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 21
   },
   "PF": {
     "code": "PF",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 6
   },
   "TF": {
     "code": "TF",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 20
   },
   "GA": {
     "code": "GA",
@@ -367,18 +354,15 @@
   },
   "GD": {
     "code": "GD",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 41
   },
   "GP": {
     "code": "GP",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 46
   },
   "GU": {
     "code": "GU",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 12
   },
   "GT": {
     "code": "GT",
@@ -406,8 +390,7 @@
   },
   "HM": {
     "code": "HM",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 1
   },
   "VA": {
     "code": "VA",
@@ -587,8 +570,7 @@
   },
   "YT": {
     "code": "YT",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 11
   },
   "MX": {
     "code": "MX",
@@ -668,13 +650,11 @@
   },
   "NU": {
     "code": "NU",
-    "inserted": 0,
-    "error": "country timeout"
+    "inserted": 44
   },
   "NF": {
     "code": "NF",
-    "inserted": 0,
-    "error": "country timeout"
+    "inserted": 21
   },
   "MK": {
     "code": "MK",
@@ -682,8 +662,7 @@
   },
   "MP": {
     "code": "MP",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 1
   },
   "NO": {
     "code": "NO",
@@ -727,8 +706,7 @@
   },
   "PN": {
     "code": "PN",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 43
   },
   "PL": {
     "code": "PL",
@@ -748,8 +726,7 @@
   },
   "RE": {
     "code": "RE",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 5
   },
   "RO": {
     "code": "RO",
@@ -765,13 +742,11 @@
   },
   "BL": {
     "code": "BL",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 2
   },
   "SH": {
     "code": "SH",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 47
   },
   "KN": {
     "code": "KN",
@@ -783,13 +758,11 @@
   },
   "MF": {
     "code": "MF",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 10
   },
   "PM": {
     "code": "PM",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 5
   },
   "VC": {
     "code": "VC",
@@ -857,8 +830,7 @@
   },
   "GS": {
     "code": "GS",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 48
   },
   "SS": {
     "code": "SS",
@@ -882,8 +854,7 @@
   },
   "SJ": {
     "code": "SJ",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 1
   },
   "SE": {
     "code": "SE",
@@ -924,8 +895,7 @@
   },
   "TK": {
     "code": "TK",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 41
   },
   "TO": {
     "code": "TO",
@@ -949,8 +919,7 @@
   },
   "TC": {
     "code": "TC",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 45
   },
   "TV": {
     "code": "TV",
@@ -978,8 +947,7 @@
   },
   "UM": {
     "code": "UM",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 5
   },
   "UY": {
     "code": "UY",
@@ -1011,8 +979,7 @@
   },
   "WF": {
     "code": "WF",
-    "inserted": 0,
-    "error": "no candidates"
+    "inserted": 3
   },
   "EH": {
     "code": "EH",
