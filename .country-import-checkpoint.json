@@ -38,5 +38,90 @@
     "code": "AQ",
     "inserted": 0,
     "error": "no candidates"
+  },
+  "AG": {
+    "code": "AG",
+    "inserted": 0
+  },
+  "AR": {
+    "code": "AR",
+    "inserted": 0
+  },
+  "AM": {
+    "code": "AM",
+    "inserted": 0
+  },
+  "AW": {
+    "code": "AW",
+    "inserted": 0
+  },
+  "AU": {
+    "code": "AU",
+    "inserted": 1
+  },
+  "AT": {
+    "code": "AT",
+    "inserted": 1
+  },
+  "AZ": {
+    "code": "AZ",
+    "inserted": 3
+  },
+  "BS": {
+    "code": "BS",
+    "inserted": 0
+  },
+  "BH": {
+    "code": "BH",
+    "inserted": 0
+  },
+  "BD": {
+    "code": "BD",
+    "inserted": 1
+  },
+  "BB": {
+    "code": "BB",
+    "inserted": 0
+  },
+  "BY": {
+    "code": "BY",
+    "inserted": 4
+  },
+  "BE": {
+    "code": "BE",
+    "inserted": 0
+  },
+  "BZ": {
+    "code": "BZ",
+    "inserted": 0
+  },
+  "BJ": {
+    "code": "BJ",
+    "inserted": 0
+  },
+  "BM": {
+    "code": "BM",
+    "inserted": 0
+  },
+  "BT": {
+    "code": "BT",
+    "inserted": 0
+  },
+  "BO": {
+    "code": "BO",
+    "inserted": 0
+  },
+  "BQ": {
+    "code": "BQ",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "BA": {
+    "code": "BA",
+    "inserted": 0
+  },
+  "BW": {
+    "code": "BW",
+    "inserted": 49
   }
 }
