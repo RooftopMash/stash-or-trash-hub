@@ -1,40 +1,33 @@
-# Election-readiness security program
+# Security readiness baseline
 
-This project is not certified for elections. This document defines the work required before any government, political-party, or election authority relies on it.
+This document records the internal controls we operate before any future regulated or election use. It is not a certification, legal opinion, or claim that the platform is election-ready.
 
-## Standards baseline
+## Operating principles
 
-- NIST Cybersecurity Framework Election Infrastructure Profile (VTS 200-1)
-- NIST CSF 2.0
-- OWASP ASVS for web/API controls
-- OWASP MASVS for mobile releases
-- ISO/IEC 27001 information-security management system
-- ISO/IEC 27701 privacy controls where personal data is processed
-- Applicable national electoral law, accessibility law, data-protection law, and vendor certification requirements
+- Protect users, brands, ratings, awards, evidence, and moderation history from unauthorized access or manipulation.
+- Treat every score as a traceable, reviewable data product; never present missing data as a negative result.
+- Separate public catalog data, verified evidence, reviewer decisions, and privileged administration.
+- Changes must be reviewed, tested, logged, and reversible. No automated job may silently deploy code.
 
-## Release gates
+## Control baseline
 
-1. Threat model signed by an independent election-security specialist.
-2. RLS, RPC, storage, authentication, authorization, and privileged-action review completed.
-3. MFA/passkeys required for administrators, reviewers, and deployment operators.
-4. Ratings and organization records carry source, methodology version, evidence, confidence, reviewer, and history.
-5. Append-only audit records are exported to a separate protected system and monitored.
-6. Backups are encrypted, access-controlled, and restored successfully in a documented drill.
-7. Independent penetration test and mobile/API assessment completed with all critical and high findings closed or formally accepted.
-8. Disaster-recovery, incident-response, business-continuity, and coordinated-vulnerability-disclosure plans are exercised.
-9. Privacy impact assessment, data-retention schedule, deletion process, and data-residency review are approved.
-10. Jurisdiction-specific election authority approval is obtained before election use.
+- **Identity:** MFA/passkeys for privileged users, least privilege, short-lived sessions, quarterly access review, and immediate offboarding.
+- **Authorization:** Supabase RLS on exposed tables, server-side validation for every mutation, no client-controlled role claims, and service credentials kept server-side.
+- **Integrity:** Append-only audit events, versioned methodologies, evidence provenance, review/appeal records, and timestamped publication snapshots.
+- **Availability:** Encrypted backups, restore drills, documented recovery objectives, monitoring, incident escalation, and tested dependency recovery.
+- **Application security:** OWASP ASVS review, dependency updates, lockfile integrity, monthly vulnerability scans, SBOM artifacts, lint/build/E2E gates, and external penetration testing before institutional use.
+- **Privacy:** Data minimization, retention rules, deletion/appeal procedures, access logging, and jurisdiction-specific privacy review.
 
-## Required evidence
+## Monthly maintenance
 
-Maintain versioned evidence for policies, access reviews, code/dependency scans, backup restores, incident exercises, penetration tests, vendor reviews, training, and every production release.
+Dependabot opens reviewable updates monthly. The monthly security workflow audits production dependencies, generates an SBOM, runs lint/build/E2E checks, and stores evidence as an artifact. Maintainers must review changelogs, breaking changes, licenses, migration risk, and security advisories before merging.
 
-## Data trust rules
+Critical advisories may be fast-tracked by two-person approval, with the reason, scope, test results, and rollback plan recorded in the pull request. Production deployment remains a separately approved action.
 
-A community rating is not an official election result or government determination. The product must display provenance and uncertainty, preserve superseded versions, separate verified organization claims from opinions, and provide an appeal and correction process.
+## Evidence register
 
-## External program procurement
+For each release, retain the pull request, dependency audit, SBOM, test output, migration review, access review, backup result, incidents/exceptions, and deployment approval. Review this register monthly and after any security incident.
 
-Engage an accredited ISO 27001 certification body, an independent CREST- or OSCP-qualified penetration-testing firm, an election-security assessor familiar with the target jurisdiction, and privacy counsel. Contracts must require conflict-of-interest disclosure, production-environment testing, retesting after remediation, written findings, and permission to publish a customer-facing assurance statement.
+## Future certification gate
 
-Certification cannot be created by code alone. It requires an operating management system, trained people, evidence over time, independent assessment, and legal approval.
+If the product later enters a government or election-regulated use case, commission an independent threat model, RLS/API assessment, penetration test, privacy impact assessment, red-team exercise, disaster-recovery test, and jurisdiction-specific legal/election review. Then engage an accredited assessor for the applicable certification or authorization. Controls begin now; certification claims wait until independently assessed.

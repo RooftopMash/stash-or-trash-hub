@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: monthly
+      day: "1"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - security
+    versioning-strategy: increase
+  - package-ecosystem: gradle
+    directory: "/android"
+    schedule:
+      interval: monthly
+      day: "1"
+      time: "03:30"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - mobile
