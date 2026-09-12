@@ -47,7 +47,7 @@ function securityHeaders(contentType?: string): HeadersInit {
     ...(contentType ? { "content-type": contentType } : {}),
     "x-content-type-options": "nosniff",
     "referrer-policy": "strict-origin-when-cross-origin",
-    "permissions-policy": "camera=(), microphone=(), geolocation=()",
+    "permissions-policy": "camera=(self), microphone=(self), geolocation=()",
     "strict-transport-security": "max-age=63072000",
   };
 }
