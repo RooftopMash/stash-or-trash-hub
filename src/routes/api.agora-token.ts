@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { RtcRole, RtcTokenBuilder } from "agora-token";
+import agoraToken from "agora-token";
+
+const { RtcRole, RtcTokenBuilder } = agoraToken;
 import { createClient } from "@supabase/supabase-js";
 
 const TOKEN_TTL_SECONDS = 10 * 60;
@@ -31,7 +33,18 @@ export const Route = createFileRoute("/api/agora-token")({
         if (!body?.partnerId || (body.mode !== "voice" && body.mode !== "video")) {
           return Response.json({ error: "partnerId and mode are required" }, { status: 400 });
         }
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.partnerId)) {
+          return Response.json({ error: "Invalid participant" }, { status: 400 });
+        }
         if (body.partnerId === user.id) return Response.json({ error: "Cannot call yourself" }, { status: 400 });
+
+        const { data: relationship, error: relationshipError } = await supabase
+          .from("messages")
+          .select("id")
+          .or(`and(sender_id.eq.${user.id},recipient_id.eq.${body.partnerId}),and(sender_id.eq.${body.partnerId},recipient_id.eq.${user.id})`)
+          .limit(1)
+          .maybeSingle();
+        if (relationshipError || !relationship) return Response.json({ error: "Call access requires an existing conversation" }, { status: 403 });
 
         const ids = [user.id, body.partnerId].sort();
         const channelName = `sot-${ids.join("-")}`.slice(0, 63);
@@ -39,7 +52,7 @@ export const Route = createFileRoute("/api/agora-token")({
         const tokenExpiration = Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS;
         const rtcToken = RtcTokenBuilder.buildTokenWithUid(appId, appCertificate, channelName, uid, RtcRole.PUBLISHER, tokenExpiration, tokenExpiration);
 
-        return Response.json({ appId, channelName, uid, token: rtcToken, expiresAt: tokenExpiration, mode: body.mode }, {
+        return Response.json({ appId, channelName, uid, token: rtcToken, expiresAt: tokenExpiration, mode: body.mode, recording: false }, {
           headers: { "cache-control": "no-store" },
         });
       },
