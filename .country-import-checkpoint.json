@@ -842,5 +842,192 @@
   "SI": {
     "code": "SI",
     "inserted": 2
+  },
+  "SB": {
+    "code": "SB",
+    "inserted": 0
+  },
+  "SO": {
+    "code": "SO",
+    "inserted": 0
+  },
+  "ZA": {
+    "code": "ZA",
+    "inserted": 0
+  },
+  "GS": {
+    "code": "GS",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "SS": {
+    "code": "SS",
+    "inserted": 0
+  },
+  "ES": {
+    "code": "ES",
+    "inserted": 0
+  },
+  "LK": {
+    "code": "LK",
+    "inserted": 0
+  },
+  "SD": {
+    "code": "SD",
+    "inserted": 0
+  },
+  "SR": {
+    "code": "SR",
+    "inserted": 0
+  },
+  "SJ": {
+    "code": "SJ",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "SE": {
+    "code": "SE",
+    "inserted": 0
+  },
+  "CH": {
+    "code": "CH",
+    "inserted": 4
+  },
+  "SY": {
+    "code": "SY",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "TW": {
+    "code": "TW",
+    "inserted": 7
+  },
+  "TJ": {
+    "code": "TJ",
+    "inserted": 0
+  },
+  "TZ": {
+    "code": "TZ",
+    "inserted": 0
+  },
+  "TH": {
+    "code": "TH",
+    "inserted": 0
+  },
+  "TL": {
+    "code": "TL",
+    "inserted": 0
+  },
+  "TG": {
+    "code": "TG",
+    "inserted": 0
+  },
+  "TK": {
+    "code": "TK",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "TO": {
+    "code": "TO",
+    "inserted": 0
+  },
+  "TT": {
+    "code": "TT",
+    "inserted": 0
+  },
+  "TN": {
+    "code": "TN",
+    "inserted": 0
+  },
+  "TR": {
+    "code": "TR",
+    "inserted": 0
+  },
+  "TM": {
+    "code": "TM",
+    "inserted": 0
+  },
+  "TC": {
+    "code": "TC",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "TV": {
+    "code": "TV",
+    "inserted": 0
+  },
+  "UG": {
+    "code": "UG",
+    "inserted": 0
+  },
+  "UA": {
+    "code": "UA",
+    "inserted": 0
+  },
+  "AE": {
+    "code": "AE",
+    "inserted": 0
+  },
+  "GB": {
+    "code": "GB",
+    "inserted": 0
+  },
+  "US": {
+    "code": "US",
+    "inserted": 0
+  },
+  "UM": {
+    "code": "UM",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "UY": {
+    "code": "UY",
+    "inserted": 0
+  },
+  "UZ": {
+    "code": "UZ",
+    "inserted": 0
+  },
+  "VU": {
+    "code": "VU",
+    "inserted": 0
+  },
+  "VE": {
+    "code": "VE",
+    "inserted": 0
+  },
+  "VN": {
+    "code": "VN",
+    "inserted": 0
+  },
+  "VG": {
+    "code": "VG",
+    "inserted": 0
+  },
+  "VI": {
+    "code": "VI",
+    "inserted": 0
+  },
+  "WF": {
+    "code": "WF",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "EH": {
+    "code": "EH",
+    "inserted": 0
+  },
+  "YE": {
+    "code": "YE",
+    "inserted": 0
+  },
+  "ZM": {
+    "code": "ZM",
+    "inserted": 0
+  },
+  "ZW": {
+    "code": "ZW",
+    "inserted": 0
   }
 }
