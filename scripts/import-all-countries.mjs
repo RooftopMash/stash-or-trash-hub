@@ -36,7 +36,7 @@ function slugify(value) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/
 function query(cls, country, path) { return `SELECT ?item ?itemLabel ?desc ?logo ?website ?industryLabel ?sitelinks WHERE { { SELECT ?item ?sitelinks WHERE { ?item wdt:P31 wd:${cls}; ${path} wd:${country}; wikibase:sitelinks ?sitelinks. } ORDER BY DESC(?sitelinks) LIMIT 50 } OPTIONAL { ?item wdt:P154 ?logo } OPTIONAL { ?item wdt:P856 ?website } OPTIONAL { ?item wdt:P452 ?industry . ?industry rdfs:label ?industryLabel FILTER(LANG(?industryLabel)="en") } OPTIONAL { ?item schema:description ?desc FILTER(LANG(?desc)="en") } SERVICE wikibase:label { bd:serviceParam wikibase:language "en" } } ORDER BY DESC(?sitelinks)`; }
 
 async function importCountry(code) {
-  if (checkpoint[code]) return checkpoint[code];
+  if (checkpoint[code] && !process.env.RETRY_FAILED) return checkpoint[code];
   const country = await qid(code);
   if (!country) return { code, inserted: 0, error: "no QID" };
   const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("country timeout")), 90000));
@@ -52,6 +52,15 @@ async function importCountryUnbounded(code, country) {
     if (!sourceId || !name || /^Q\\d+$/.test(name)) continue;
     const current = entities.get(sourceId) ?? { source: "wikidata", source_id: sourceId, name, slug: slugify(name), country: code, category: null, description: null, website: null, logo_url: null, status: "pending" };
     current.category ||= row.industryLabel?.value ?? null; current.description ||= row.desc?.value ?? null; current.website ||= row.website?.value ?? null; current.logo_url ||= row.logo?.value ?? null; entities.set(sourceId, current);
+  }
+  if (!entities.size) {
+    const fallback = `SELECT ?item ?itemLabel ?desc ?logo ?website ?sitelinks WHERE { ?item wdt:P17 wd:${country}; wikibase:sitelinks ?sitelinks . OPTIONAL { ?item wdt:P154 ?logo } OPTIONAL { ?item wdt:P856 ?website } OPTIONAL { ?item schema:description ?desc FILTER(LANG(?desc)="en") } SERVICE wikibase:label { bd:serviceParam wikibase:language "en" } } ORDER BY DESC(?sitelinks) LIMIT 50`;
+    const fallbackRows = await queryWikidata(fallback).catch(() => []);
+    for (const row of fallbackRows) {
+      const sourceId = row.item?.value?.split("/").pop(); const name = row.itemLabel?.value;
+      if (!sourceId || !name || /^Q\\d+$/.test(name)) continue;
+      entities.set(sourceId, { source: "wikidata", source_id: sourceId, name, slug: slugify(name), country: code, category: "brand", description: row.desc?.value ?? null, website: row.website?.value ?? null, logo_url: row.logo?.value ?? null, status: "pending" });
+    }
   }
   const rows = [...entities.values()].filter((row) => row.slug).slice(0, 100);
   if (!rows.length) return { code, inserted: 0, error: "no candidates" };
