@@ -1,0 +1,42 @@
+{
+  "AF": {
+    "code": "AF",
+    "inserted": 0
+  },
+  "AX": {
+    "code": "AX",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "AL": {
+    "code": "AL",
+    "inserted": 0
+  },
+  "DZ": {
+    "code": "DZ",
+    "inserted": 1
+  },
+  "AS": {
+    "code": "AS",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "AD": {
+    "code": "AD",
+    "inserted": 0
+  },
+  "AO": {
+    "code": "AO",
+    "inserted": 0
+  },
+  "AI": {
+    "code": "AI",
+    "inserted": 0,
+    "error": "no candidates"
+  },
+  "AQ": {
+    "code": "AQ",
+    "inserted": 0,
+    "error": "no candidates"
+  }
+}
