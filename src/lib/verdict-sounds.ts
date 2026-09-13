@@ -1,4 +1,12 @@
 let audioContext: AudioContext | null = null;
+let coinDropAudio: HTMLAudioElement | null = null;
+
+function playRecordedCoinDrop() {
+  if (typeof window === "undefined") return;
+  coinDropAudio ??= new Audio("/audio/coin-drop.wav");
+  coinDropAudio.currentTime = 0;
+  void coinDropAudio.play().catch(() => undefined);
+}
 
 function getAudioContext() {
   if (typeof window === "undefined") return null;
@@ -39,6 +47,7 @@ function playNoise(context: AudioContext, time: number, volume: number, duration
 }
 
 export function playStashSound() {
+  playRecordedCoinDrop();
   const context = getAudioContext();
   if (!context) return;
   const now = context.currentTime;
