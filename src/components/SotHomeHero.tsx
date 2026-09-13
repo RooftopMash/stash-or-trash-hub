@@ -5,15 +5,10 @@ import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 import { SotWordmark } from "@/components/SotWordmark";
 
 const cascade = [
-  { letter: "S", className: "text-[#d6a928]", position: "left-[3%] top-[8%] rotate-[-14deg]" },
-  { letter: "O", className: "text-slate-950", position: "left-[19%] top-[40%] rotate-[12deg]" },
-  { letter: "r", className: "text-[#e34b4b]", position: "left-[37%] top-[10%] rotate-[-8deg]" },
-  { letter: "T", className: "text-slate-950", position: "left-[54%] top-[48%] rotate-[15deg]" },
-  { letter: "S", className: "text-[#d6a928]", position: "left-[70%] top-[14%] rotate-[9deg]" },
-  { letter: "O", className: "text-slate-950", position: "left-[84%] top-[42%] rotate-[-12deg]" },
-  { letter: "r", className: "text-[#e34b4b]", position: "left-[11%] top-[72%] rotate-[8deg]" },
-  { letter: "T", className: "text-slate-950", position: "left-[43%] top-[78%] rotate-[-10deg]" },
-  { letter: "S", className: "text-[#d6a928]", position: "left-[76%] top-[73%] rotate-[14deg]" },
+  { letter: "S", className: "text-[#d6a928]", position: "left-[8%] top-[18%] rotate-[-14deg]" },
+  { letter: "O", className: "text-slate-950", position: "left-[31%] top-[55%] rotate-[12deg]" },
+  { letter: "r", className: "text-[#e34b4b]", position: "left-[56%] top-[14%] rotate-[-8deg]" },
+  { letter: "T", className: "text-slate-950", position: "left-[78%] top-[52%] rotate-[15deg]" },
 ];
 
 export function SotHomeHero() {
