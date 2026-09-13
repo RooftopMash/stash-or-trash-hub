@@ -52,8 +52,12 @@ export function SotHomeHero() {
         </div>
         <div className="order-1 flex min-h-[280px] items-center justify-center lg:order-2 lg:min-h-[390px]">
           <div className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)] ring-1 ring-slate-200">
-            <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="absolute inset-y-0 left-0 z-10 w-1/2 cursor-pointer" />
-            <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="absolute inset-y-0 right-0 z-10 w-1/2 cursor-pointer" />
+            <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group absolute inset-y-0 left-0 z-10 flex w-1/2 cursor-pointer items-end justify-start p-4 text-left">
+              <span className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#9a720b] opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">Stash</span>
+            </button>
+            <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group absolute inset-y-0 right-0 z-10 flex w-1/2 cursor-pointer items-end justify-end p-4 text-right">
+              <span className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-slate-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">Trash</span>
+            </button>
             <img
               src="/images/sot-home-objects.png"
               alt="A realistic gold coin beside a battered silver trash can"
