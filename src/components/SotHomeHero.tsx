@@ -54,23 +54,17 @@ export function SotHomeHero() {
           <div className="grid w-full max-w-5xl gap-8 sm:grid-cols-2 sm:gap-12">
             <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group flex flex-col items-center gap-4 rounded-[2rem] bg-white p-5 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-[#d6a928]/30 transition-shadow hover:shadow-[0_24px_70px_rgba(214,169,40,0.22)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#d6a928]/40">
               <span className="sr-only">Stash</span>
-              <img src="/images/sot-coin.png" alt="$OrT gold coin, 2026" className={`w-full max-w-sm transition-transform duration-500 motion-reduce:transition-none ${activeObject === "coin" ? "-translate-y-8 rotate-3" : ""}`} />
-              <span className="text-sm font-black uppercase tracking-[0.2em] text-[#8d6508]">Stash</span>
+              <img src="/images/sot-coin.png" alt="$OrT gold coin, 2026" className={`w-full max-w-sm transition-transform duration-700 ease-in motion-reduce:transition-none ${activeObject === "coin" ? "translate-y-24 rotate-[240deg] scale-95" : ""}`} />
             </button>
             <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group flex flex-col items-center gap-4 rounded-[2rem] bg-white p-5 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-slate-300 transition-shadow hover:shadow-[0_24px_70px_rgba(15,23,42,0.18)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/40">
               <span className="sr-only">Trash</span>
-              <img src="/images/sot-trash-can.png" alt="Battered silver trash can with recycle symbol" className={`w-full max-w-sm transition-transform duration-500 motion-reduce:transition-none ${activeObject === "bin" ? "translate-y-4 -rotate-2" : ""}`} />
-              <span className="text-sm font-black uppercase tracking-[0.2em] text-slate-700">Trash</span>
+              <img src="/images/sot-trash-can.png" alt="Battered silver trash can with recycle symbol" className={`w-full max-w-sm transition-transform duration-500 ease-out motion-reduce:transition-none ${activeObject === "bin" ? "translate-y-5 rotate-1 scale-[0.98]" : ""}`} />
             </button>
-          </div>
-          <div className="mt-4 flex justify-center gap-3 text-sm font-black uppercase tracking-[0.18em]">
-            <span className="rounded-full bg-[#d6a928]/15 px-4 py-2 text-[#8d6508]">Stash</span>
-            <span className="rounded-full bg-slate-700/10 px-4 py-2 text-slate-700">Trash</span>
           </div>
         </div>
       </div>
       <div aria-hidden="true" className="relative flex justify-center gap-4 overflow-hidden pb-5 text-5xl font-black leading-none sm:gap-8 sm:text-7xl">
-        {cascade.map(({ letter, className }, index) => <span key={`${letter}-${index}`} className={`${className} animate-[float_5s_ease-in-out_infinite]`} style={{ animationDelay: `${index * 180}ms` }}>{letter}</span>)}
+        {cascade.map(({ letter, className }, index) => <span key={`${letter}-${index}`} className={`${className} animate-[float_3.2s_ease-in-out_infinite]`} style={{ animationDelay: `${index * 180}ms` }}>{letter}</span>)}
       </div>
     </section>
   );
