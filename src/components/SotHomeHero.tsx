@@ -25,8 +25,8 @@ export function SotHomeHero() {
         <div className="absolute left-[12%] top-8 h-64 w-64 rounded-full border-[18px] border-[#d6a928]" />
         <div className="absolute right-[15%] top-20 h-52 w-40 rotate-6 rounded-[2rem] border-[12px] border-slate-500" />
       </div>
-      <div className="relative mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_1.2fr] lg:items-center lg:py-20">
-        <div className="order-2 max-w-xl lg:order-1">
+      <div className="relative mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12 sm:px-6 lg:py-20">
+        <div className="order-2 mx-auto max-w-3xl text-center">
           <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
             <Coins className="h-4 w-4 text-[#d6a928]" aria-hidden="true" />
             <span>People-powered brand intelligence</span>
@@ -50,20 +50,28 @@ export function SotHomeHero() {
             </Link>
           </div>
         </div>
-        <div className="order-1 flex min-h-[280px] items-center justify-center lg:order-2 lg:min-h-[390px]">
-          <div className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)] ring-1 ring-slate-200">
+        <div className="order-1 flex min-h-[280px] items-center justify-center lg:min-h-[390px]">
+          <div className="relative w-full max-w-4xl overflow-hidden rounded-[2rem] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)] ring-1 ring-slate-200">
             <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group absolute inset-y-0 left-0 z-10 flex w-1/2 cursor-pointer items-end justify-start p-4 text-left">
               <span className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#9a720b] opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">Stash</span>
             </button>
             <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group absolute inset-y-0 right-0 z-10 flex w-1/2 cursor-pointer items-end justify-end p-4 text-right">
               <span className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-slate-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">Trash</span>
             </button>
+            <div className="pointer-events-none absolute left-[25%] top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 text-center font-display font-black text-[#8d6508] drop-shadow-[0_2px_1px_rgba(255,255,255,0.7)]">
+              <div className="text-3xl tracking-tight sm:text-5xl">$OrT</div>
+              <div className="mt-1 text-[8px] uppercase tracking-[0.2em] sm:text-[10px]">{new Date().getFullYear()}</div>
+            </div>
             <img
               src="/images/sot-home-objects.png"
               alt="A realistic gold coin beside a battered silver trash can"
               className={`h-auto w-full object-cover transition-transform duration-500 motion-reduce:transition-none ${activeObject === "coin" ? "-translate-y-10 rotate-2" : activeObject === "bin" ? "translate-y-4 -rotate-2" : ""}`}
             />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white/40 to-transparent" />
+          </div>
+          <div className="mt-4 flex justify-center gap-3 text-sm font-black uppercase tracking-[0.18em]">
+            <span className="rounded-full bg-[#d6a928]/15 px-4 py-2 text-[#8d6508]">Stash</span>
+            <span className="rounded-full bg-slate-700/10 px-4 py-2 text-slate-700">Trash</span>
           </div>
         </div>
       </div>
