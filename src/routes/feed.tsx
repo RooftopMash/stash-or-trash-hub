@@ -42,8 +42,9 @@ function Feed() {
       <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-stash">Community pulse</p>
-          <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight">Feed</h1>
-          <p className="mt-2 max-w-2xl text-muted-foreground">Explore concerns, compliments, ideas, and conversations from people and brands across your markets.</p>
+          <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight">Stash Or Trash</h1>
+          <p className="mt-2 max-w-3xl text-lg font-semibold leading-7 text-foreground">The Brand Barometer. Post anything about a brand and let the community deliver its verdict in real time — the CX &amp; PR signal that matters.</p>
+          <p className="mt-2 max-w-2xl text-muted-foreground">Every verdict brings brands closer to the people they serve. Cast yours.</p>
         </div>
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <div>

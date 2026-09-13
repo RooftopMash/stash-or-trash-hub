@@ -42,21 +42,17 @@ export function playStashSound() {
   const context = getAudioContext();
   if (!context) return;
   const now = context.currentTime;
-  playMetalClick(context, now, 2850, 0.16, 0.035);
-  playMetalClick(context, now + 0.075, 2150, 0.13, 0.045);
-  playMetalClick(context, now + 0.16, 1720, 0.1, 0.06);
-  playMetalClick(context, now + 0.255, 1180, 0.07, 0.08);
-  playMetalClick(context, now + 0.36, 220, 0.06, 0.12);
+  playNoise(context, now, 0.09, 0.055, 2100);
+  playMetalClick(context, now + 0.012, 620, 0.13, 0.18);
+  playMetalClick(context, now + 0.025, 360, 0.06, 0.22);
 }
 
 export function playTrashSound() {
   const context = getAudioContext();
   if (!context) return;
   const now = context.currentTime;
-  playMetalClick(context, now, 180, 0.3, 0.12);
-  playMetalClick(context, now + 0.045, 92, 0.24, 0.22);
-  playMetalClick(context, now + 0.085, 640, 0.19, 0.32);
-  playMetalClick(context, now + 0.16, 420, 0.13, 0.42);
-  playNoise(context, now + 0.03, 0.12, 0.18, 900);
-  playNoise(context, now + 0.13, 0.08, 0.28, 2600);
+  playNoise(context, now, 0.16, 0.12, 720);
+  playMetalClick(context, now + 0.008, 155, 0.28, 0.22);
+  playMetalClick(context, now + 0.035, 285, 0.14, 0.36);
+  playNoise(context, now + 0.055, 0.08, 0.2, 1800);
 }
