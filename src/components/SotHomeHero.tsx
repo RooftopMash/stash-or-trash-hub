@@ -51,12 +51,12 @@ export function SotHomeHero() {
           </div>
         </div>
         <div className="order-1 flex min-h-[280px] items-center justify-center lg:min-h-[390px]">
-          <div className="grid w-full max-w-5xl gap-8 sm:grid-cols-2 sm:gap-12">
-            <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group flex flex-col items-center gap-4 rounded-[2rem] bg-white p-5 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-[#d6a928]/30 transition-shadow hover:shadow-[0_24px_70px_rgba(214,169,40,0.22)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#d6a928]/40">
+          <div className="mx-auto grid w-full max-w-4xl gap-6 sm:grid-cols-2 sm:gap-8 lg:max-w-[52rem]">
+            <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group flex min-w-0 flex-col items-center gap-4 rounded-[2rem] bg-white p-4 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-[#d6a928]/30 transition-shadow hover:shadow-[0_24px_70px_rgba(214,169,40,0.22)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#d6a928]/40 sm:p-5">
               <span className="sr-only">Stash</span>
               <img src="/images/sot-coin.png" alt="$OrT gold coin, 2026" className={`w-full max-w-sm transition-transform duration-700 ease-in motion-reduce:transition-none ${activeObject === "coin" ? "translate-y-24 rotate-[240deg] scale-95" : ""}`} />
             </button>
-            <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group flex flex-col items-center gap-4 rounded-[2rem] bg-white p-5 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-slate-300 transition-shadow hover:shadow-[0_24px_70px_rgba(15,23,42,0.18)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/40">
+            <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group flex min-w-0 flex-col items-center gap-4 rounded-[2rem] bg-white p-4 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-slate-300 transition-shadow hover:shadow-[0_24px_70px_rgba(15,23,42,0.18)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/40 sm:p-5">
               <span className="sr-only">Trash</span>
               <img src="/images/sot-trash-can.png" alt="Battered silver trash can with recycle symbol" className={`w-full max-w-sm transition-transform duration-500 ease-out motion-reduce:transition-none ${activeObject === "bin" ? "translate-y-5 rotate-1 scale-[0.98]" : ""}`} />
             </button>
