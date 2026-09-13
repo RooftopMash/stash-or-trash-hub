@@ -9,7 +9,7 @@ import { Award, CalendarClock, CheckCircle2, Crown, Filter, Heart, Map, Search, 
 import { brandCategory, categoryOptions } from "@/lib/categories";
 import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
-import { EdelmanFactorLink } from "@/components/EdelmanFactor";
+import { PeopleTrustFactorLink } from "@/components/PeopleTrustFactor";
 
 export const Route = createFileRoute("/awards")({
   head: () => ({
@@ -77,7 +77,7 @@ function AwardsPage() {
           <Trophy className="mx-auto h-12 w-12 text-primary" />
           <h1 className="mt-4 font-display text-4xl font-extrabold sm:text-5xl">{t("awards.title")}</h1>
           <p className="mt-2 font-display text-lg font-semibold text-primary">{t("awards.tagline")}</p>
-          <div className="mt-3 flex justify-center"><EdelmanFactorLink /></div>
+          <div className="mt-3 flex justify-center"><PeopleTrustFactorLink /></div>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">{t("awards.intro")}</p>
         </section>
 

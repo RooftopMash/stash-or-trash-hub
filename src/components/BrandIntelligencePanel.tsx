@@ -1,7 +1,7 @@
 import { AlertCircle, ArrowUpRight, CheckCircle2, Clock3, Lightbulb, MessageSquareText, ShieldCheck, Users } from "lucide-react";
 import type { BrandKpis } from "@/lib/brand-platform";
 import { cn } from "@/lib/utils";
-import { EdelmanFactor } from "@/components/EdelmanFactor";
+import { PeopleTrustFactor } from "@/components/PeopleTrustFactor";
 
 const signalCards = [
   { key: "positive", label: "Positive experiences", icon: CheckCircle2, tone: "text-emerald-600 bg-emerald-500/10" },
@@ -40,7 +40,7 @@ export function BrandIntelligencePanel({ kpis }: { kpis: BrandKpis }) {
       </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><p className="text-xs text-muted-foreground">Evidence, methodology, and community context should accompany every public claim.</p><button type="button" className="inline-flex items-center gap-1 text-sm font-semibold text-foreground hover:text-stash">View reporting guide <ArrowUpRight className="h-4 w-4" /></button></div>
-      <div className="mt-5"><EdelmanFactor signals={{ evidence: Math.min(100, 45 + kpis.posts * 2), response: responseRate, experience: totalSignals ? Math.round(((kpis.positive + kpis.neutral) / totalSignals) * 100) : 0, trust: responseRate }} /></div>
+      <div className="mt-5"><PeopleTrustFactor signals={{ evidence: Math.min(100, 45 + kpis.posts * 2), response: responseRate, experience: totalSignals ? Math.round(((kpis.positive + kpis.neutral) / totalSignals) * 100) : 0, trust: responseRate }} /></div>
     </section>
   );
 }
