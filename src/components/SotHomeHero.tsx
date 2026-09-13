@@ -51,23 +51,17 @@ export function SotHomeHero() {
           </div>
         </div>
         <div className="order-1 flex min-h-[280px] items-center justify-center lg:min-h-[390px]">
-          <div className="relative w-full max-w-4xl overflow-hidden rounded-[2rem] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)] ring-1 ring-slate-200">
-            <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group absolute inset-y-0 left-0 z-10 flex w-1/2 cursor-pointer items-end justify-start p-4 text-left">
-              <span className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#9a720b] opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">Stash</span>
+          <div className="grid w-full max-w-5xl gap-8 sm:grid-cols-2 sm:gap-12">
+            <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group flex flex-col items-center gap-4 rounded-[2rem] bg-white p-5 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-[#d6a928]/30 transition-shadow hover:shadow-[0_24px_70px_rgba(214,169,40,0.22)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#d6a928]/40">
+              <span className="sr-only">Stash</span>
+              <img src="/images/sot-coin.png" alt="$OrT gold coin, 2026" className={`w-full max-w-sm transition-transform duration-500 motion-reduce:transition-none ${activeObject === "coin" ? "-translate-y-8 rotate-3" : ""}`} />
+              <span className="text-sm font-black uppercase tracking-[0.2em] text-[#8d6508]">Stash</span>
             </button>
-            <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group absolute inset-y-0 right-0 z-10 flex w-1/2 cursor-pointer items-end justify-end p-4 text-right">
-              <span className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-slate-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">Trash</span>
+            <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group flex flex-col items-center gap-4 rounded-[2rem] bg-white p-5 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-slate-300 transition-shadow hover:shadow-[0_24px_70px_rgba(15,23,42,0.18)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/40">
+              <span className="sr-only">Trash</span>
+              <img src="/images/sot-trash-can.png" alt="Battered silver trash can with recycle symbol" className={`w-full max-w-sm transition-transform duration-500 motion-reduce:transition-none ${activeObject === "bin" ? "translate-y-4 -rotate-2" : ""}`} />
+              <span className="text-sm font-black uppercase tracking-[0.2em] text-slate-700">Trash</span>
             </button>
-            <div className="pointer-events-none absolute left-[25%] top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 text-center font-display font-black text-[#8d6508] drop-shadow-[0_2px_1px_rgba(255,255,255,0.7)]">
-              <div className="text-3xl tracking-tight sm:text-5xl">$OrT</div>
-              <div className="mt-1 text-[8px] uppercase tracking-[0.2em] sm:text-[10px]">{new Date().getFullYear()}</div>
-            </div>
-            <img
-              src="/images/sot-home-objects.png"
-              alt="A realistic gold coin beside a battered silver trash can"
-              className={`h-auto w-full object-cover transition-transform duration-500 motion-reduce:transition-none ${activeObject === "coin" ? "-translate-y-10 rotate-2" : activeObject === "bin" ? "translate-y-4 -rotate-2" : ""}`}
-            />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white/40 to-transparent" />
           </div>
           <div className="mt-4 flex justify-center gap-3 text-sm font-black uppercase tracking-[0.18em]">
             <span className="rounded-full bg-[#d6a928]/15 px-4 py-2 text-[#8d6508]">Stash</span>
