@@ -10,6 +10,7 @@ import { recordVote, emitEngagementChange } from "@/lib/engagement";
 import coinIcon from "@/assets/icon-coin.png";
 import binIcon from "@/assets/icon-bin.png";
 import { cn } from "@/lib/utils";
+import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 
 /**
  * One-tap Stash / Trash on a brand itself. `compact` renders just the two
@@ -73,7 +74,8 @@ export function BrandVerdict({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          vote("stash");
+          playStashSound();
+          void vote("stash");
         }}
         className={cn("gap-2", mine === "stash" && "verdict-picked", mine === "trash" && "verdict-dimmed")}
       >
@@ -86,7 +88,8 @@ export function BrandVerdict({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          vote("trash");
+          playTrashSound();
+          void vote("trash");
         }}
         className={cn("gap-2", mine === "trash" && "verdict-picked", mine === "stash" && "verdict-dimmed")}
       >
