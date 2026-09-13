@@ -41,7 +41,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               Home
             </Link>
             <Link
-              to="/feed"
+              to="/"
               className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
             >
               {t("nav.feed")}
