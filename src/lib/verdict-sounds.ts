@@ -57,4 +57,6 @@ export function playTrashSound() {
   playMetalClick(context, now + 0.045, 92, 0.24, 0.22);
   playMetalClick(context, now + 0.085, 640, 0.19, 0.32);
   playMetalClick(context, now + 0.16, 420, 0.13, 0.42);
+  playNoise(context, now + 0.03, 0.12, 0.18, 900);
+  playNoise(context, now + 0.13, 0.08, 0.28, 2600);
 }

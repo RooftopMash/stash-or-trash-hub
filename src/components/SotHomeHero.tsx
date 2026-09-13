@@ -61,7 +61,7 @@ export function SotHomeHero() {
             <img
               src="/images/sot-home-objects.png"
               alt="A realistic gold coin beside a battered silver trash can"
-              className={`h-auto w-full object-cover transition-transform duration-500 motion-reduce:transition-none ${activeObject === "coin" ? "-translate-y-3 rotate-1" : activeObject === "bin" ? "translate-y-2 -rotate-1" : ""}`}
+              className={`h-auto w-full object-cover transition-transform duration-500 motion-reduce:transition-none ${activeObject === "coin" ? "-translate-y-10 rotate-2" : activeObject === "bin" ? "translate-y-4 -rotate-2" : ""}`}
             />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white/40 to-transparent" />
           </div>
