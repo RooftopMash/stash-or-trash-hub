@@ -17,6 +17,7 @@ This document records the internal controls we operate before any future regulat
 - **Availability:** Encrypted backups, restore drills, documented recovery objectives, monitoring, incident escalation, and tested dependency recovery.
 - **Application security:** OWASP ASVS review, dependency updates, lockfile integrity, monthly vulnerability scans, SBOM artifacts, lint/build/E2E gates, and external penetration testing before institutional use.
 - **Privacy:** Data minimization, retention rules, deletion/appeal procedures, access logging, and jurisdiction-specific privacy review.
+- **Realtime calls:** Server-issued short-lived Agora tokens, conversation-membership authorization, recording disabled by default, participant call events, provider-console MFA, and credential rotation procedures.
 
 ## Monthly maintenance
 

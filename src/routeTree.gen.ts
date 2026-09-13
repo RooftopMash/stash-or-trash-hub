@@ -21,6 +21,7 @@ import { Route as ItemsIdRouteImport } from './routes/items.$id'
 import { Route as HashtagsTagRouteImport } from './routes/hashtags.$tag'
 import { Route as BrandsSlugRouteImport } from './routes/brands.$slug'
 import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
+import { Route as ApiAgoraTokenRouteImport } from './routes/api.agora-token'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
@@ -87,6 +88,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAgoraTokenRoute = ApiAgoraTokenRouteImport.update({
+  id: '/api/agora-token',
+  path: '/api/agora-token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/messages': typeof AuthenticatedMessagesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/api/agora-token': typeof ApiAgoraTokenRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/messages': typeof AuthenticatedMessagesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/api/agora-token': typeof ApiAgoraTokenRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/api/agora-token': typeof ApiAgoraTokenRoute
   '/auth_/callback': typeof AuthCallbackRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/notifications'
     | '/profile'
+    | '/api/agora-token'
     | '/auth/callback'
     | '/brands/$slug'
     | '/hashtags/$tag'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/notifications'
     | '/profile'
+    | '/api/agora-token'
     | '/auth/callback'
     | '/brands/$slug'
     | '/hashtags/$tag'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/_authenticated/messages'
     | '/_authenticated/notifications'
     | '/_authenticated/profile'
+    | '/api/agora-token'
     | '/auth_/callback'
     | '/brands/$slug'
     | '/hashtags/$tag'
@@ -246,6 +258,7 @@ export interface RootRouteChildren {
   AwardsRoute: typeof AwardsRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
+  ApiAgoraTokenRoute: typeof ApiAgoraTokenRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   BrandsSlugRoute: typeof BrandsSlugRoute
   HashtagsTagRoute: typeof HashtagsTagRoute
@@ -340,6 +353,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/agora-token': {
+      id: '/api/agora-token'
+      path: '/api/agora-token'
+      fullPath: '/api/agora-token'
+      preLoaderRoute: typeof ApiAgoraTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -413,6 +433,7 @@ const rootRouteChildren: RootRouteChildren = {
   AwardsRoute: AwardsRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
+  ApiAgoraTokenRoute: ApiAgoraTokenRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   BrandsSlugRoute: BrandsSlugRoute,
   HashtagsTagRoute: HashtagsTagRoute,
