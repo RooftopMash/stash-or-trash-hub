@@ -38,6 +38,12 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               to="/"
               className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
             >
+              Home
+            </Link>
+            <Link
+              to="/"
+              className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
+            >
               {t("nav.feed")}
             </Link>
             <Link
