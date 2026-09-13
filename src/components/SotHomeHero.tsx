@@ -5,10 +5,10 @@ import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 import { SotWordmark } from "@/components/SotWordmark";
 
 const cascade = [
-  { letter: "S", className: "text-[#d6a928]" },
-  { letter: "O", className: "text-slate-950" },
-  { letter: "r", className: "text-[#e34b4b]" },
-  { letter: "T", className: "text-[#2563eb]" },
+  { letter: "S", className: "text-[#d6a928]", position: "left-[8%] top-[18%] rotate-[-14deg]" },
+  { letter: "O", className: "text-slate-950", position: "left-[31%] top-[55%] rotate-[12deg]" },
+  { letter: "r", className: "text-[#e34b4b]", position: "left-[56%] top-[14%] rotate-[-8deg]" },
+  { letter: "T", className: "text-slate-950", position: "left-[78%] top-[52%] rotate-[15deg]" },
 ];
 
 export function SotHomeHero() {
@@ -50,21 +50,27 @@ export function SotHomeHero() {
             </Link>
           </div>
         </div>
-        <div className="order-1 flex min-h-[280px] items-center justify-center lg:min-h-[390px]">
-          <div className="mx-auto grid w-full max-w-4xl gap-6 sm:grid-cols-2 sm:gap-8 lg:max-w-[52rem]">
-            <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group flex min-w-0 flex-col items-center gap-4 rounded-[2rem] bg-white p-4 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-[#d6a928]/30 transition-shadow hover:shadow-[0_24px_70px_rgba(214,169,40,0.22)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#d6a928]/40 sm:p-5">
+        <div className="relative z-10 order-1 flex min-h-[360px] items-center justify-center lg:min-h-[440px]">
+          <div className="mx-auto grid w-full max-w-4xl gap-10 sm:grid-cols-2 sm:gap-12 lg:max-w-[52rem]">
+            <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group flex min-w-0 items-center justify-center bg-transparent p-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#d6a928]/40">
               <span className="sr-only">Stash</span>
-              <img src="/images/sot-coin.png" alt="$OrT gold coin, 2026" className={`w-full max-w-sm motion-reduce:transition-none ${activeObject === "coin" ? "sot-coin-fall" : ""}`} />
+              <span className="relative flex h-72 w-full items-end justify-center sm:h-80">
+                <img src="/images/sot-coin.png" alt="$OrT gold coin, 2026" className={`w-full max-w-sm origin-center motion-reduce:transition-none ${activeObject === "coin" ? "sot-coin-fall" : ""}`} />
+                <span aria-hidden="true" className="absolute bottom-1 h-2 w-44 rounded-[50%] bg-slate-950/15 blur-sm" />
+              </span>
             </button>
-            <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group flex min-w-0 flex-col items-center gap-4 rounded-[2rem] bg-white p-4 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-slate-300 transition-shadow hover:shadow-[0_24px_70px_rgba(15,23,42,0.18)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/40 sm:p-5">
+            <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group flex min-w-0 items-center justify-center bg-transparent p-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/40">
               <span className="sr-only">Trash</span>
-              <img src="/images/sot-trash-can.png" alt="Battered silver trash can with recycle symbol" className={`w-full max-w-sm motion-reduce:transition-none ${activeObject === "bin" ? "sot-bin-lid-close" : ""}`} />
+              <span className="relative flex h-72 w-full items-end justify-center sm:h-80">
+                <img src="/images/sot-trash-can.png" alt="Battered silver trash can with recycle symbol" className="absolute bottom-0 w-full max-w-sm [clip-path:inset(16%_0_0_0)]" />
+                <img src="/images/sot-trash-can.png" alt="" aria-hidden="true" className={`absolute bottom-0 w-full max-w-sm [clip-path:inset(0_0_84%_0)] ${activeObject === "bin" ? "sot-bin-lid-close" : ""}`} />
+              </span>
             </button>
           </div>
         </div>
       </div>
-      <div aria-hidden="true" className="relative flex justify-center gap-4 overflow-hidden pb-5 text-5xl font-black leading-none sm:gap-8 sm:text-7xl">
-        {cascade.map(({ letter, className }, index) => <span key={`${letter}-${index}`} className={`${className} sot-letter-cascade`} style={{ animationDelay: `${index * 180}ms` }}>{letter}</span>)}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-hidden text-[clamp(4.5rem,14vw,11rem)] font-black leading-none">
+        {cascade.map(({ letter, className, position }, index) => <span key={`${letter}-${index}`} className={`absolute ${position} ${className} sot-letter-cascade`} style={{ animationDelay: `${index * 180}ms` }}>{letter}</span>)}
       </div>
     </section>
   );
