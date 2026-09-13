@@ -18,6 +18,7 @@ import { ArrowRight, BarChart3, BriefcaseBusiness, Recycle, Search, Users } from
 import { brandCategory, categoryOptions, matchesCategory } from "@/lib/categories";
 import { countryLabel, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
+import { SotHomeHero } from "@/components/SotHomeHero";
 import coinsWatermark from "@/assets/watermark-coins.png";
 import binsWatermark from "@/assets/watermark-bins.png";
 
@@ -90,6 +91,7 @@ function Index() {
 
       <div className="relative z-10">
         <Header onPosted={() => refetch()} />
+        <SotHomeHero />
 
         <main className="mx-auto max-w-6xl px-4 py-8">
           <section className="mb-8 text-center">
