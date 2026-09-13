@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Coins, Recycle } from "lucide-react";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 import { SotWordmark } from "@/components/SotWordmark";
@@ -13,6 +13,58 @@ const cascade = [
 
 export function SotHomeHero() {
   const [activeObject, setActiveObject] = useState<"coin" | "bin" | null>(null);
+  const letterRefs = useRef<Array<HTMLSpanElement | null>>([]);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) return;
+
+    const letters = cascade.map((_, index) => ({
+      index,
+      x: 0,
+      y: 0,
+      rotation: 0,
+      startX: 0,
+      startY: 0,
+      startRotation: 0,
+      targetX: (Math.random() - 0.5) * 260,
+      targetY: (Math.random() - 0.5) * 230,
+      targetRotation: (Math.random() - 0.5) * 90,
+      startedAt: performance.now(),
+      duration: 900 + Math.random() * 2300,
+    }));
+    let frame = 0;
+
+    const animate = (now: number) => {
+      for (const letter of letters) {
+        const progress = Math.min(1, (now - letter.startedAt) / letter.duration);
+        const eased = progress * progress * (3 - 2 * progress);
+        letter.x = letter.startX + (letter.targetX - letter.startX) * eased;
+        letter.y = letter.startY + (letter.targetY - letter.startY) * eased;
+        letter.rotation = letter.startRotation + (letter.targetRotation - letter.startRotation) * eased;
+        letterRefs.current[letter.index]?.style.setProperty("transform", `translate3d(${letter.x.toFixed(1)}px, ${letter.y.toFixed(1)}px, 0) rotate(${letter.rotation.toFixed(1)}deg)`);
+
+        if (progress >= 1) {
+          letter.x = letter.targetX;
+          letter.y = letter.targetY;
+          letter.rotation = letter.targetRotation;
+          letter.startX = letter.x;
+          letter.startY = letter.y;
+          letter.startRotation = letter.rotation;
+          letter.targetX = (Math.random() - 0.5) * 520;
+          letter.targetY = (Math.random() - 0.5) * 420;
+          letter.targetRotation = (Math.random() - 0.5) * 180;
+          letter.startedAt = now;
+          letter.duration = 700 + Math.random() * 3000;
+        }
+      }
+      frame = window.requestAnimationFrame(animate);
+    };
+
+    frame = window.requestAnimationFrame(animate);
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   const triggerObject = (object: "coin" | "bin") => {
     setActiveObject(object);
     object === "coin" ? playStashSound() : playTrashSound();
@@ -70,7 +122,7 @@ export function SotHomeHero() {
         </div>
       </div>
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-hidden text-[clamp(4.5rem,14vw,11rem)] font-black leading-none">
-        {cascade.map(({ letter, className, position }, index) => <span key={`${letter}-${index}`} className={`absolute ${position} ${className} sot-letter-cascade`} style={{ animationDelay: `${index * 180}ms` }}>{letter}</span>)}
+        {cascade.map(({ letter, className, position }, index) => <span key={`${letter}-${index}`} ref={(element) => { letterRefs.current[index] = element; }} className={`absolute ${position} ${className} sot-letter-cascade`}>{letter}</span>)}
       </div>
     </section>
   );
