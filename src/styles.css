@@ -4,6 +4,32 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes sot-coin-fall {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  55% { transform: translate3d(0, 9rem, 0) rotate(220deg) scale(0.94); }
+  78% { transform: translate3d(0, 7.5rem, 0) rotate(300deg) scale(0.98); }
+  100% { transform: translate3d(0, 9rem, 0) rotate(360deg) scale(0.94); }
+}
+
+@keyframes sot-bin-lid-close {
+  0% { transform: translateY(0) rotate(0deg); }
+  38% { transform: translateY(-0.4rem) rotate(-7deg); }
+  72% { transform: translateY(0.35rem) rotate(2deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+@keyframes sot-letter-cascade {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-0.8rem) rotate(-3deg); }
+}
+
+.sot-coin-fall { animation: sot-coin-fall 700ms cubic-bezier(.2,.8,.25,1) both; }
+.sot-bin-lid-close { animation: sot-bin-lid-close 520ms cubic-bezier(.2,.8,.25,1) both; }
+.sot-letter-cascade { animation: sot-letter-cascade 2.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .sot-coin-fall, .sot-bin-lid-close, .sot-letter-cascade { animation: none; }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
