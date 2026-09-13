@@ -91,9 +91,9 @@ function AwardsPage() {
             <div className="flex items-center gap-2 text-xs font-semibold text-primary"><Map className="h-4 w-4" />{regionLabel}</div>
           </div>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm md:col-span-2">
-              <div className="flex flex-col gap-3 lg:flex-row">
+          <div className="mt-5 grid items-start gap-5 md:grid-cols-[minmax(0,1fr)_280px]">
+            <div className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <div className="grid gap-3 lg:grid-cols-[minmax(140px,0.75fr)_minmax(180px,1.4fr)_minmax(150px,0.9fr)]">
                 <label className="flex h-10 items-center gap-2 rounded-xl border border-border bg-background px-3">
                   <CalendarClock className="h-4 w-4 text-muted-foreground" />
                   <span className="sr-only">Award period</span>
@@ -108,10 +108,10 @@ function AwardsPage() {
                   <span className="sr-only">Search awards</span>
                   <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search brands or markets" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
                 </label>
-                <label className="flex h-10 items-center gap-2 rounded-xl border border-border bg-background px-3">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
+                <label className="flex h-10 min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-3">
+                  <Filter className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <span className="sr-only">Award country</span>
-                  <select value={country} onChange={(event) => setCountry(event.target.value)} className="bg-transparent text-sm font-medium outline-none">
+                  <select value={country} onChange={(event) => setCountry(event.target.value)} className="min-w-0 w-full bg-transparent text-sm font-medium outline-none">
                     {countries.map((item) => <option key={item} value={item}>{item === "All countries" ? item : countryName(item)}</option>)}
                   </select>
                 </label>
@@ -120,7 +120,7 @@ function AwardsPage() {
                 {categories.map((item) => <button key={item} onClick={() => setCategory(item)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", category === item ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground")}>{item}</button>)}
               </div>
             </div>
-            <div className="rounded-2xl border border-stash/30 bg-stash/5 p-4 shadow-sm">
+            <div className="rounded-2xl border border-stash/30 bg-stash/5 p-5 shadow-sm md:min-h-[148px]">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-stash"><CheckCircle2 className="h-4 w-4" /> Live snapshot</div>
               <p className="mt-2 font-display text-sm font-bold">{period}</p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Updated {snapshotTime.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. Scores remain scoped to {regionLabel.toLowerCase()} and {category === "All categories" ? "all categories" : category}.</p>
