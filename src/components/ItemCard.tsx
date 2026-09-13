@@ -17,6 +17,7 @@ import { CommentThread } from "@/components/CommentThread";
 import { PostText } from "@/components/PostText";
 import { AuditBadge } from "@/components/AuditBadge";
 import { BrandResponses } from "@/components/BrandResponses";
+import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 
 export function ItemCard({
   item,
@@ -172,7 +173,7 @@ export function ItemCard({
             variant="stash"
             size="lg"
             disabled={busy}
-            onClick={() => vote("stash")}
+            onClick={() => { playStashSound(); void vote("stash"); }}
             className={cn(
               "gap-2",
               item.myVerdict === "stash" && "verdict-picked",
@@ -185,7 +186,7 @@ export function ItemCard({
             variant="trash"
             size="lg"
             disabled={busy}
-            onClick={() => vote("trash")}
+            onClick={() => { playTrashSound(); void vote("trash"); }}
             className={cn(
               "gap-2",
               item.myVerdict === "trash" && "verdict-picked",

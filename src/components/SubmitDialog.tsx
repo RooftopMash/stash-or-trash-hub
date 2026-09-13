@@ -20,6 +20,7 @@ import { Plus, ImagePlus } from "lucide-react";
 import coinIcon from "@/assets/icon-coin.png";
 import binIcon from "@/assets/icon-bin.png";
 import { cn } from "@/lib/utils";
+import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 import type { Verdict } from "@/lib/stash";
 import { toast } from "sonner";
 
@@ -135,7 +136,7 @@ export function SubmitDialog({
                 type="button"
                 variant="stash"
                 size="lg"
-                onClick={() => setVerdict("stash")}
+                onClick={() => { playStashSound(); setVerdict("stash"); }}
                 className={cn("gap-2", verdict === "stash" && "verdict-picked", verdict === "trash" && "verdict-dimmed")}
               >
                 <img src={coinIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.stash")}
@@ -144,7 +145,7 @@ export function SubmitDialog({
                 type="button"
                 variant="trash"
                 size="lg"
-                onClick={() => setVerdict("trash")}
+                onClick={() => { playTrashSound(); setVerdict("trash"); }}
                 className={cn("gap-2", verdict === "trash" && "verdict-picked", verdict === "stash" && "verdict-dimmed")}
               >
                 <img src={binIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.trash")}
