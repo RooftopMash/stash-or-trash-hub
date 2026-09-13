@@ -64,7 +64,7 @@ function Index() {
   }, [localFeed, query, selectedCategory]);
 
   return (
-    <div className="relative h-screen overflow-hidden bg-white">
+    <div className="relative min-h-screen overflow-x-hidden bg-white">
       {/* Split-screen brand watermark: gold coins (Stash) on the left, falling bins (Trash) on the right */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div
