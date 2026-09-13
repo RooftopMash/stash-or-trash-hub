@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { SecureConnectionsPanel } from "@/components/SecureConnectionsPanel";
 import { BrandAICopilot } from "@/components/BrandAICopilot";
 import { ContentSafetyGate } from "@/components/ContentSafetyGate";
+import { BrandIntelligencePanel } from "@/components/BrandIntelligencePanel";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   beforeLoad: async () => {
@@ -260,6 +261,8 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
           </div>
 
           {/* Phase A KPIs — 30-day CX signal for this brand */}
+          {kpis && <BrandIntelligencePanel kpis={kpis} />}
+
           <div className="mt-4 rounded-xl border border-border p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {t("brandTeam.kpis")}

@@ -24,6 +24,7 @@ import type { Verdict } from "@/lib/stash";
 import { toast } from "sonner";
 
 const NO_BRAND = "__none__";
+const FEEDBACK_TYPES = ["Concern", "Compliment", "Idea", "Question"] as const;
 
 export function SubmitDialog({
   onPosted,
@@ -152,14 +153,13 @@ export function SubmitDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category">{t("submit.category")}</Label>
-            <Input
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder={t("submit.categoryPh")}
-              maxLength={40}
-            />
+            <Label htmlFor="category">What kind of feedback is this?</Label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {FEEDBACK_TYPES.map((type) => (
+                <Button key={type} type="button" variant={category === type ? "default" : "outline"} size="sm" onClick={() => setCategory(type)}>{type}</Button>
+              ))}
+            </div>
+            <Input id="category" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Add a more specific topic, if useful" maxLength={40} />
           </div>
 
           <div className="space-y-2">

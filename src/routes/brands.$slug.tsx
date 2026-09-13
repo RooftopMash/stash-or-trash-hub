@@ -44,6 +44,7 @@ import {
   TrendingDown
 } from "lucide-react";
 import { toast } from "sonner";
+import { PeopleTrustFactor } from "@/components/PeopleTrustFactor";
 
 export const Route = createFileRoute("/brands/$slug")({
   component: BrandPage,
@@ -265,7 +266,9 @@ function BrandPage() {
                 {brand.category && <p className="text-sm text-muted-foreground mt-0.5">{brand.category}</p>}
                 {brand.description && <p className="mt-2 text-sm text-foreground/80 leading-relaxed">{brand.description}</p>}
 
-                <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
+                <div className="mt-4"><PeopleTrustFactor signals={{ evidence: Math.min(100, 50 + (feed?.length ?? 0) * 2), response: Math.min(100, 40 + (feed?.filter((item) => item.status === "resolved").length ?? 0) * 10), experience: Math.min(100, Math.max(0, brand.trust_score)), trust: Math.min(100, Math.max(0, brand.trust_score)) }} compact /></div>
+
+  <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
                   <span className="flex items-center gap-1.5">
                     <TrendingUp className="h-4 w-4 text-stash" />
                     <span className="font-semibold">{brand.trust_score}</span>
