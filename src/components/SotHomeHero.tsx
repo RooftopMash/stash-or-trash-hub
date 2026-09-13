@@ -39,18 +39,13 @@ export function SotHomeHero() {
           </div>
         </div>
         <div className="order-1 flex min-h-[280px] items-center justify-center lg:order-2 lg:min-h-[390px]">
-          <div className="relative flex w-full max-w-2xl items-center justify-between gap-4 sm:gap-10">
-            <div className="relative flex h-40 w-40 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#f8dd72] via-[#d6a928] to-[#966b08] shadow-[12px_18px_0_rgba(51,65,85,0.12),inset_-12px_-12px_20px_rgba(92,64,3,0.25),inset_10px_10px_18px_rgba(255,248,190,0.6)] sm:h-56 sm:w-56">
-              <div className="absolute inset-4 rounded-full border-2 border-[#fff1a8]/70" />
-              <SotWordmark size="lg" className="relative scale-125" />
-            </div>
-            <div className="absolute left-1/2 top-1/2 hidden h-px w-1/4 -translate-x-1/2 bg-slate-300 sm:block" />
-            <div className="relative flex h-44 w-32 shrink-0 flex-col items-center justify-center rounded-b-[2rem] rounded-t-lg border-4 border-slate-500 bg-gradient-to-r from-slate-300 via-slate-100 to-slate-400 shadow-[10px_14px_0_rgba(51,65,85,0.14)] before:absolute before:-top-5 before:h-8 before:w-36 before:rounded-full before:border-4 before:border-slate-500 before:bg-slate-300 after:absolute after:bottom-8 after:left-5 after:h-2 after:w-20 after:rotate-12 after:rounded-full after:bg-slate-500/50 sm:h-60 sm:w-44 sm:before:w-48">
-              <div className="absolute left-3 top-14 h-10 w-4 -rotate-12 rounded-full bg-slate-500/40" />
-              <div className="absolute right-4 top-24 h-14 w-3 rotate-45 rounded-full bg-slate-600/40" />
-              <div className="absolute bottom-14 left-8 h-3 w-16 -rotate-6 rounded-full bg-slate-700/40" />
-              <span className="relative mt-8 text-center text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Make it better</span>
-            </div>
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)] ring-1 ring-slate-200">
+            <img
+              src="/images/sot-home-objects.png"
+              alt="A realistic gold coin beside a battered silver trash can"
+              className="h-auto w-full object-cover"
+            />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white/40 to-transparent" />
           </div>
         </div>
       </div>
