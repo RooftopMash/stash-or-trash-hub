@@ -8,12 +8,12 @@ const cascade = [
   { letter: "S", className: "text-[#d6a928]", position: "left-[3%] top-[8%] rotate-[-14deg]" },
   { letter: "O", className: "text-slate-950", position: "left-[19%] top-[40%] rotate-[12deg]" },
   { letter: "r", className: "text-[#e34b4b]", position: "left-[37%] top-[10%] rotate-[-8deg]" },
-  { letter: "T", className: "text-[#2563eb]", position: "left-[54%] top-[48%] rotate-[15deg]" },
-  { letter: "S", className: "text-[#e34b4b]", position: "left-[70%] top-[14%] rotate-[9deg]" },
-  { letter: "O", className: "text-[#d6a928]", position: "left-[84%] top-[42%] rotate-[-12deg]" },
-  { letter: "r", className: "text-[#2563eb]", position: "left-[11%] top-[72%] rotate-[8deg]" },
+  { letter: "T", className: "text-slate-950", position: "left-[54%] top-[48%] rotate-[15deg]" },
+  { letter: "S", className: "text-[#d6a928]", position: "left-[70%] top-[14%] rotate-[9deg]" },
+  { letter: "O", className: "text-slate-950", position: "left-[84%] top-[42%] rotate-[-12deg]" },
+  { letter: "r", className: "text-[#e34b4b]", position: "left-[11%] top-[72%] rotate-[8deg]" },
   { letter: "T", className: "text-slate-950", position: "left-[43%] top-[78%] rotate-[-10deg]" },
-  { letter: "S", className: "text-[#2563eb]", position: "left-[76%] top-[73%] rotate-[14deg]" },
+  { letter: "S", className: "text-[#d6a928]", position: "left-[76%] top-[73%] rotate-[14deg]" },
 ];
 
 export function SotHomeHero() {
@@ -74,7 +74,7 @@ export function SotHomeHero() {
           </div>
         </div>
       </div>
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden text-[clamp(4.5rem,14vw,11rem)] font-black leading-none">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-hidden text-[clamp(4.5rem,14vw,11rem)] font-black leading-none">
         {cascade.map(({ letter, className, position }, index) => <span key={`${letter}-${index}`} className={`absolute ${position} ${className} sot-letter-cascade`} style={{ animationDelay: `${index * 180}ms` }}>{letter}</span>)}
       </div>
     </section>
