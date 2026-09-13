@@ -5,22 +5,24 @@
 @custom-variant dark (&:is(.dark *));
 
 @keyframes sot-coin-fall {
-  0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
-  55% { transform: translate3d(0, 9rem, 0) rotate(220deg) scale(0.94); }
-  78% { transform: translate3d(0, 7.5rem, 0) rotate(300deg) scale(0.98); }
-  100% { transform: translate3d(0, 9rem, 0) rotate(360deg) scale(0.94); }
+  0% { transform: translate3d(0, -11rem, 0) rotate(-20deg) scale(0.9); opacity: 0; }
+  14% { opacity: 1; }
+  72% { transform: translate3d(0, 8.5rem, 0) rotate(420deg) scale(0.95); }
+  84% { transform: translate3d(0, 7.25rem, 0) rotate(470deg) scale(1.02); }
+  100% { transform: translate3d(0, 8.5rem, 0) rotate(520deg) scale(0.95); opacity: 1; }
 }
 
 @keyframes sot-bin-lid-close {
-  0% { transform: translateY(0) rotate(0deg); }
-  38% { transform: translateY(-0.4rem) rotate(-7deg); }
-  72% { transform: translateY(0.35rem) rotate(2deg); }
-  100% { transform: translateY(0) rotate(0deg); }
+  0% { transform: translate3d(0, -0.25rem, 0) rotate(0deg); }
+  30% { transform: translate3d(-0.9rem, -1.25rem, 0) rotate(-13deg); }
+  65% { transform: translate3d(0.45rem, 0.2rem, 0) rotate(5deg); }
+  82% { transform: translate3d(-0.2rem, -0.15rem, 0) rotate(-2deg); }
+  100% { transform: translate3d(0, 0, 0) rotate(0deg); }
 }
 
 @keyframes sot-letter-cascade {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-0.8rem) rotate(-3deg); }
+  0%, 100% { transform: translate3d(0, -1.5rem, 0) rotate(0deg); }
+  50% { transform: translate3d(2.25rem, 2.5rem, 0) rotate(12deg); }
 }
 
 .sot-coin-fall { animation: sot-coin-fall 700ms cubic-bezier(.2,.8,.25,1) both; }
