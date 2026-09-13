@@ -64,7 +64,7 @@ function Index() {
   }, [localFeed, query, selectedCategory]);
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative h-screen overflow-hidden bg-white">
       {/* Split-screen brand watermark: gold coins (Stash) on the left, falling bins (Trash) on the right */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div
@@ -93,7 +93,7 @@ function Index() {
         <Header onPosted={() => refetch()} />
         <SotHomeHero />
 
-        <main className="mx-auto max-w-6xl px-4 py-8">
+        <main className="hidden">
           <section className="mb-8 text-center">
             <h1 className="font-display text-4xl font-extrabold sm:text-5xl">
               <SotWordmark size="lg" />

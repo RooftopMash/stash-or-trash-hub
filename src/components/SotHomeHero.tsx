@@ -30,8 +30,11 @@ export function SotHomeHero() {
             A direct feedback-and-response platform where people speak clearly, brands respond responsibly, and better ideas have somewhere to go.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link to="/brands" className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800">
-              Explore brands <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            <Link to="/feed" className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800">
+              Explore the feed <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+            <Link to="/brands" className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-950 hover:text-slate-950">
+              Browse brands
             </Link>
             <Link to="/awards" className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-950 hover:text-slate-950">
               See the live awards <Recycle className="h-4 w-4" aria-hidden="true" />
