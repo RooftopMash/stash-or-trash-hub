@@ -19,20 +19,28 @@ export function SotHomeHero() {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) return;
 
-    const letters = cascade.map((_, index) => ({
-      index,
-      x: 0,
-      y: 0,
-      rotation: 0,
-      startX: 0,
-      startY: 0,
-      startRotation: 0,
-      targetX: (Math.random() - 0.5) * 260,
-      targetY: (Math.random() - 0.5) * 230,
-      targetRotation: (Math.random() - 0.5) * 90,
-      startedAt: performance.now(),
-      duration: 900 + Math.random() * 2300,
-    }));
+    const randomPoint = () => ({
+      x: (Math.random() - 0.5) * window.innerWidth * 0.9,
+      y: (Math.random() - 0.5) * window.innerHeight * 0.9,
+      rotation: (Math.random() - 0.5) * 180,
+    });
+    const letters = cascade.map((_, index) => {
+      const target = randomPoint();
+      return {
+        index,
+        x: 0,
+        y: 0,
+        rotation: 0,
+        startX: 0,
+        startY: 0,
+        startRotation: 0,
+        targetX: target.x,
+        targetY: target.y,
+        targetRotation: target.rotation,
+        startedAt: performance.now(),
+        duration: 900 + Math.random() * 2300,
+      };
+    });
     let frame = 0;
 
     const animate = (now: number) => {
@@ -51,9 +59,10 @@ export function SotHomeHero() {
           letter.startX = letter.x;
           letter.startY = letter.y;
           letter.startRotation = letter.rotation;
-          letter.targetX = (Math.random() - 0.5) * 520;
-          letter.targetY = (Math.random() - 0.5) * 420;
-          letter.targetRotation = (Math.random() - 0.5) * 180;
+          const target = randomPoint();
+          letter.targetX = target.x;
+          letter.targetY = target.y;
+          letter.targetRotation = target.rotation;
           letter.startedAt = now;
           letter.duration = 700 + Math.random() * 3000;
         }
@@ -121,7 +130,7 @@ export function SotHomeHero() {
           </div>
         </div>
       </div>
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-hidden text-[clamp(4.5rem,14vw,11rem)] font-black leading-none">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-50 overflow-hidden text-[clamp(4.5rem,14vw,11rem)] font-black leading-none">
         {cascade.map(({ letter, className, position }, index) => <span key={`${letter}-${index}`} ref={(element) => { letterRefs.current[index] = element; }} className={`absolute ${position} ${className} sot-letter-cascade`}>{letter}</span>)}
       </div>
     </section>
