@@ -124,7 +124,7 @@ export function ItemCard({
             )}
             <h3 className="font-display text-xl font-bold leading-tight">
               <Link to="/items/$id" params={{ id: item.id }} className="hover:underline">
-                <PostText text={item.title} />
+                <PostText text={item.title} linkHashtags={false} />
               </Link>
             </h3>
             <Link
