@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Coins, Recycle } from "lucide-react";
-import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 import { SotWordmark } from "@/components/SotWordmark";
 
 const cascade = [
@@ -76,7 +75,6 @@ export function SotHomeHero() {
 
   const triggerObject = (object: "coin" | "bin") => {
     setActiveObject(object);
-    object === "coin" ? playStashSound() : playTrashSound();
     window.setTimeout(() => setActiveObject(null), 650);
   };
 
