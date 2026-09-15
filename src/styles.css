@@ -56,11 +56,19 @@
   100% { transform: translate3d(3rem, 2rem, 0) rotate(15deg); }
 }
 
+.sot-hero-coin,
+.sot-hero-bin { animation: sot-hero-float 3.8s ease-in-out infinite; will-change: transform; }
+.sot-hero-bin { animation-delay: -1.4s; }
 .sot-coin-fall { animation: sot-coin-fall 700ms cubic-bezier(.2,.8,.25,1) both; }
 .sot-bin-lid-close { animation: sot-bin-lid-close 520ms cubic-bezier(.2,.8,.25,1) both; }
+
+@keyframes sot-hero-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
 .sot-letter-cascade { animation: none; will-change: transform; }
 @media (prefers-reduced-motion: reduce) {
-  .sot-coin-fall, .sot-bin-lid-close, .sot-letter-cascade { animation: none; }
+  .sot-hero-coin, .sot-hero-bin, .sot-coin-fall, .sot-bin-lid-close, .sot-letter-cascade { animation: none; }
 }
 
 @theme inline {

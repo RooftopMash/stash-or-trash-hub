@@ -116,15 +116,19 @@ export function SotHomeHero() {
             <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group flex min-w-0 items-center justify-center bg-transparent p-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#d6a928]/40">
               <span className="sr-only">Stash</span>
               <span className="relative flex h-72 w-full items-end justify-center sm:h-80">
-                <img src="/images/sot-coin.png" alt="$OrT gold coin, 2026" className={`w-full max-w-sm origin-center motion-reduce:transition-none ${activeObject === "coin" ? "sot-coin-fall" : ""}`} />
+                <span aria-hidden="true" className={`sot-hero-coin ${activeObject === "coin" ? "sot-coin-fall" : ""}`}>
+                  <Coins className="h-32 w-32 text-[#d6a928] drop-shadow-[0_12px_8px_rgba(15,23,42,0.2)] sm:h-44 sm:w-44" strokeWidth={1.5} />
+                </span>
                 <span aria-hidden="true" className="absolute bottom-1 h-2 w-44 rounded-[50%] bg-slate-950/15 blur-sm" />
               </span>
             </button>
             <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group flex min-w-0 items-center justify-center bg-transparent p-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/40">
               <span className="sr-only">Trash</span>
               <span className="relative flex h-72 w-full items-end justify-center sm:h-80">
-                <img src="/images/sot-trash-can.png" alt="Battered silver trash can with recycle symbol" className="absolute bottom-0 w-full max-w-sm [clip-path:inset(16%_0_0_0)]" />
-                <img src="/images/sot-trash-can.png" alt="" aria-hidden="true" className={`absolute bottom-0 w-full max-w-sm [clip-path:inset(0_0_84%_0)] ${activeObject === "bin" ? "sot-bin-lid-close" : ""}`} />
+                <span aria-hidden="true" className={`sot-hero-bin ${activeObject === "bin" ? "sot-bin-lid-close" : ""}`}>
+                  <Recycle className="h-36 w-36 text-slate-500 drop-shadow-[0_12px_8px_rgba(15,23,42,0.2)] sm:h-48 sm:w-48" strokeWidth={1.35} />
+                </span>
+                <span aria-hidden="true" className="absolute bottom-1 h-2 w-44 rounded-[50%] bg-slate-950/15 blur-sm" />
               </span>
             </button>
           </div>
