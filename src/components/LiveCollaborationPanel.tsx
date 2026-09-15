@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Camera, Mic, Phone, ShieldCheck, Video, VideoOff, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/integrations/supabase/client";
 
 type LiveCollaborationPanelProps = {
   partnerName: string;
@@ -22,6 +23,20 @@ export function LiveCollaborationPanel({ partnerName, isBrandWorkspace, partnerI
   const videoRef = useRef<ICameraVideoTrack | null>(null);
   const [cameraOn, setCameraOn] = useState(true);
   const [microphoneOn, setMicrophoneOn] = useState(true);
+  const [incomingCall, setIncomingCall] = useState<"voice" | "video" | null>(null);
+  const signalingRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+
+  useEffect(() => {
+    if (!session?.user?.id || !partnerId) return;
+    const supabase = createClient();
+    const channelName = `call:${[session.user.id, partnerId].sort().join(":")}`;
+    const channel = supabase.channel(channelName);
+    signalingRef.current = channel;
+    void channel.on("broadcast", { event: "incoming-call" }, ({ payload }) => {
+      if (payload?.to === session.user.id && (payload.mode === "voice" || payload.mode === "video")) setIncomingCall(payload.mode);
+    }).subscribe();
+    return () => { void supabase.removeChannel(channel); signalingRef.current = null; };
+  }, [partnerId, session?.user?.id]);
 
   const requestCall = async (mode: "voice" | "video") => {
     if (!session?.access_token) return;
@@ -38,7 +53,19 @@ export function LiveCollaborationPanel({ partnerName, isBrandWorkspace, partnerI
       if (mode === "video") { videoRef.current = await AgoraRTC.createCameraVideoTrack(); await client.publish(videoRef.current); }
       setConnected(true);
       setRequestedMode(mode);
+      await signalingRef.current?.send({ type: "broadcast", event: "incoming-call", payload: { to: partnerId, from: session.user.id, mode } });
     } catch (error) { console.error("Agora call failed", error); setRequestedMode(null); }
+  };
+
+  const declineCall = async () => {
+    await signalingRef.current?.send({ type: "broadcast", event: "call-declined", payload: { to: partnerId, from: session?.user?.id } });
+    setIncomingCall(null);
+  };
+
+  const acceptCall = async () => {
+    const mode = incomingCall;
+    setIncomingCall(null);
+    if (mode) await requestCall(mode);
   };
 
   const leaveCall = async () => { audioRef.current?.close(); videoRef.current?.close(); if (clientRef.current) await clientRef.current.leave(); clientRef.current = null; setConnected(false); setRequestedMode(null); };
@@ -46,6 +73,18 @@ export function LiveCollaborationPanel({ partnerName, isBrandWorkspace, partnerI
 
   return (
     <div className="border-b border-border bg-secondary/40 px-4 py-3">
+      {incomingCall && (
+        <div role="alert" className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-stash/30 bg-background p-3 shadow-sm">
+          <div>
+            <p className="font-semibold">Incoming {incomingCall === "video" ? "video" : "voice"} call</p>
+            <p className="text-xs text-muted-foreground">{partnerName} is calling you.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" onClick={() => void acceptCall()}><Phone data-icon="inline-start" /> Accept</Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => void declineCall()}><X data-icon="inline-start" /> Decline</Button>
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold">Collaborate with {partnerName}</p>
