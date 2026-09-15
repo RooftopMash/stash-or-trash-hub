@@ -1,80 +1,21 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ArrowRight, Coins, Recycle } from "lucide-react";
+import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 import { SotWordmark } from "@/components/SotWordmark";
 
 const cascade = [
-  { letter: "S", className: "text-[#d6a928]", position: "left-[8%] top-[18%] rotate-[-14deg]" },
-  { letter: "O", className: "text-slate-950", position: "left-[31%] top-[55%] rotate-[12deg]" },
-  { letter: "r", className: "text-[#e34b4b]", position: "left-[56%] top-[14%] rotate-[-8deg]" },
-  { letter: "T", className: "text-slate-950", position: "left-[78%] top-[52%] rotate-[15deg]" },
+  { letter: "S", className: "text-[#d6a928]" },
+  { letter: "O", className: "text-slate-950" },
+  { letter: "r", className: "text-[#e34b4b]" },
+  { letter: "T", className: "text-[#2563eb]" },
 ];
 
 export function SotHomeHero() {
   const [activeObject, setActiveObject] = useState<"coin" | "bin" | null>(null);
-  const letterRefs = useRef<Array<HTMLSpanElement | null>>([]);
-
-  useEffect(() => {
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion) return;
-
-    const randomPoint = () => ({
-      x: (Math.random() - 0.5) * window.innerWidth * 0.9,
-      y: (Math.random() - 0.5) * window.innerHeight * 0.9,
-      rotation: (Math.random() - 0.5) * 180,
-    });
-    const letters = cascade.map((_, index) => {
-      const target = randomPoint();
-      return {
-        index,
-        x: 0,
-        y: 0,
-        rotation: 0,
-        startX: 0,
-        startY: 0,
-        startRotation: 0,
-        targetX: target.x,
-        targetY: target.y,
-        targetRotation: target.rotation,
-        startedAt: performance.now(),
-        duration: 900 + Math.random() * 2300,
-      };
-    });
-    let frame = 0;
-
-    const animate = (now: number) => {
-      for (const letter of letters) {
-        const progress = Math.min(1, (now - letter.startedAt) / letter.duration);
-        const eased = progress * progress * (3 - 2 * progress);
-        letter.x = letter.startX + (letter.targetX - letter.startX) * eased;
-        letter.y = letter.startY + (letter.targetY - letter.startY) * eased;
-        letter.rotation = letter.startRotation + (letter.targetRotation - letter.startRotation) * eased;
-        letterRefs.current[letter.index]?.style.setProperty("transform", `translate3d(${letter.x.toFixed(1)}px, ${letter.y.toFixed(1)}px, 0) rotate(${letter.rotation.toFixed(1)}deg)`);
-
-        if (progress >= 1) {
-          letter.x = letter.targetX;
-          letter.y = letter.targetY;
-          letter.rotation = letter.targetRotation;
-          letter.startX = letter.x;
-          letter.startY = letter.y;
-          letter.startRotation = letter.rotation;
-          const target = randomPoint();
-          letter.targetX = target.x;
-          letter.targetY = target.y;
-          letter.targetRotation = target.rotation;
-          letter.startedAt = now;
-          letter.duration = 700 + Math.random() * 3000;
-        }
-      }
-      frame = window.requestAnimationFrame(animate);
-    };
-
-    frame = window.requestAnimationFrame(animate);
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-
   const triggerObject = (object: "coin" | "bin") => {
     setActiveObject(object);
+    object === "coin" ? playStashSound() : playTrashSound();
     window.setTimeout(() => setActiveObject(null), 650);
   };
 
@@ -109,31 +50,21 @@ export function SotHomeHero() {
             </Link>
           </div>
         </div>
-        <div className="relative z-10 order-1 flex min-h-[360px] items-center justify-center lg:min-h-[440px]">
-          <div className="mx-auto grid w-full max-w-4xl gap-10 sm:grid-cols-2 sm:gap-12 lg:max-w-[52rem]">
-            <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group flex min-w-0 items-center justify-center bg-transparent p-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#d6a928]/40">
+        <div className="order-1 flex min-h-[280px] items-center justify-center lg:min-h-[390px]">
+          <div className="mx-auto grid w-full max-w-4xl gap-6 sm:grid-cols-2 sm:gap-8 lg:max-w-[52rem]">
+            <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group flex min-w-0 flex-col items-center gap-4 rounded-[2rem] bg-white p-4 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-[#d6a928]/30 transition-shadow hover:shadow-[0_24px_70px_rgba(214,169,40,0.22)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#d6a928]/40 sm:p-5">
               <span className="sr-only">Stash</span>
-              <span className="relative flex h-72 w-full items-end justify-center sm:h-80">
-                <span aria-hidden="true" className={`sot-hero-coin ${activeObject === "coin" ? "sot-coin-fall" : ""}`}>
-                  <Coins className="h-32 w-32 text-[#d6a928] drop-shadow-[0_12px_8px_rgba(15,23,42,0.2)] sm:h-44 sm:w-44" strokeWidth={1.5} />
-                </span>
-                <span aria-hidden="true" className="absolute bottom-1 h-2 w-44 rounded-[50%] bg-slate-950/15 blur-sm" />
-              </span>
+              <img src="/images/sot-coin.png" alt="$OrT gold coin, 2026" className={`w-full max-w-sm motion-reduce:transition-none ${activeObject === "coin" ? "sot-coin-fall" : ""}`} />
             </button>
-            <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group flex min-w-0 items-center justify-center bg-transparent p-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/40">
+            <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group flex min-w-0 flex-col items-center gap-4 rounded-[2rem] bg-white p-4 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-slate-300 transition-shadow hover:shadow-[0_24px_70px_rgba(15,23,42,0.18)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/40 sm:p-5">
               <span className="sr-only">Trash</span>
-              <span className="relative flex h-72 w-full items-end justify-center sm:h-80">
-                <span aria-hidden="true" className={`sot-hero-bin ${activeObject === "bin" ? "sot-bin-lid-close" : ""}`}>
-                  <Recycle className="h-36 w-36 text-slate-500 drop-shadow-[0_12px_8px_rgba(15,23,42,0.2)] sm:h-48 sm:w-48" strokeWidth={1.35} />
-                </span>
-                <span aria-hidden="true" className="absolute bottom-1 h-2 w-44 rounded-[50%] bg-slate-950/15 blur-sm" />
-              </span>
+              <img src="/images/sot-trash-can.png" alt="Battered silver trash can with recycle symbol" className={`w-full max-w-sm motion-reduce:transition-none ${activeObject === "bin" ? "sot-bin-lid-close" : ""}`} />
             </button>
           </div>
         </div>
       </div>
-      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-50 overflow-hidden text-[clamp(4.5rem,14vw,11rem)] font-black leading-none">
-        {cascade.map(({ letter, className, position }, index) => <span key={`${letter}-${index}`} ref={(element) => { letterRefs.current[index] = element; }} className={`absolute ${position} ${className} sot-letter-cascade`}>{letter}</span>)}
+      <div aria-hidden="true" className="relative flex justify-center gap-4 overflow-hidden pb-5 text-5xl font-black leading-none sm:gap-8 sm:text-7xl">
+        {cascade.map(({ letter, className }, index) => <span key={`${letter}-${index}`} className={`${className} sot-letter-cascade`} style={{ animationDelay: `${index * 180}ms` }}>{letter}</span>)}
       </div>
     </section>
   );

@@ -16,7 +16,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Coins, ImagePlus, Plus, Trash2 } from "lucide-react";
+import { Plus, ImagePlus } from "lucide-react";
+import coinIcon from "@/assets/icon-coin.png";
+import binIcon from "@/assets/icon-bin.png";
 import { cn } from "@/lib/utils";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 import type { Verdict } from "@/lib/stash";
@@ -137,7 +139,7 @@ export function SubmitDialog({
                 onClick={() => { playStashSound(); setVerdict("stash"); }}
                 className={cn("gap-2", verdict === "stash" && "verdict-picked", verdict === "trash" && "verdict-dimmed")}
               >
-                <Coins aria-hidden="true" className="verdict-icon" /> {t("vote.stash")}
+                <img src={coinIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.stash")}
               </Button>
               <Button
                 type="button"
@@ -146,7 +148,7 @@ export function SubmitDialog({
                 onClick={() => { playTrashSound(); setVerdict("trash"); }}
                 className={cn("gap-2", verdict === "trash" && "verdict-picked", verdict === "stash" && "verdict-dimmed")}
               >
-                <Trash2 aria-hidden="true" className="verdict-icon" /> {t("vote.trash")}
+                <img src={binIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.trash")}
               </Button>
             </div>
           </div>

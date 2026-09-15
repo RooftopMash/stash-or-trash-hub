@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { castBrandVote, removeBrandVote, fetchBrandVerdict } from "@/lib/brands";
 import { recordVote, emitEngagementChange } from "@/lib/engagement";
-import { Coins, Trash2 } from "lucide-react";
+import coinIcon from "@/assets/icon-coin.png";
+import binIcon from "@/assets/icon-bin.png";
 import { cn } from "@/lib/utils";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 
@@ -78,7 +79,7 @@ export function BrandVerdict({
         }}
         className={cn("gap-2", mine === "stash" && "verdict-picked", mine === "trash" && "verdict-dimmed")}
       >
-        <Coins aria-hidden="true" className="verdict-icon" /> {t("vote.stash")}
+        <img src={coinIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.stash")}
       </Button>
       <Button
         variant="trash"
@@ -92,7 +93,7 @@ export function BrandVerdict({
         }}
         className={cn("gap-2", mine === "trash" && "verdict-picked", mine === "stash" && "verdict-dimmed")}
       >
-        <Trash2 aria-hidden="true" className="verdict-icon" /> {t("vote.trash")}
+        <img src={binIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.trash")}
       </Button>
     </div>
   );

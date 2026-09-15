@@ -359,23 +359,6 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
   };
 }
 
-export async function uploadProfilePhoto(userId: string, file: File): Promise<string> {
-  if (!file.type.startsWith("image/")) throw new Error("Please choose an image file.");
-  if (file.size > 5 * 1024 * 1024) throw new Error("Profile photos must be 5 MB or smaller.");
-
-  const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const path = `${userId}/profile-${crypto.randomUUID()}.${extension}`;
-  const { error } = await supabase.storage.from("item-images").upload(path, file, {
-    cacheControl: "3600",
-    contentType: file.type,
-    upsert: false,
-  });
-  if (error) throw error;
-
-  const { data } = supabase.storage.from("item-images").getPublicUrl(path);
-  return data.publicUrl;
-}
-
 export async function updateMyProfile(input: {
   userId: string;
   display_name: string;
