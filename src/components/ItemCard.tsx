@@ -4,9 +4,7 @@ import type { FeedItem, Verdict } from "@/lib/stash";
 import { castVote, removeVote, deleteItem } from "@/lib/stash";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
-import coinIcon from "@/assets/icon-coin.png";
-import binIcon from "@/assets/icon-bin.png";
+import { Coins, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -180,7 +178,7 @@ export function ItemCard({
               item.myVerdict === "trash" && "verdict-dimmed",
             )}
           >
-            <img src={coinIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.stash")}
+            <Coins aria-hidden="true" className="verdict-icon" /> {t("vote.stash")}
           </Button>
           <Button
             variant="trash"
@@ -193,7 +191,7 @@ export function ItemCard({
               item.myVerdict === "stash" && "verdict-dimmed",
             )}
           >
-            <img src={binIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.trash")}
+            <Trash2 aria-hidden="true" className="verdict-icon" /> {t("vote.trash")}
           </Button>
         </div>
 

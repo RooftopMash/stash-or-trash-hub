@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Camera, Mic, Phone, ShieldCheck, Video, VideoOff, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 type LiveCollaborationPanelProps = {
   partnerName: string;
@@ -24,11 +24,10 @@ export function LiveCollaborationPanel({ partnerName, isBrandWorkspace, partnerI
   const [cameraOn, setCameraOn] = useState(true);
   const [microphoneOn, setMicrophoneOn] = useState(true);
   const [incomingCall, setIncomingCall] = useState<"voice" | "video" | null>(null);
-  const signalingRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+  const signalingRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!session?.user?.id || !partnerId) return;
-    const supabase = createClient();
     const channelName = `call:${[session.user.id, partnerId].sort().join(":")}`;
     const channel = supabase.channel(channelName);
     signalingRef.current = channel;
