@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowRight, Coins, Recycle } from "lucide-react";
-import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 import { SotWordmark } from "@/components/SotWordmark";
 
 const cascade = [
@@ -15,7 +14,6 @@ export function SotHomeHero() {
   const [activeObject, setActiveObject] = useState<"coin" | "bin" | null>(null);
   const triggerObject = (object: "coin" | "bin") => {
     setActiveObject(object);
-    object === "coin" ? playStashSound() : playTrashSound();
     window.setTimeout(() => setActiveObject(null), 650);
   };
 
@@ -54,11 +52,11 @@ export function SotHomeHero() {
           <div className="mx-auto grid w-full max-w-4xl gap-6 sm:grid-cols-2 sm:gap-8 lg:max-w-[52rem]">
             <button type="button" aria-label="Stash: drop the coin" onMouseEnter={() => triggerObject("coin")} onFocus={() => triggerObject("coin")} onClick={() => triggerObject("coin")} className="group flex min-w-0 flex-col items-center gap-4 rounded-[2rem] bg-white p-4 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-[#d6a928]/30 transition-shadow hover:shadow-[0_24px_70px_rgba(214,169,40,0.22)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#d6a928]/40 sm:p-5">
               <span className="sr-only">Stash</span>
-              <img src="/images/sot-coin.png" alt="$OrT gold coin, 2026" className={`w-full max-w-sm motion-reduce:transition-none ${activeObject === "coin" ? "sot-coin-fall" : ""}`} />
+              <img src="/images/sot-coin.png" alt="$OrT gold coin, 2026" className={`sot-coin-art w-full max-w-sm motion-reduce:transition-none ${activeObject === "coin" ? "sot-object-active" : ""}`} />
             </button>
             <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group flex min-w-0 flex-col items-center gap-4 rounded-[2rem] bg-white p-4 text-center shadow-[0_20px_60px_rgba(15,23,42,0.1)] ring-1 ring-slate-300 transition-shadow hover:shadow-[0_24px_70px_rgba(15,23,42,0.18)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/40 sm:p-5">
               <span className="sr-only">Trash</span>
-              <img src="/images/sot-trash-can.png" alt="Battered silver trash can with recycle symbol" className={`w-full max-w-sm motion-reduce:transition-none ${activeObject === "bin" ? "sot-bin-lid-close" : ""}`} />
+              <img src="/images/sot-trash-can.png" alt="Battered silver trash can with recycle symbol" className={`sot-bin-art w-full max-w-sm motion-reduce:transition-none ${activeObject === "bin" ? "sot-object-active" : ""}`} />
             </button>
           </div>
         </div>
