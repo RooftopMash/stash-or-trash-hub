@@ -38,7 +38,14 @@ function AuthPage() {
     setBusy(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      const message = /email not confirmed/i.test(error.message)
+        ? "Please confirm your email before signing in."
+        : /invalid login credentials/i.test(error.message)
+          ? "Invalid email or password."
+          : "We could not sign you in right now. Please try again.";
+      return toast.error(message);
+    }
     toast.success(t("auth.welcome"));
     navigate({ to: "/" });
   };
