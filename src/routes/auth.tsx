@@ -35,9 +35,8 @@ function AuthPage() {
   }, [user, navigate]);
 
   const signIn = async () => {
-    if (!email.trim() || !password) return toast.error("Enter your email and password.");
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) {
       const message = /email not confirmed/i.test(error.message)
