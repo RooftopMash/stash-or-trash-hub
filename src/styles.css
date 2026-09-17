@@ -10,12 +10,12 @@
 }
 
 @keyframes sot-coin-press {
-  0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
-  16% { transform: translate3d(0, -0.9rem, 0) rotate(90deg) scale(1.03); }
-  42% { transform: translate3d(0, 0.25rem, 0) rotate(430deg) scale(0.98); }
-  64% { transform: translate3d(0, 0.55rem, 0) rotate(690deg) scale(0.95); }
-  82% { transform: translate3d(0, 0.3rem, 0) rotate(815deg) scale(0.97); }
-  100% { transform: translate3d(0, 0, 0) rotate(900deg) scale(1); }
+  0% { transform: perspective(28rem) rotateX(68deg) rotateZ(0deg) translateY(0) scale(1); }
+  18% { transform: perspective(28rem) rotateX(72deg) rotateZ(150deg) translateY(-0.55rem) scale(1.04); }
+  44% { transform: perspective(28rem) rotateX(68deg) rotateZ(560deg) translateY(0.1rem) scale(0.98); }
+  68% { transform: perspective(28rem) rotateX(65deg) rotateZ(830deg) translateY(0.2rem) scale(0.96); }
+  84% { transform: perspective(28rem) rotateX(68deg) rotateZ(1010deg) translateY(0.05rem) scale(0.98); }
+  100% { transform: perspective(28rem) rotateX(68deg) rotateZ(1080deg) translateY(0) scale(1); }
 }
 
 @keyframes sot-bin-approach {
@@ -25,9 +25,10 @@
 
 @keyframes sot-bin-lid-press {
   0% { transform: translate(-50%, 0) rotate(0deg); }
-  26% { transform: translate(-50%, -1.8rem) rotate(-18deg); }
-  56% { transform: translate(-50%, 0.15rem) rotate(2deg); }
-  76% { transform: translate(-50%, -0.35rem) rotate(-4deg); }
+  22% { transform: translate(-50%, -0.2rem) rotate(-8deg); }
+  46% { transform: translate(-50%, -1.3rem) rotate(-30deg); }
+  66% { transform: translate(-50%, -0.65rem) rotate(-14deg); }
+  82% { transform: translate(-50%, -0.15rem) rotate(-3deg); }
   100% { transform: translate(-50%, 0) rotate(0deg); }
 }
 
