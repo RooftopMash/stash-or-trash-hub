@@ -5,17 +5,17 @@
 @custom-variant dark (&:is(.dark *));
 
 @keyframes sot-coin-approach {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(-2deg); }
-  50% { transform: translate3d(0, -0.65rem, 0) rotate(2deg); }
+  0%, 100% { transform: perspective(700px) translate3d(0, 0, 0) rotateX(68deg) rotateZ(-2deg); }
+  50% { transform: perspective(700px) translate3d(0, -0.65rem, 0) rotateX(68deg) rotateZ(2deg); }
 }
 
 @keyframes sot-coin-press {
-  0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
-  16% { transform: translate3d(0, -0.9rem, 0) rotate(90deg) scale(1.03); }
-  42% { transform: translate3d(0, 0.25rem, 0) rotate(430deg) scale(0.98); }
-  64% { transform: translate3d(0, 0.55rem, 0) rotate(690deg) scale(0.95); }
-  82% { transform: translate3d(0, 0.3rem, 0) rotate(815deg) scale(0.97); }
-  100% { transform: translate3d(0, 0, 0) rotate(900deg) scale(1); }
+  0% { transform: translate3d(0, 0, 0) rotateX(68deg) rotateZ(0deg) scale(1); }
+  18% { transform: translate3d(0, -0.45rem, 0) rotateX(68deg) rotateZ(110deg) scale(1.03); }
+  42% { transform: translate3d(0, 0.08rem, 0) rotateX(68deg) rotateZ(420deg) scale(1); }
+  68% { transform: translate3d(0, 0.16rem, 0) rotateX(68deg) rotateZ(690deg) scale(0.97); }
+  86% { transform: translate3d(0, 0.08rem, 0) rotateX(68deg) rotateZ(825deg) scale(0.98); }
+  100% { transform: translate3d(0, 0, 0) rotateX(68deg) rotateZ(900deg) scale(1); }
 }
 
 @keyframes sot-bin-approach {
@@ -25,9 +25,9 @@
 
 @keyframes sot-bin-lid-press {
   0% { transform: translate(-50%, 0) rotate(0deg); }
-  26% { transform: translate(-50%, -1.8rem) rotate(-18deg); }
-  56% { transform: translate(-50%, 0.15rem) rotate(2deg); }
-  76% { transform: translate(-50%, -0.35rem) rotate(-4deg); }
+  20% { transform: translate(-50%, -1.9rem) rotate(-24deg); }
+  48% { transform: translate(-50%, 0.18rem) rotate(3deg); }
+  68% { transform: translate(-50%, -0.25rem) rotate(-2deg); }
   100% { transform: translate(-50%, 0) rotate(0deg); }
 }
 
@@ -36,7 +36,7 @@
   50% { transform: translateY(-0.8rem) rotate(-3deg); }
 }
 
-.sot-coin-art { animation: sot-coin-approach 4.8s ease-in-out infinite; transform-origin: 50% 70%; }
+.sot-coin-art { animation: sot-coin-approach 4.8s ease-in-out infinite; transform-origin: 50% 70%; transform: perspective(700px) rotateX(68deg); }
 .sot-coin-art.sot-object-active { animation: sot-coin-press 820ms cubic-bezier(.2,.8,.25,1) both; }
 .sot-bin-body { animation: sot-bin-approach 5.6s ease-in-out infinite; transform-origin: 50% 78%; }
 .sot-bin-lid { transform-origin: 50% 12%; }
