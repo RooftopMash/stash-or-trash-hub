@@ -14,7 +14,7 @@ export function SotHomeHero() {
   const [activeObject, setActiveObject] = useState<"coin" | "bin" | null>(null);
   const triggerObject = (object: "coin" | "bin") => {
     setActiveObject(object);
-    window.setTimeout(() => setActiveObject(null), 650);
+    window.setTimeout(() => setActiveObject(null), object === "coin" ? 1200 : 900);
   };
 
   return (
