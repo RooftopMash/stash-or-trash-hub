@@ -14,7 +14,7 @@ export function SotHomeHero() {
   const [activeObject, setActiveObject] = useState<"coin" | "bin" | null>(null);
   const triggerObject = (object: "coin" | "bin") => {
     setActiveObject(object);
-    window.setTimeout(() => setActiveObject(null), 650);
+    window.setTimeout(() => setActiveObject(null), object === "coin" ? 1200 : 900);
   };
 
   return (
@@ -56,7 +56,10 @@ export function SotHomeHero() {
             </button>
             <button type="button" aria-label="Trash: close the metal lid" onMouseEnter={() => triggerObject("bin")} onFocus={() => triggerObject("bin")} onClick={() => triggerObject("bin")} className="group flex min-w-0 flex-col items-center justify-center bg-transparent text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50">
               <span className="sr-only">Trash</span>
-              <img src="/images/sot-trash-can.png" alt="Battered silver trash can with recycle symbol" className={`sot-bin-art mix-blend-multiply w-full max-w-sm motion-reduce:transition-none ${activeObject === "bin" ? "sot-object-active" : ""}`} />
+              <span className="sot-bin-stage relative block w-full max-w-sm">
+                <img src="/images/sot-trash-body.png" alt="Battered silver trash can with recycle symbol" className="sot-bin-body mix-blend-multiply relative z-10 w-full" />
+                <span aria-hidden="true" className={`sot-bin-lid absolute left-1/2 top-[7%] z-20 h-[18%] w-[72%] -translate-x-1/2 rounded-[50%] border-[0.45rem] border-slate-500 bg-gradient-to-b from-slate-300 via-slate-600 to-slate-400 shadow-[inset_0_0.2rem_0.35rem_rgba(255,255,255,0.65),0_0.35rem_0.4rem_rgba(15,23,42,0.22)] ${activeObject === "bin" ? "sot-object-active" : ""}`}><span className="absolute left-1/2 top-1/2 h-2 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-700/80 shadow-inner" /></span>
+              </span>
             </button>
           </div>
         </div>
