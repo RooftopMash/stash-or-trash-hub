@@ -58,7 +58,7 @@ export function SotHomeHero() {
               <span className="sr-only">Trash</span>
               <span className="sot-bin-stage relative block w-full max-w-sm">
                 <img src="/images/sot-trash-body.png" alt="Battered silver trash can with recycle symbol" className="sot-bin-body mix-blend-multiply relative z-10 w-full" />
-                <img src="/images/sot-trash-lid.png" alt="" aria-hidden="true" className={`sot-bin-lid mix-blend-multiply absolute left-1/2 -top-[8%] z-20 w-[78%] -translate-x-1/2 ${activeObject === "bin" ? "sot-object-active" : ""}`} />
+                <img src="/images/sot-trash-lid.png" alt="" aria-hidden="true" className={`sot-bin-lid mix-blend-multiply absolute -right-[1%] -top-[2%] z-20 w-[54%] rotate-[24deg] origin-bottom-left ${activeObject === "bin" ? "sot-object-active" : ""}`} />
               </span>
             </button>
           </div>
