@@ -40,7 +40,7 @@
 .sot-coin-art { animation: sot-coin-approach 4.8s ease-in-out infinite; transform-origin: 50% 70%; }
 .sot-coin-art.sot-object-active { animation: sot-coin-press 820ms cubic-bezier(.2,.8,.25,1) both; }
 .sot-bin-body { animation: sot-bin-approach 5.6s ease-in-out infinite; transform-origin: 50% 78%; }
-.sot-bin-lid { transform-origin: 50% 12%; }
+.sot-bin-lid { transform-origin: 50% 100%; }
 .sot-bin-lid.sot-object-active { animation: sot-bin-lid-press 760ms cubic-bezier(.2,.8,.25,1) both; }
 .sot-letter-cascade { animation: sot-letter-cascade 2.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
