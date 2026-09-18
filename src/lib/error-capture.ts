@@ -9,10 +9,16 @@ function record(error: unknown) {
 }
 
 if (typeof globalThis.addEventListener === "function") {
-  globalThis.addEventListener("error", (event) => record((event as ErrorEvent).error ?? event));
-  globalThis.addEventListener("unhandledrejection", (event) =>
-    record((event as PromiseRejectionEvent).reason),
-  );
+  globalThis.addEventListener("error", (event) => {
+    const errorEvent = event as ErrorEvent;
+    if (errorEvent.error instanceof Error || errorEvent.message) {
+      record(errorEvent.error ?? new Error(errorEvent.message));
+    }
+  });
+  globalThis.addEventListener("unhandledrejection", (event) => {
+    const reason = (event as PromiseRejectionEvent).reason;
+    if (reason instanceof Error || typeof reason === "string") record(reason);
+  });
 }
 
 export function consumeLastCapturedError(): unknown {

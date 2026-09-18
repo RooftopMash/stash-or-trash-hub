@@ -7,7 +7,14 @@ export function ProductionMonitoring() {
     if (sentry?.captureException) installSentryBridge({ captureException: sentry.captureException.bind(sentry) });
 
     const onError = (event: ErrorEvent) => {
-      reportLovableError(event.error ?? new Error(event.message), { mechanism: "window_error", filename: event.filename, line: event.lineno });
+      // Resource-load events are plain Events with `isTrusted`, not application errors.
+      // Reporting them as exceptions produces the unhelpful {"isTrusted":true} preview error.
+      if (!(event.error instanceof Error) && !event.message) return;
+      reportLovableError(event.error ?? new Error(event.message), {
+        mechanism: "window_error",
+        filename: event.filename,
+        line: event.lineno,
+      });
     };
     const onRejection = (event: PromiseRejectionEvent) => {
       reportLovableError(event.reason, { mechanism: "unhandledrejection" });
