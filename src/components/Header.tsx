@@ -19,7 +19,10 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
   const unreadNotifs = useUnreadNotifications(user?.id);
 
   return (
-    <header suppressHydrationWarning className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
+    <header
+      suppressHydrationWarning
+      className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl"
+    >
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link to="/" className="group flex items-center gap-2">
@@ -27,7 +30,10 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               aria-label="SOrT — Stash Or Trash logo"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foreground text-sm font-extrabold tracking-[-0.12em] text-background shadow-sm transition-transform group-hover:scale-110 group-hover:rotate-3"
             >
-              <span className="text-stash">S</span><span>O</span><span className="text-trash">r</span><span>T</span>
+              <span className="text-stash">S</span>
+              <span>O</span>
+              <span className="text-trash">r</span>
+              <span>T</span>
             </span>
             <span className="hidden sm:inline">
               <SotWordmark className="text-xl" />
@@ -82,7 +88,12 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
           {loading ? null : user ? (
             <>
               {isAdmin && (
-                <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/admin" })} aria-label={t("nav.admin")}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate({ to: "/admin" })}
+                  aria-label={t("nav.admin")}
+                >
                   <Shield className="h-4 w-4" />
                 </Button>
               )}
@@ -100,7 +111,13 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
                   </span>
                 )}
               </Button>
-              <Button variant="ghost" size="icon" className="relative" onClick={() => navigate({ to: "/messages" })} aria-label={t("nav.messages")}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => navigate({ to: "/messages" })}
+                aria-label={t("nav.messages")}
+              >
                 <MessageCircle className="h-4 w-4" />
                 {unread > 0 && (
                   <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-trash px-1 text-[10px] font-bold text-white">

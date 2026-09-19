@@ -124,7 +124,7 @@ export function ItemCard({
             )}
             <h3 className="font-display text-xl font-bold leading-tight">
               <Link to="/items/$id" params={{ id: item.id }} className="hover:underline">
-                <PostText text={item.title} />
+                <PostText text={item.title} disableLinks />
               </Link>
             </h3>
             <Link
@@ -173,7 +173,10 @@ export function ItemCard({
             variant="stash"
             size="lg"
             disabled={busy}
-            onClick={() => { playStashSound(); void vote("stash"); }}
+            onClick={() => {
+              playStashSound();
+              void vote("stash");
+            }}
             className={cn(
               "gap-2",
               item.myVerdict === "stash" && "verdict-picked",
@@ -186,7 +189,10 @@ export function ItemCard({
             variant="trash"
             size="lg"
             disabled={busy}
-            onClick={() => { playTrashSound(); void vote("trash"); }}
+            onClick={() => {
+              playTrashSound();
+              void vote("trash");
+            }}
             className={cn(
               "gap-2",
               item.myVerdict === "trash" && "verdict-picked",
@@ -196,7 +202,6 @@ export function ItemCard({
             <img src={binIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.trash")}
           </Button>
         </div>
-
 
         <BrandResponses itemId={item.id} brandId={item.brand_id} />
 
@@ -208,7 +213,6 @@ export function ItemCard({
             onCommentClick={() => setCommentsOpen((v) => !v)}
           />
         </div>
-
 
         {commentsOpen && (
           <div className="mt-4 border-t border-border pt-4">

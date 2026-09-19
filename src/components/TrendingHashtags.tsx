@@ -38,20 +38,18 @@ export function TrendingHashtags() {
               className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary transition-colors group"
             >
               <div>
-                <p className="font-semibold text-sm group-hover:text-primary">
-                  #{tag.tag}
-                </p>
+                <p className="font-semibold text-sm group-hover:text-primary">#{tag.tag}</p>
                 <p className="text-xs text-muted-foreground">
                   {t("social.postsCount", { count: tag.use_count })}
                 </p>
               </div>
-              <span className="text-xs text-muted-foreground">{tag.use_count.toLocaleString()}</span>
+              <span className="text-xs text-muted-foreground">
+                {tag.use_count.toLocaleString()}
+              </span>
             </Link>
           ))
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            {t("social.noTrending")}
-          </p>
+          <p className="text-sm text-muted-foreground text-center py-4">{t("social.noTrending")}</p>
         )}
       </div>
     </div>

@@ -46,10 +46,7 @@ export function BrandAnalytics({ brandId, brandName }: { brandId: string; brandN
     queryFn: () => fetchOpenCrisisAlert(brandId),
   });
 
-  const rows = useMemo(
-    () => (trend ?? []).map((r) => ({ ...r, label: r.day.slice(5) })),
-    [trend],
-  );
+  const rows = useMemo(() => (trend ?? []).map((r) => ({ ...r, label: r.day.slice(5) })), [trend]);
 
   const exportCsv = () => {
     const csv = trendToCsv(trend ?? []);
@@ -105,7 +102,12 @@ export function BrandAnalytics({ brandId, brandName }: { brandId: string; brandN
               {t("analytics.days", { count: w })}
             </Button>
           ))}
-          <Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" onClick={exportCsv}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={exportCsv}
+          >
             <Download className="h-3.5 w-3.5" /> {t("analytics.export")}
           </Button>
         </div>

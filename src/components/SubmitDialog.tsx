@@ -96,9 +96,7 @@ export function SubmitDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">{t("submit.title")}</DialogTitle>
-          <DialogDescription>
-            {t("submit.intro")}
-          </DialogDescription>
+          <DialogDescription>{t("submit.intro")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -122,7 +120,13 @@ export function SubmitDialog({
                 placeholder={t("submit.brandPh")}
               />
               {brandId !== NO_BRAND && (
-                <Button type="button" variant="ghost" size="sm" className="h-8 px-2" onClick={() => setBrandId(NO_BRAND)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={() => setBrandId(NO_BRAND)}
+                >
                   {t("submit.noBrand")}
                 </Button>
               )}
@@ -136,8 +140,15 @@ export function SubmitDialog({
                 type="button"
                 variant="stash"
                 size="lg"
-                onClick={() => { playStashSound(); setVerdict("stash"); }}
-                className={cn("gap-2", verdict === "stash" && "verdict-picked", verdict === "trash" && "verdict-dimmed")}
+                onClick={() => {
+                  playStashSound();
+                  setVerdict("stash");
+                }}
+                className={cn(
+                  "gap-2",
+                  verdict === "stash" && "verdict-picked",
+                  verdict === "trash" && "verdict-dimmed",
+                )}
               >
                 <img src={coinIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.stash")}
               </Button>
@@ -145,8 +156,15 @@ export function SubmitDialog({
                 type="button"
                 variant="trash"
                 size="lg"
-                onClick={() => { playTrashSound(); setVerdict("trash"); }}
-                className={cn("gap-2", verdict === "trash" && "verdict-picked", verdict === "stash" && "verdict-dimmed")}
+                onClick={() => {
+                  playTrashSound();
+                  setVerdict("trash");
+                }}
+                className={cn(
+                  "gap-2",
+                  verdict === "trash" && "verdict-picked",
+                  verdict === "stash" && "verdict-dimmed",
+                )}
               >
                 <img src={binIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.trash")}
               </Button>
@@ -157,10 +175,24 @@ export function SubmitDialog({
             <Label htmlFor="category">What kind of feedback is this?</Label>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {FEEDBACK_TYPES.map((type) => (
-                <Button key={type} type="button" variant={category === type ? "default" : "outline"} size="sm" onClick={() => setCategory(type)}>{type}</Button>
+                <Button
+                  key={type}
+                  type="button"
+                  variant={category === type ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCategory(type)}
+                >
+                  {type}
+                </Button>
               ))}
             </div>
-            <Input id="category" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Add a more specific topic, if useful" maxLength={40} />
+            <Input
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Add a more specific topic, if useful"
+              maxLength={40}
+            />
           </div>
 
           <div className="space-y-2">

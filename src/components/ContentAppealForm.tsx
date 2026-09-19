@@ -42,8 +42,20 @@ export function ContentAppealForm({ reviewId }: { reviewId: string }) {
       </Button>
       {open && (
         <div className="mt-2 space-y-2">
-          <Textarea value={reason} onChange={(event) => setReason(event.target.value)} minLength={10} maxLength={2000} placeholder="Explain why this decision should be reviewed by a human..." aria-label="Appeal reason" />
-          <Button type="button" size="sm" onClick={submitAppeal} disabled={submitting || reason.trim().length < 10}>
+          <Textarea
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            minLength={10}
+            maxLength={2000}
+            placeholder="Explain why this decision should be reviewed by a human..."
+            aria-label="Appeal reason"
+          />
+          <Button
+            type="button"
+            size="sm"
+            onClick={submitAppeal}
+            disabled={submitting || reason.trim().length < 10}
+          >
             {submitting ? "Submitting..." : "Submit appeal"}
           </Button>
         </div>
@@ -53,5 +65,9 @@ export function ContentAppealForm({ reviewId }: { reviewId: string }) {
 }
 
 export async function fetchMyAppeals(userId: string) {
-  return supabase.from("content_appeals").select("id, review_id, status, reason, created_at, resolved_at").eq("appellant_id", userId).order("created_at", { ascending: false });
+  return supabase
+    .from("content_appeals")
+    .select("id, review_id, status, reason, created_at, resolved_at")
+    .eq("appellant_id", userId)
+    .order("created_at", { ascending: false });
 }

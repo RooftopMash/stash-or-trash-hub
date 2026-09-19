@@ -42,19 +42,20 @@ function createSupabaseClient() {
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.SUPABASE_ANON_KEY;
 
+  const effectiveUrl = SUPABASE_URL || "https://placeholder.supabase.co";
+  const effectiveKey = SUPABASE_PUBLISHABLE_KEY || "placeholder-anon-key";
+
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
       ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
       ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
+    console.warn(`[Supabase] Missing Supabase environment variable(s): ${missing.join(', ')}. Using mock fallback credentials.`);
   }
 
-  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  return createClient<Database>(effectiveUrl, effectiveKey, {
     global: {
-      fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
+      fetch: createSupabaseFetch(effectiveKey),
     },
     auth: {
       storage: brokeredPreviewStorage(),

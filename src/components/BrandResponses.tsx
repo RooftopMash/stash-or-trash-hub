@@ -18,13 +18,7 @@ import {
  * Official brand replies on a post: publicly readable, written only by users
  * with an analyst/admin role on that brand.
  */
-export function BrandResponses({
-  itemId,
-  brandId,
-}: {
-  itemId: string;
-  brandId: string | null;
-}) {
+export function BrandResponses({ itemId, brandId }: { itemId: string; brandId: string | null }) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [body, setBody] = useState("");
@@ -81,7 +75,12 @@ export function BrandResponses({
               {r.brandVerified && <BadgeCheck className="h-3.5 w-3.5" />}
             </div>
             {user?.id === r.user_id && (
-              <Button variant="ghost" size="sm" className="h-auto px-1 py-0 text-xs" onClick={() => remove(r.id)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto px-1 py-0 text-xs"
+                onClick={() => remove(r.id)}
+              >
                 {t("social.delete")}
               </Button>
             )}

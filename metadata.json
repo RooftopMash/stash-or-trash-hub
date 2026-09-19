@@ -1,0 +1,6 @@
+{
+  "name": "SOT — Stash Or Trash",
+  "description": "SOT (Stash Or Trash) is the Brand Barometer — a CX/UX marketing & PR tool where the community delivers a live verdict on brands.",
+  "requestFramePermissions": ["camera", "microphone", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

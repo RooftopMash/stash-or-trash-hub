@@ -9,14 +9,21 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { BrandSearch } from "@/components/BrandSearch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
-  fetchIncidents, createIncident, subscribeToIncidents,
-  type Incident, type IncidentMediaType,
+  fetchIncidents,
+  createIncident,
+  subscribeToIncidents,
+  type Incident,
+  type IncidentMediaType,
 } from "@/lib/incidents";
 
 function relativeTime(iso: string): string {
@@ -30,25 +37,44 @@ function relativeTime(iso: string): string {
 function MediaView({ incident }: { incident: Incident }) {
   if (!incident.signedMediaUrl) return null;
   if (incident.media_type === "video") {
-    return <video src={incident.signedMediaUrl} controls className="mt-3 aspect-video w-full rounded-xl bg-black object-contain" />;
+    return (
+      <video
+        src={incident.signedMediaUrl}
+        controls
+        className="mt-3 aspect-video w-full rounded-xl bg-black object-contain"
+      />
+    );
   }
   if (incident.media_type === "audio") {
     return <audio src={incident.signedMediaUrl} controls className="mt-3 w-full" />;
   }
-  return <img src={incident.signedMediaUrl} alt={incident.title} className="mt-3 aspect-video w-full rounded-xl object-cover" loading="lazy" />;
+  return (
+    <img
+      src={incident.signedMediaUrl}
+      alt={incident.title}
+      className="mt-3 aspect-video w-full rounded-xl object-cover"
+      loading="lazy"
+    />
+  );
 }
 
 export function LiveIncidents() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const { data: incidents, isLoading, refetch } = useQuery({
+  const {
+    data: incidents,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["incidents"],
     queryFn: () => fetchIncidents(100),
   });
 
   useEffect(() => {
     const unsubscribe = subscribeToIncidents(() => refetch());
-    return () => { unsubscribe(); };
+    return () => {
+      unsubscribe();
+    };
   }, [refetch]);
 
   return (
@@ -76,7 +102,11 @@ export function LiveIncidents() {
               <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
                   {inc.brandName && inc.brandSlug && (
-                    <Link to="/brands/$slug" params={{ slug: inc.brandSlug }} className="text-xs font-semibold text-primary hover:underline">
+                    <Link
+                      to="/brands/$slug"
+                      params={{ slug: inc.brandSlug }}
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
                       {inc.brandName}
                     </Link>
                   )}
@@ -86,10 +116,14 @@ export function LiveIncidents() {
                     </span>
                   )}
                 </div>
-                <span className="shrink-0 text-[10px] text-muted-foreground">{relativeTime(inc.created_at)}</span>
+                <span className="shrink-0 text-[10px] text-muted-foreground">
+                  {relativeTime(inc.created_at)}
+                </span>
               </div>
               <h3 className="mt-1 font-display font-bold">{inc.title}</h3>
-              {inc.description && <p className="mt-1 text-sm text-muted-foreground">{inc.description}</p>}
+              {inc.description && (
+                <p className="mt-1 text-sm text-muted-foreground">{inc.description}</p>
+              )}
               <MediaView incident={inc} />
               <p className="mt-2 text-[10px] text-muted-foreground">by {inc.authorName}</p>
             </div>
@@ -99,7 +133,6 @@ export function LiveIncidents() {
     </section>
   );
 }
-
 
 function IncidentComposer({ onPosted }: { onPosted?: () => void }) {
   const { t } = useTranslation();
@@ -115,14 +148,27 @@ function IncidentComposer({ onPosted }: { onPosted?: () => void }) {
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const reset = () => { setTitle(""); setDescription(""); setBrandId(null); setFile(null); setCoords(null); setBusy(false); };
+  const reset = () => {
+    setTitle("");
+    setDescription("");
+    setBrandId(null);
+    setFile(null);
+    setCoords(null);
+    setBusy(false);
+  };
 
   const captureLocation = () => {
     if (!navigator.geolocation) return toast.error("Location unavailable on this device");
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => { setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocating(false); },
-      () => { toast.error("Could not get location"); setLocating(false); },
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocating(false);
+      },
+      () => {
+        toast.error("Could not get location");
+        setLocating(false);
+      },
     );
   };
 
@@ -132,11 +178,19 @@ function IncidentComposer({ onPosted }: { onPosted?: () => void }) {
     setBusy(true);
     try {
       await createIncident({
-        userId: user.id, brandId, title, description, file, mediaType,
-        lat: coords?.lat ?? null, lng: coords?.lng ?? null,
+        userId: user.id,
+        brandId,
+        title,
+        description,
+        file,
+        mediaType,
+        lat: coords?.lat ?? null,
+        lng: coords?.lng ?? null,
       });
       toast.success("Incident reported.");
-      reset(); setOpen(false); onPosted?.();
+      reset();
+      setOpen(false);
+      onPosted?.();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not report incident.");
     } finally {
@@ -164,38 +218,93 @@ function IncidentComposer({ onPosted }: { onPosted?: () => void }) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="inc-title">Title</Label>
-            <Input id="inc-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="What happened?" />
+            <Input
+              id="inc-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={120}
+              placeholder="What happened?"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="inc-desc">Description (optional)</Label>
-            <Textarea id="inc-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={500} />
+            <Textarea
+              id="inc-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              maxLength={500}
+            />
           </div>
           <div className="space-y-2">
             <Label>Media</Label>
             <div className="flex gap-2">
-              <Button type="button" size="sm" variant={mediaType === "photo" ? "default" : "outline"} onClick={() => setMediaType("photo")} className="gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant={mediaType === "photo" ? "default" : "outline"}
+                onClick={() => setMediaType("photo")}
+                className="gap-1"
+              >
                 <ImageIcon className="h-4 w-4" /> Photo
               </Button>
-              <Button type="button" size="sm" variant={mediaType === "video" ? "default" : "outline"} onClick={() => setMediaType("video")} className="gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant={mediaType === "video" ? "default" : "outline"}
+                onClick={() => setMediaType("video")}
+                className="gap-1"
+              >
                 <Video className="h-4 w-4" /> Video
               </Button>
-              <Button type="button" size="sm" variant={mediaType === "audio" ? "default" : "outline"} onClick={() => setMediaType("audio")} className="gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant={mediaType === "audio" ? "default" : "outline"}
+                onClick={() => setMediaType("audio")}
+                className="gap-1"
+              >
                 <Mic className="h-4 w-4" /> Voice
               </Button>
             </div>
-            <Input ref={fileRef} type="file" accept={accept} onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            <Input
+              ref={fileRef}
+              type="file"
+              accept={accept}
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
             <p className="text-[10px] text-muted-foreground">
-              Use your camera / mic app to record, then attach the file here. (Live camera capture lands with device testing.)
+              Use your camera / mic app to record, then attach the file here. (Live camera capture
+              lands with device testing.)
             </p>
           </div>
           <div className="space-y-2">
-            <Button type="button" size="sm" variant="outline" onClick={captureLocation} disabled={locating} className="gap-1.5">
-              {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
-              {coords ? `Location attached (${coords.lat.toFixed(3)}, ${coords.lng.toFixed(3)})` : "Attach location"}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={captureLocation}
+              disabled={locating}
+              className="gap-1.5"
+            >
+              {locating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <MapPin className="h-4 w-4" />
+              )}
+              {coords
+                ? `Location attached (${coords.lat.toFixed(3)}, ${coords.lng.toFixed(3)})`
+                : "Attach location"}
             </Button>
           </div>
           <Button onClick={submit} disabled={busy} className="w-full gap-1.5">
-            {busy ? "Posting..." : <><Send className="h-4 w-4" /> Report now</>}
+            {busy ? (
+              "Posting..."
+            ) : (
+              <>
+                <Send className="h-4 w-4" /> Report now
+              </>
+            )}
           </Button>
         </div>
       </DialogContent>

@@ -27,7 +27,11 @@ export function CommentThread({ itemId, currentUserId }: CommentThreadProps) {
   const [body, setBody] = useState("");
   const [isPosting, setIsPosting] = useState(false);
 
-  const { data: comments, isLoading, refetch } = useQuery({
+  const {
+    data: comments,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["comments", itemId, currentUserId],
     queryFn: () => getComments(itemId, currentUserId),
   });
@@ -141,14 +145,9 @@ export function CommentThread({ itemId, currentUserId }: CommentThreadProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleLikeComment(comment.id, comment.userLiked)}
-                  className={cn(
-                    "h-auto px-1 py-0.5 gap-0.5",
-                    comment.userLiked && "text-trash"
-                  )}
+                  className={cn("h-auto px-1 py-0.5 gap-0.5", comment.userLiked && "text-trash")}
                 >
-                  <Heart
-                    className={cn("h-3 w-3", comment.userLiked && "fill-current")}
-                  />
+                  <Heart className={cn("h-3 w-3", comment.userLiked && "fill-current")} />
                   <span>{comment.likeCount}</span>
                 </Button>
               </div>

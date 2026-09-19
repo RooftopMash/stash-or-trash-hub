@@ -13,11 +13,17 @@ import { Globe } from "lucide-react";
 export function LanguageSwitcher() {
   const { i18n } = useTranslation();
   const [query, setQuery] = useState("");
-  const current = LANGUAGES.find((l) => l.code === i18n.language || l.code === i18n.language.split("-")[0]) ?? LANGUAGES[0];
+  const current =
+    LANGUAGES.find((l) => l.code === i18n.language || l.code === i18n.language.split("-")[0]) ??
+    LANGUAGES[0];
   const filteredLanguages = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return LANGUAGES;
-    return LANGUAGES.filter((language) => `${language.label} ${language.native ?? ""} ${language.code}`.toLowerCase().includes(normalized));
+    return LANGUAGES.filter((language) =>
+      `${language.label} ${language.native ?? ""} ${language.code}`
+        .toLowerCase()
+        .includes(normalized),
+    );
   }, [query]);
 
   const change = async (code: string) => {
@@ -40,8 +46,16 @@ export function LanguageSwitcher() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64 p-2">
         <div className="border-b border-border px-2 pb-2">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search languages" aria-label="Search languages" className="h-8 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
-          <p className="mt-1 text-[11px] text-muted-foreground">{LANGUAGES.length} launch languages</p>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search languages"
+            aria-label="Search languages"
+            className="h-8 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {LANGUAGES.length} launch languages
+          </p>
         </div>
         <div className="max-h-72 overflow-y-auto pt-1">
           {filteredLanguages.map((l) => (
@@ -51,10 +65,13 @@ export function LanguageSwitcher() {
               className={l.code === current.code ? "font-semibold text-primary" : "justify-between"}
               dir={RTL_LANGUAGES.includes(l.code) ? "rtl" : "ltr"}
             >
-              <span>{l.native ?? l.label}</span><span className="text-xs text-muted-foreground">{l.code}</span>
+              <span>{l.native ?? l.label}</span>
+              <span className="text-xs text-muted-foreground">{l.code}</span>
             </DropdownMenuItem>
           ))}
-          {filteredLanguages.length === 0 && <p className="px-2 py-3 text-sm text-muted-foreground">No matching language.</p>}
+          {filteredLanguages.length === 0 && (
+            <p className="px-2 py-3 text-sm text-muted-foreground">No matching language.</p>
+          )}
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

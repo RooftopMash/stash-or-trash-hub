@@ -3,8 +3,13 @@ import { installSentryBridge, reportLovableError } from "@/lib/lovable-error-rep
 
 export function ProductionMonitoring() {
   useEffect(() => {
-    const sentry = (window as Window & { Sentry?: { captureException?: (error: unknown, context?: Record<string, unknown>) => void } }).Sentry;
-    if (sentry?.captureException) installSentryBridge({ captureException: sentry.captureException.bind(sentry) });
+    const sentry = (
+      window as Window & {
+        Sentry?: { captureException?: (error: unknown, context?: Record<string, unknown>) => void };
+      }
+    ).Sentry;
+    if (sentry?.captureException)
+      installSentryBridge({ captureException: sentry.captureException.bind(sentry) });
 
     const onError = (event: ErrorEvent) => {
       // Resource-load events are plain Events with `isTrusted`, not application errors.

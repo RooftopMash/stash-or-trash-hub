@@ -77,7 +77,11 @@ export function BrandVerdict({
           playStashSound();
           void vote("stash");
         }}
-        className={cn("gap-2", mine === "stash" && "verdict-picked", mine === "trash" && "verdict-dimmed")}
+        className={cn(
+          "gap-2",
+          mine === "stash" && "verdict-picked",
+          mine === "trash" && "verdict-dimmed",
+        )}
       >
         <img src={coinIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.stash")}
       </Button>
@@ -91,7 +95,11 @@ export function BrandVerdict({
           playTrashSound();
           void vote("trash");
         }}
-        className={cn("gap-2", mine === "trash" && "verdict-picked", mine === "stash" && "verdict-dimmed")}
+        className={cn(
+          "gap-2",
+          mine === "trash" && "verdict-picked",
+          mine === "stash" && "verdict-dimmed",
+        )}
       >
         <img src={binIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.trash")}
       </Button>

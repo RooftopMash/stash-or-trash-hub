@@ -5,46 +5,363 @@
 @custom-variant dark (&:is(.dark *));
 
 @keyframes sot-coin-approach {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(-2deg); }
-  50% { transform: translate3d(0, -0.65rem, 0) rotate(2deg); }
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-2deg);
+  }
+  50% {
+    transform: translate3d(0, -0.65rem, 0) rotate(2deg);
+  }
 }
 
-@keyframes sot-coin-press {
-  0% { transform: perspective(28rem) rotateX(68deg) rotateZ(0deg) translateY(0) scale(1); }
-  18% { transform: perspective(28rem) rotateX(72deg) rotateZ(150deg) translateY(-0.55rem) scale(1.04); }
-  44% { transform: perspective(28rem) rotateX(68deg) rotateZ(560deg) translateY(0.1rem) scale(0.98); }
-  68% { transform: perspective(28rem) rotateX(65deg) rotateZ(830deg) translateY(0.2rem) scale(0.96); }
-  84% { transform: perspective(28rem) rotateX(68deg) rotateZ(1010deg) translateY(0.05rem) scale(0.98); }
-  100% { transform: perspective(28rem) rotateX(68deg) rotateZ(1080deg) translateY(0) scale(1); }
+/* Township Coin Spinning on Flat Surfaces (Zwepe / R5 / R2 game):
+   1. Initial finger-flick impulse launching off the desk/stoop
+   2. High-speed upright rim spin on flat surface
+   3. Gradual deceleration, friction, and angle lean
+   4. High-frequency Euler buzz precession rattle
+   5. Rattles flat onto the surface with final clack */
+/* =========================================================================
+   SOrT HOME OBJECT ANIMATIONS
+   1. The South African Zwepe Coin Spin (matching user's Video 1 & Video 2):
+      - High-speed upright rim spin on flat surface (rotating around Y axis)
+      - Progressive gyroscopic tilt & wide circular precession
+      - High-frequency Euler's disk chatter buzz near the surface
+      - Final flat settling face-up with contact shadow sync
+   2. Randy The Hungry Trash Can:
+      - Eager wide mouth opening (lid hinging from back rim)
+      - Triple hungry cartoon chomps (CHOMP! CHOMP! BIG GULP CHOMP!)
+      - Squash-and-stretch body reaction
+   ========================================================================= */
+
+@keyframes sot-zwepe-coin-spin {
+  0% {
+    transform: perspective(900px) rotateX(16deg) rotateY(0deg) rotateZ(0deg) translateY(0);
+    filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.2));
+  }
+  3% {
+    /* Zwepe finger snap impulse: snaps onto upright bottom rim on the surface */
+    transform: perspective(900px) rotateX(4deg) rotateY(180deg) rotateZ(0deg) translateY(-8px);
+    filter: drop-shadow(0 18px 16px rgba(0, 0, 0, 0.35));
+  }
+  8% {
+    /* Grounded on rim: spinning upright at blurring township speed (Video 2: 0s-1.2s) */
+    transform: perspective(900px) rotateX(2deg) rotateY(720deg) rotateZ(0deg) translateY(0);
+    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
+  }
+  18% {
+    /* Fast upright rim rotation */
+    transform: perspective(900px) rotateX(3deg) rotateY(1800deg) rotateZ(0deg) translateY(0);
+    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
+  }
+  28% {
+    /* Fast upright rim rotation continues */
+    transform: perspective(900px) rotateX(4deg) rotateY(2880deg) rotateZ(0deg) translateY(0);
+    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
+  }
+  38% {
+    /* Gyroscopic stability begins to yield to friction: coin starts to tilt */
+    transform: perspective(900px) rotateX(18deg) rotateY(3800deg) rotateZ(-12deg) translateY(4px);
+    filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.38));
+  }
+  48% {
+    /* Noticeable lean, precession circle expands on the surface */
+    transform: perspective(900px) rotateX(32deg) rotateY(4680deg) rotateZ(16deg) translateY(8px);
+    filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.32));
+  }
+  58% {
+    /* Pronounced lean, precession angle steepens towards the table */
+    transform: perspective(900px) rotateX(46deg) rotateY(5580deg) rotateZ(-20deg) translateY(13px);
+    filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.28));
+  }
+  68% {
+    /* Low-angle Euler precession kicks in: buzz chatter starts */
+    transform: perspective(900px) rotateX(58deg) rotateY(6480deg) rotateZ(24deg) translateY(18px);
+    filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.24));
+  }
+  76% {
+    /* Accelerating Euler buzz: rim circling rapidly right against the flat surface */
+    transform: perspective(900px) rotateX(66deg) rotateY(7380deg) rotateZ(-16deg) translateY(22px);
+    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.2));
+  }
+  83% {
+    /* Intense Euler buzz chatter */
+    transform: perspective(900px) rotateX(68deg) rotateY(8100deg) rotateZ(10deg) translateY(24px);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.18));
+  }
+  88% {
+    /* High frequency micro-shudder against the table */
+    transform: perspective(900px) rotateX(69deg) rotateY(8640deg) rotateZ(-6deg) translateY(25px);
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.16));
+  }
+  92% {
+    /* Settling micro-vibrations */
+    transform: perspective(900px) rotateX(70deg) rotateY(8950deg) rotateZ(3deg) translateY(25.5px);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+  }
+  96% {
+    /* Final shudder */
+    transform: perspective(900px) rotateX(70.5deg) rotateY(9020deg) rotateZ(-1deg) translateY(25.8px);
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.14));
+  }
+  100% {
+    /* Sits flat against the table surface, gleaming face-up */
+    transform: perspective(900px) rotateX(71deg) rotateY(9060deg) rotateZ(0deg) translateY(26px);
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.14));
+  }
 }
 
-@keyframes sot-bin-approach {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
-  50% { transform: translate3d(0, -0.45rem, 0) rotate(-1.5deg); }
+/* Synchronized contact shadow underneath the Zwepe spinning coin */
+@keyframes sot-zwepe-shadow {
+  0% {
+    transform: scale(1, 0.28);
+    opacity: 0.35;
+  }
+  3% {
+    /* Lifted on flick */
+    transform: scale(0.6, 0.15);
+    opacity: 0.25;
+  }
+  8%, 28% {
+    /* Grounded upright contact point: narrow dark ellipse right at rim contact point */
+    transform: scale(0.4, 0.12);
+    opacity: 0.75;
+  }
+  38% {
+    transform: scale(0.6, 0.18);
+    opacity: 0.6;
+  }
+  48% {
+    transform: scale(0.8, 0.26);
+    opacity: 0.5;
+  }
+  58% {
+    transform: scale(0.95, 0.35);
+    opacity: 0.42;
+  }
+  68%, 88% {
+    transform: scale(1.05, 0.42);
+    opacity: 0.35;
+  }
+  100% {
+    /* Full flat shadow anchoring the resting coin on the table */
+    transform: scale(1.12, 0.46);
+    opacity: 0.3;
+  }
 }
 
-@keyframes sot-bin-lid-press {
-  0% { transform: translate(0, 0) rotate(24deg); }
-  22% { transform: translate(0.35rem, -0.2rem) rotate(34deg); }
-  46% { transform: translate(0.2rem, -1rem) rotate(52deg); }
-  66% { transform: translate(0.1rem, -0.35rem) rotate(38deg); }
-  82% { transform: translate(0, -0.05rem) rotate(28deg); }
-  100% { transform: translate(0, 0) rotate(24deg); }
+/* Randy The Hungry Trash Can: Lid chomps like a hungry cartoon creature */
+@keyframes randy-lid-chomp {
+  0% {
+    transform: rotate(0deg);
+  }
+  10% {
+    /* Mouth flies wide open: hungry anticipation! */
+    transform: rotate(-62deg);
+  }
+  22% {
+    /* Holds wide open: AAAAAAAH! */
+    transform: rotate(-65deg);
+  }
+  32% {
+    /* CHOMP 1: Sharp hungry bite snap shut! */
+    transform: rotate(2deg);
+  }
+  44% {
+    /* Mouth pops open again for bite 2! */
+    transform: rotate(-48deg);
+  }
+  55% {
+    /* CHOMP 2: Snaps shut! */
+    transform: rotate(1deg);
+  }
+  67% {
+    /* Mouth opens EXTRA wide for big gulp bite 3! */
+    transform: rotate(-74deg);
+  }
+  78% {
+    /* BIG GULP CHOMP 3: Slams shut flush with can rim! */
+    transform: rotate(0deg);
+  }
+  85% {
+    /* Lid rebound shudder */
+    transform: rotate(-5deg);
+  }
+  92% {
+    transform: rotate(1.5deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* Randy The Hungry Trash Can: Body squashes and stretches with every chomp */
+@keyframes randy-body-swallow {
+  0% {
+    transform: scale(1, 1) translateY(0);
+  }
+  10%, 22% {
+    /* Mouth wide open: body stretches upward in hungry anticipation */
+    transform: scale(0.95, 1.08) translateY(-4px);
+  }
+  32% {
+    /* CHOMP 1 impact: squashes down */
+    transform: scale(1.08, 0.92) translateY(3px);
+  }
+  44% {
+    /* Stretch */
+    transform: scale(0.96, 1.05) translateY(-2px);
+  }
+  55% {
+    /* CHOMP 2 impact */
+    transform: scale(1.06, 0.94) translateY(2px);
+  }
+  67% {
+    /* Big stretch for big bite */
+    transform: scale(0.93, 1.10) translateY(-6px);
+  }
+  78% {
+    /* BIG CHOMP 3 slam impact */
+    transform: scale(1.12, 0.88) translateY(5px);
+  }
+  86% {
+    /* Satisfied swallow wobble / burp */
+    transform: scale(0.98, 1.02) translateY(-1px);
+  }
+  94% {
+    transform: scale(1.01, 0.99) translateY(0);
+  }
+  100% {
+    transform: scale(1, 1) translateY(0);
+  }
+}
+
+/* Randy idle breathing: mouth slightly ajar, eager for trash */
+@keyframes randy-idle-lid {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-10deg);
+  }
+}
+
+/* Ambient idle coin float */
+@keyframes sot-coin-approach {
+  0%, 100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.5deg);
+  }
+}
+
+.sot-coin-art {
+  animation: sot-coin-approach 4.6s ease-in-out infinite;
+  transform-origin: 50% 100%;
+  transition: filter 0.3s ease;
+}
+.sot-coin-art.sot-object-active {
+  animation: sot-zwepe-coin-spin 2.9s cubic-bezier(0.18, 0.8, 0.24, 1) forwards;
+}
+
+.sot-coin-shadow {
+  transform-origin: 50% 50%;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.sot-coin-shadow.sot-object-active {
+  animation: sot-zwepe-shadow 2.9s cubic-bezier(0.18, 0.8, 0.24, 1) forwards;
+}
+
+/* Randy The Hungry Trash Can: Junk inside mouth shakes & gulps down on chomp */
+@keyframes randy-junk-gulp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  10%, 22% {
+    /* Mouth wide open: junk rises up eagerly */
+    transform: translateY(-5px) scale(1.06) rotate(-2deg);
+    opacity: 1;
+  }
+  32% {
+    /* Chomp 1: compressed down */
+    transform: translateY(2px) scale(0.95) rotate(2deg);
+  }
+  44% {
+    /* Pop up */
+    transform: translateY(-3px) scale(1.03) rotate(-1deg);
+  }
+  55% {
+    /* Chomp 2 */
+    transform: translateY(3px) scale(0.92) rotate(1deg);
+  }
+  67% {
+    /* Big gulp anticipation */
+    transform: translateY(-6px) scale(1.08) rotate(-3deg);
+  }
+  78% {
+    /* Slam swallowed */
+    transform: translateY(1px) scale(0.96) rotate(0deg);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.randy-junk-contents {
+  transform-origin: 50% 100%;
+  transition: transform 0.2s ease;
+}
+.randy-junk-contents.randy-active {
+  animation: randy-junk-gulp 1.15s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+/* Randy The Hungry Trash Can animation classes */
+.randy-can-stage {
+  perspective: 800px;
+}
+.randy-body {
+  transform-origin: 50% 90%;
+  transition: transform 0.2s ease;
+}
+.randy-body.randy-active {
+  animation: randy-body-swallow 1.15s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+.randy-lid {
+  transform-origin: 86% 20.5%;
+  animation: randy-idle-lid 3.4s ease-in-out infinite;
+  transition: transform 0.25s ease;
+}
+.randy-lid.randy-active {
+  animation: randy-lid-chomp 1.15s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+.group:hover .randy-lid:not(.randy-active) {
+  /* Randy opens his mouth when hovered, eager to eat trash! */
+  transform: rotate(-32deg);
 }
 
 @keyframes sot-letter-cascade {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-0.8rem) rotate(-3deg); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.8rem) rotate(-3deg);
+  }
 }
 
-.sot-coin-art { animation: sot-coin-approach 4.8s ease-in-out infinite; transform-origin: 50% 70%; }
-.sot-coin-art.sot-object-active { animation: sot-coin-press 820ms cubic-bezier(.2,.8,.25,1) both; }
-.sot-bin-body { animation: sot-bin-approach 5.6s ease-in-out infinite; transform-origin: 50% 78%; }
-.sot-bin-lid { transform-origin: 12% 100%; }
-.sot-bin-lid.sot-object-active { animation: sot-bin-lid-press 760ms cubic-bezier(.2,.8,.25,1) both; }
-.sot-letter-cascade { animation: sot-letter-cascade 2.2s ease-in-out infinite; }
+.sot-letter-cascade {
+  animation: sot-letter-cascade 2.2s ease-in-out infinite;
+}
 @media (prefers-reduced-motion: reduce) {
-  .sot-coin-art, .sot-bin-body, .sot-bin-lid, .sot-letter-cascade { animation: none; }
+  .sot-coin-art,
+  .sot-bin-art,
+  .sot-bin-body,
+  .sot-bin-lid,
+  .sot-letter-cascade {
+    animation: none;
+  }
 }
 
 @theme inline {
@@ -89,7 +406,6 @@
   --color-chrome-dark: var(--chrome-dark);
   --color-logo-ink: var(--logo-ink);
   --color-logo-red: var(--logo-red);
-
 
   --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
@@ -154,10 +470,10 @@
     var(--chrome) 42%,
     var(--chrome-dark) 100%
   );
-  --shadow-badge: 0 6px 0 -2px color-mix(in oklab, var(--logo-ink) 85%, transparent),
+  --shadow-badge:
+    0 6px 0 -2px color-mix(in oklab, var(--logo-ink) 85%, transparent),
     0 10px 20px -8px color-mix(in oklab, var(--logo-ink) 90%, transparent);
 }
-
 
 @layer base {
   * {
@@ -171,7 +487,10 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, .font-display {
+  h1,
+  h2,
+  h3,
+  .font-display {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }

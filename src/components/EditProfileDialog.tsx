@@ -66,7 +66,12 @@ export function EditProfileDialog({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="profile-name">{t("social.displayName")}</Label>
-            <Input id="profile-name" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
+            <Input
+              id="profile-name"
+              value={name}
+              maxLength={60}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="profile-bio">{t("social.bio")}</Label>

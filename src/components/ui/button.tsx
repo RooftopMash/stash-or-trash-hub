@@ -18,7 +18,6 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         stash: "verdict-badge verdict-gold rounded-xl",
         trash: "verdict-badge verdict-chrome rounded-xl",
-
       },
       size: {
         default: "h-9 px-4 py-2",

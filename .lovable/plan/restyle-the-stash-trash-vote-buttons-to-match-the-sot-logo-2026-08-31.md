@@ -7,17 +7,20 @@ Right now the two vote buttons are generic outline buttons — thin green and th
 ## What changes
 
 **Stash button — the "gold coins" side**
+
 - Gold gradient face (warm amber to deep gold), like the coins in the mark
 - Dark charcoal bold italic label with a subtle raised highlight along the top edge
 - Coin-stack icon instead of the thumbs-up
 - Thin dark outline, matching the logo's black keyline
 
 **Trash button — the "chrome bin" side**
+
 - Brushed chrome/silver gradient face with the logo's red keyline
 - Dark bold italic label, same type treatment as Stash
 - Bin icon kept, drawn in the logo's metal tones
 
 **Shared treatment**
+
 - Bold italic uppercase labels with a slight skew, echoing the logo's lettering
 - Dark keyline + soft drop shadow so both buttons sit on the card like badges
 - Tactile press: presses down slightly and the highlight dims

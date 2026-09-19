@@ -66,6 +66,7 @@ export const en = {
   },
   auth: {
     continueGoogle: "Continue with Google",
+    continueFacebook: "Continue with Facebook",
     or: "or",
     signIn: "Sign in",
     signUp: "Sign up",
@@ -101,7 +102,7 @@ export const en = {
     searchPlaceholder: "Search brands...",
     searchResults: "Brands",
     searchNoResults: "No brands found.",
-    addNew: "Add \"{{name}}\" as a new brand",
+    addNew: 'Add "{{name}}" as a new brand',
     verdictTitle: "Stash or Trash {{brand}}?",
     verdictHint: "One tap records your verdict. Tap again to change it.",
     verdictAddStory: "Got a story or a photo? Post it about this brand.",
@@ -283,7 +284,8 @@ export const en = {
     someone: "Someone",
     voiceStats: "{{posts}} posts · {{engagement}} engagement · {{followers}} followers",
     crisisTitle: "Crisis alert.",
-    crisisBody: "Negative sentiment is at {{share}}% versus a {{baseline}}% baseline. Respond to open posts now.",
+    crisisBody:
+      "Negative sentiment is at {{share}}% versus a {{baseline}}% baseline. Respond to open posts now.",
     crisisDismiss: "Mark handled",
     crisisDismissFailed: "Could not update the alert.",
   },

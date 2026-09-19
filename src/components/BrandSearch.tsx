@@ -14,11 +14,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 export function BrandSearch({
@@ -62,9 +58,7 @@ export function BrandSearch({
     navigate({ to: "/brands/new", search: { name: q } });
   };
 
-  const exactMatch = (results ?? []).some(
-    (b) => b.name.toLowerCase() === q.toLowerCase(),
-  );
+  const exactMatch = (results ?? []).some((b) => b.name.toLowerCase() === q.toLowerCase());
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -98,10 +92,17 @@ export function BrandSearch({
               <CommandGroup heading={t("brand.searchResults")}>
                 {results.map((b) => (
                   <CommandItem key={b.id} value={b.id} onSelect={() => handleSelect(b)}>
-                    <Check className={cn("mr-2 h-4 w-4", selectedId === b.id ? "opacity-100" : "opacity-0")} />
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selectedId === b.id ? "opacity-100" : "opacity-0",
+                      )}
+                    />
                     <span className="truncate">{b.name}</span>
                     {b.country && (
-                      <span className="ml-auto shrink-0 pl-2 text-xs text-muted-foreground">{b.country}</span>
+                      <span className="ml-auto shrink-0 pl-2 text-xs text-muted-foreground">
+                        {b.country}
+                      </span>
                     )}
                   </CommandItem>
                 ))}

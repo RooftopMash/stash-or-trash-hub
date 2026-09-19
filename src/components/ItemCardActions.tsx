@@ -102,12 +102,7 @@ export function ItemCardActions({
   return (
     <div className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-muted-foreground border-t border-border pt-3">
       {/* Comment */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onCommentClick}
-        className="flex-1 gap-1.5"
-      >
+      <Button variant="ghost" size="sm" onClick={onCommentClick} className="flex-1 gap-1.5">
         <MessageCircle className="h-4 w-4" />
         <span className="hidden sm:inline">{t("social.comment")}</span>
       </Button>
@@ -118,10 +113,7 @@ export function ItemCardActions({
         size="sm"
         onClick={handleLike}
         disabled={isLiking}
-        className={cn(
-          "flex-1 gap-1.5",
-          userLiked && "text-trash hover:text-trash"
-        )}
+        className={cn("flex-1 gap-1.5", userLiked && "text-trash hover:text-trash")}
       >
         <Heart className={cn("h-4 w-4", userLiked && "fill-current")} />
         <span className="hidden sm:inline">{likeCount ?? 0}</span>
@@ -133,10 +125,7 @@ export function ItemCardActions({
         size="sm"
         onClick={handleRepost}
         disabled={isReposting}
-        className={cn(
-          "flex-1 gap-1.5",
-          userRepostedPost && "text-stash hover:text-stash"
-        )}
+        className={cn("flex-1 gap-1.5", userRepostedPost && "text-stash hover:text-stash")}
       >
         <Repeat2 className={cn("h-4 w-4", userRepostedPost && "fill-current")} />
         <span className="hidden sm:inline">{repostCount ?? 0}</span>
@@ -148,7 +137,7 @@ export function ItemCardActions({
         size="sm"
         onClick={() => {
           navigator.clipboard?.writeText(
-            `${typeof window !== "undefined" ? window.location.origin : ""}/items/${itemId}`
+            `${typeof window !== "undefined" ? window.location.origin : ""}/items/${itemId}`,
           );
           toast.success(t("social.linkCopied"));
         }}
