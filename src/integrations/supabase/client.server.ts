@@ -33,7 +33,8 @@ function createSupabaseAdminClient() {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  const effectiveUrl = SUPABASE_URL || "https://placeholder.supabase.co";
+  const effectiveUrl =
+    SUPABASE_URL || "https://ypbyouaddkdfuhfpnguu.supabase.co";
   const effectiveKey = SUPABASE_SERVICE_ROLE_KEY || "placeholder-service-role-key";
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {

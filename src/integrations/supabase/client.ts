@@ -29,29 +29,28 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 
 function createSupabaseClient() {
+  const envObj = typeof process !== 'undefined' && process.env ? process.env : {};
+
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
   const SUPABASE_URL =
     import.meta.env.VITE_SUPABASE_URL ||
     import.meta.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.SUPABASE_URL;
+    envObj.VITE_SUPABASE_URL ||
+    envObj.SUPABASE_URL;
   const SUPABASE_PUBLISHABLE_KEY =
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
     import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_ANON_KEY;
+    envObj.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    envObj.SUPABASE_PUBLISHABLE_KEY ||
+    envObj.SUPABASE_ANON_KEY;
 
-  const effectiveUrl = SUPABASE_URL || "https://placeholder.supabase.co";
-  const effectiveKey = SUPABASE_PUBLISHABLE_KEY || "placeholder-anon-key";
-
-  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-    const missing = [
-      ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-      ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
-    ];
-    console.warn(`[Supabase] Missing Supabase environment variable(s): ${missing.join(', ')}. Using mock fallback credentials.`);
-  }
+  const effectiveUrl =
+    SUPABASE_URL || "https://ypbyouaddkdfuhfpnguu.supabase.co";
+  const effectiveKey =
+    SUPABASE_PUBLISHABLE_KEY ||
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwYnlvdWFkZGtkZnVoZnBuZ3V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1OTY0OTgsImV4cCI6MjA5OTE3MjQ5OH0.IEHBd2gZuTpIvedgDPpytWxeoDUglcWIsZctl5Z9TvI";
 
   return createClient<Database>(effectiveUrl, effectiveKey, {
     global: {

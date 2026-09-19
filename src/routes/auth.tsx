@@ -41,18 +41,24 @@ function AuthPage() {
       return;
     }
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
-    setBusy(false);
-    if (error) {
-      const message = /email not confirmed/i.test(error.message)
-        ? "Please confirm your email before signing in."
-        : /invalid login credentials/i.test(error.message)
-          ? "Invalid email or password. If you do not have an account yet, click Sign Up."
-          : error.message || "We could not sign you in right now. Please try again.";
-      return toast.error(message);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+      if (error) {
+        const message = /email not confirmed/i.test(error.message)
+          ? "Please confirm your email before signing in."
+          : /invalid login credentials/i.test(error.message)
+            ? "Invalid email or password. If you do not have an account yet, click Sign Up."
+            : error.message || "We could not sign you in right now. Please try again.";
+        return toast.error(message);
+      }
+      toast.success(t("auth.welcome"));
+      navigate({ to: "/" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred during sign in.";
+      toast.error(msg);
+    } finally {
+      setBusy(false);
     }
-    toast.success(t("auth.welcome"));
-    navigate({ to: "/" });
   };
 
   const signUp = async () => {
@@ -66,22 +72,28 @@ function AuthPage() {
       return;
     }
     setBusy(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: cleanEmail,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: { display_name: displayName.trim() || cleanEmail.split("@")[0] },
-      },
-    });
-    setBusy(false);
-    if (error) return toast.error(error.message);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: { display_name: displayName.trim() || cleanEmail.split("@")[0] },
+        },
+      });
+      if (error) return toast.error(error.message);
 
-    if (data.session) {
-      toast.success(t("auth.created"));
-      navigate({ to: "/" });
-    } else {
-      toast.success("Account created! Please check your email inbox to confirm your account.");
+      if (data.session) {
+        toast.success(t("auth.created"));
+        navigate({ to: "/" });
+      } else {
+        toast.success("Account created! Please check your email inbox to confirm your account.");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred during sign up.";
+      toast.error(msg);
+    } finally {
+      setBusy(false);
     }
   };
 
