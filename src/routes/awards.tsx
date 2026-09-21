@@ -10,7 +10,7 @@ import { brandCategory, categoryOptions } from "@/lib/categories";
 import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 import { PeopleTrustFactorLink } from "@/components/PeopleTrustFactor";
-import { BRAND_TIERS, type BrandTier, getBrandTier, getTierInfo, matchesTier } from "@/lib/brandTiers";
+import { BRAND_TIERS, type BrandTier, type BrandTierFilter, getBrandTier, getTierInfo, matchesTier } from "@/lib/brandTiers";
 
 export const Route = createFileRoute("/awards")({
   head: () => ({
@@ -43,7 +43,7 @@ function AwardsPage() {
 
   const [country, setCountry] = useState("All countries");
   const [category, setCategory] = useState("All categories");
-  const [tier, setTier] = useState<BrandTier>("All tiers");
+  const [tier, setTier] = useState<BrandTierFilter>("All tiers");
   const [query, setQuery] = useState("");
   const [period, setPeriod] = useState("Live season");
   const snapshotTime = useMemo(() => new Date(), []);
@@ -131,20 +131,26 @@ function AwardsPage() {
                   <span>{tier === "All tiers" ? "Showing all scale tiers" : `Tier: ${tier}`}</span>
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-1">
-                  {BRAND_TIERS.map((item) => (
-                    <button
-                      key={item}
-                      onClick={() => setTier(item)}
-                      className={cn(
-                        "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                        tier === item
-                          ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                          : "bg-secondary/70 text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {item}
-                    </button>
-                  ))}
+                  {BRAND_TIERS.map((item) => {
+                    const info = item !== "All tiers" ? getTierInfo(item) : null;
+                    return (
+                      <button
+                        key={item}
+                        onClick={() => setTier(item)}
+                        className={cn(
+                          "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                          tier === item
+                            ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                            : "bg-secondary/70 text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {info?.pricePoint && (
+                          <span className="font-mono text-[10px] opacity-75">{info.pricePoint}</span>
+                        )}
+                        <span>{item}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -154,7 +160,7 @@ function AwardsPage() {
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Updated {snapshotTime.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. Scoped to {regionLabel.toLowerCase()}, {category === "All categories" ? "all categories" : category}, and {tier === "All tiers" ? "all competitive tiers" : tier}.</p>
               {tier !== "All tiers" && (
                 <div className="mt-3 rounded-lg border border-border/60 bg-background/80 p-2.5 text-xs">
-                  <p className="font-semibold text-foreground">{tier}</p>
+                  <p className="font-semibold text-foreground">{getTierInfo(tier).label} ({getTierInfo(tier).pricePoint})</p>
                   <p className="mt-0.5 text-muted-foreground">{getTierInfo(tier).description}</p>
                 </div>
               )}
@@ -195,8 +201,12 @@ function AwardsPage() {
                     <span className="flex-1 truncate font-semibold">
                       <span className="flex items-center gap-2">
                         <span className="truncate">{b.name}</span>
-                        <span className={cn("hidden sm:inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium leading-none", tierInfo.badgeClass)}>
-                          {tierInfo.shortName}
+                        <span
+                          className={cn("hidden sm:inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold leading-none", tierInfo.badgeClass)}
+                          title={`${tierInfo.name} (${tierInfo.pricePoint}): ${tierInfo.description}`}
+                        >
+                          <span className="font-mono text-[9px] opacity-75">{tierInfo.pricePoint}</span>
+                          <span>{tierInfo.shortName}</span>
                         </span>
                       </span>
                       <span className="text-xs font-normal text-muted-foreground">

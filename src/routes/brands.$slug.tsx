@@ -264,16 +264,17 @@ function BrandPage() {
                     People's SOT: {getPeoplesSotGrade(brand.trust_score).grade}
                   </div>
 
-                  {/* SOT Brand Scale Tier Badge */}
+                  {/* SOT Brand Tier Badge */}
                   {(() => {
                     const tierName = getBrandTier(brand.name, brand.category);
                     const tierInfo = getTierInfo(tierName);
                     return (
                       <div
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${tierInfo.badgeClass}`}
-                        title={tierInfo.description}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold border ${tierInfo.badgeClass}`}
+                        title={`${tierInfo.name} (${tierInfo.pricePoint}): ${tierInfo.description}`}
                       >
-                        Tier: {tierInfo.shortName}
+                        <span className="font-mono text-[11px] opacity-80">{tierInfo.pricePoint}</span>
+                        <span>{tierInfo.shortName}</span>
                       </div>
                     );
                   })()}

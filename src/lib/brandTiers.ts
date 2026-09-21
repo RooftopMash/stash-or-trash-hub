@@ -1,195 +1,326 @@
 /**
- * Brand Tier Classification for Fair SOT Awards & Leaderboards
- * 
- * Ensures fair competition across scale, business models, and market reach.
- * "KFC can't compete with Nike" — fast-food retail operates on different
- * footfall, margins, customer loyalty mechanics, and brand archetypes than
- * global sportswear, luxury ateliers, tech ecosystems, or local challengers.
+ * Brand Tier Classification Interface & Metadata
+ *
+ * Categorizes consumer brands into defined market tiers:
+ * - Luxury: Haute couture, supercars, fine horlogerie, ateliers ($$$$)
+ * - Premium: High-end consumer tech, aspirational apparel, gourmet retail ($$$)
+ * - Mass Market: Commercial giants, everyday staples, supermarkets, telcos ($$)
+ * - Budget: Value-first retailers, discount fast-casual, affordable essentials ($)
+ *
+ * Enhances the Brand Barometer UX by enabling level-playing-field sentiment,
+ * fair award leaderboards, and meaningful comparative CX analytics.
  */
+
+export type BrandTierLevel = "Luxury" | "Premium" | "Mass Market" | "Budget";
 
 export const BRAND_TIERS = [
   "All tiers",
-  "Global Titans",
-  "Industry Giants",
-  "National Champions",
-  "Emerging & Challengers",
-  "Heritage & Local Icons",
+  "Luxury",
+  "Premium",
+  "Mass Market",
+  "Budget",
 ] as const;
 
-export type BrandTier = (typeof BRAND_TIERS)[number];
+export type BrandTierFilter = (typeof BRAND_TIERS)[number];
 
-export type TierInfo = {
-  name: BrandTier;
+/**
+ * BrandTier Interface
+ * Represents the structured metadata, display properties, and economic segment of a brand tier.
+ */
+export interface BrandTier {
+  id: BrandTierLevel;
+  name: BrandTierLevel;
+  label: string;
   shortName: string;
   description: string;
-  example: string;
+  pricePoint: string; // e.g. "$$$$", "$$$", "$$", "$"
+  marketSegment: string;
   badgeClass: string;
+  borderClass: string;
+  dotColor: string;
+  priority: number; // 1 = Luxury, 2 = Premium, 3 = Mass Market, 4 = Budget (used for sorting)
+  examples: string[];
+}
+
+/** Backward compatibility alias for existing consumers expecting TierInfo */
+export type TierInfo = BrandTier;
+
+export const TIER_METADATA: Record<BrandTierLevel, BrandTier> = {
+  Luxury: {
+    id: "Luxury",
+    name: "Luxury",
+    label: "Luxury & Haute Horlogerie",
+    shortName: "Luxury",
+    description:
+      "Elite heritage maisons, bespoke couturiers, exotic automakers, and prestigious jewelers with exclusive distribution and top-of-market pricing.",
+    pricePoint: "$$$$",
+    marketSegment: "High-net-worth & aspirational luxury",
+    badgeClass:
+      "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30",
+    borderClass: "border-purple-300 dark:border-purple-800",
+    dotColor: "bg-purple-500",
+    priority: 1,
+    examples: [
+      "Louis Vuitton",
+      "Chanel",
+      "Gucci",
+      "Rolex",
+      "Prada",
+      "Dior",
+      "Hermes",
+      "Cartier",
+      "Ferrari",
+      "Porsche",
+      "MaXhosa",
+    ],
+  },
+  Premium: {
+    id: "Premium",
+    name: "Premium",
+    label: "Premium & Aspirational",
+    shortName: "Premium",
+    description:
+      "High-end consumer technology, aspirational sportswear, upscale automotive, and gourmet retail delivering elevated craftsmanship at an accessible premium.",
+    pricePoint: "$$$",
+    marketSegment: "Upper-middle & lifestyle consumers",
+    badgeClass:
+      "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30",
+    borderClass: "border-blue-300 dark:border-blue-800",
+    dotColor: "bg-blue-500",
+    priority: 2,
+    examples: [
+      "Apple",
+      "Nike",
+      "Starbucks",
+      "Tesla",
+      "BMW",
+      "Mercedes-Benz",
+      "L'Oréal",
+      "Woolworths",
+      "Sony",
+      "Nespresso",
+      "Discovery",
+    ],
+  },
+  "Mass Market": {
+    id: "Mass Market",
+    name: "Mass Market",
+    label: "Mass Market & Commercial Giants",
+    shortName: "Mass Market",
+    description:
+      "Everyday consumer staples, national supermarket chains, telecoms, mainstream fast-food leaders, and high-volume commercial powerhouses.",
+    pricePoint: "$$",
+    marketSegment: "General public & mainstream consumer base",
+    badgeClass:
+      "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+    borderClass: "border-emerald-300 dark:border-emerald-800",
+    dotColor: "bg-emerald-500",
+    priority: 3,
+    examples: [
+      "Coca-Cola",
+      "McDonald's",
+      "KFC",
+      "Toyota",
+      "Zara",
+      "Adidas",
+      "MTN",
+      "Vodacom",
+      "Shoprite",
+      "Capitec",
+      "Shell",
+      "KOO",
+    ],
+  },
+  Budget: {
+    id: "Budget",
+    name: "Budget",
+    label: "Budget & Value First",
+    shortName: "Budget",
+    description:
+      "Discount retailers, fast-value essentials, bargain fashion, low-cost logistics, and entry-level consumer goods focused on maximum affordability.",
+    pricePoint: "$",
+    marketSegment: "Price-sensitive & value-focused consumer",
+    badgeClass:
+      "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30",
+    borderClass: "border-amber-300 dark:border-amber-800",
+    dotColor: "bg-amber-500",
+    priority: 4,
+    examples: [
+      "Subway",
+      "Burger King",
+      "Shein",
+      "Temu",
+      "Pep",
+      "Ackermans",
+      "Mr Price",
+      "Primark",
+      "Dollar General",
+      "Chappies",
+    ],
+  },
 };
 
-export const TIER_METADATA: Record<Exclude<BrandTier, "All tiers">, TierInfo> = {
-  "Global Titans": {
-    name: "Global Titans",
-    shortName: "Titans",
-    description: "Multi-continent mega-enterprises with billions in global revenue and ubiquitous cultural reach (e.g. Nike, Apple, Google, Coca-Cola).",
-    example: "Nike, Apple, Coca-Cola, Toyota",
-    badgeClass: "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30",
-  },
-  "Industry Giants": {
-    name: "Industry Giants",
-    shortName: "Giants",
-    description: "Multinational market-cap leaders dominating distinct consumer verticals, quick-service, telecoms, and mass logistics (e.g. KFC, McDonald's, MTN, Shell).",
-    example: "KFC, McDonald's, MTN, Vodacom, Shell",
-    badgeClass: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30",
-  },
-  "National Champions": {
-    name: "National Champions",
-    shortName: "Champions",
-    description: "Market-leading institutions, banks, grocers, and utility powerhouses that anchor domestic and regional economies (e.g. Woolworths, Shoprite, Capitec).",
-    example: "Woolworths, Shoprite, Capitec, Discovery",
-    badgeClass: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30",
-  },
-  "Heritage & Local Icons": {
-    name: "Heritage & Local Icons",
-    shortName: "Heritage",
-    description: "Longstanding household names, beloved culinary staples, pantry essentials, and generational cultural trademarks (e.g. KOO, Mrs Ball's, Black Cat).",
-    example: "KOO, Mrs Ball's, Black Cat, Jungle Oats, Savanna",
-    badgeClass: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
-  },
-  "Emerging & Challengers": {
-    name: "Emerging & Challengers",
-    shortName: "Challengers",
-    description: "Fast-growing insurgent brands, direct-to-consumer innovators, designer labels, and indie makers disrupting established categories.",
-    example: "Bathu, Drip Footwear, MaXhosa, TSHEPO Denim",
-    badgeClass: "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30",
-  },
-};
+// Explicit lookup map for brand slugs/names to guarantee high-accuracy tier placement
+const explicitTierMap: Record<string, BrandTierLevel> = {
+  // Luxury ($$$$)
+  "louis vuitton": "Luxury",
+  louisvuitton: "Luxury",
+  lvmh: "Luxury",
+  chanel: "Luxury",
+  gucci: "Luxury",
+  rolex: "Luxury",
+  prada: "Luxury",
+  dior: "Luxury",
+  hermes: "Luxury",
+  cartier: "Luxury",
+  ferrari: "Luxury",
+  porsche: "Luxury",
+  lamborghini: "Luxury",
+  bentley: "Luxury",
+  rollsroyce: "Luxury",
+  "rolls-royce": "Luxury",
+  balenciaga: "Luxury",
+  burberry: "Luxury",
+  versace: "Luxury",
+  armani: "Luxury",
+  "giorgio armani": "Luxury",
+  maxhosa: "Luxury",
+  "maxhosa africa": "Luxury",
+  "thebe magugu": "Luxury",
+  "rich mnisi": "Luxury",
+  ardmore: "Luxury",
+  "kirsten goss": "Luxury",
+  pichulik: "Luxury",
 
-// Explicit mappings for known global & local brands to guarantee high-accuracy tier placement
-const explicitTierMap: Record<string, Exclude<BrandTier, "All tiers">> = {
-  // Global Titans
-  nike: "Global Titans",
-  adidas: "Global Titans",
-  apple: "Global Titans",
-  google: "Global Titans",
-  microsoft: "Global Titans",
-  amazon: "Global Titans",
-  "coca-cola": "Global Titans",
-  cocacola: "Global Titans",
-  toyota: "Global Titans",
-  samsung: "Global Titans",
-  sony: "Global Titans",
-  lvmh: "Global Titans",
-  zara: "Global Titans",
-  ikea: "Global Titans",
-  "l'oréal": "Global Titans",
-  loreal: "Global Titans",
+  // Premium ($$$)
+  nike: "Premium",
+  apple: "Premium",
+  starbucks: "Premium",
+  tesla: "Premium",
+  bmw: "Premium",
+  mercedes: "Premium",
+  "mercedes-benz": "Premium",
+  audi: "Premium",
+  volvo: "Premium",
+  "l'oréal": "Premium",
+  loreal: "Premium",
+  woolworths: "Premium",
+  nespresso: "Premium",
+  bose: "Premium",
+  sony: "Premium",
+  discovery: "Premium",
+  sanlam: "Premium",
+  "old mutual": "Premium",
+  oldmutual: "Premium",
+  google: "Premium",
+  microsoft: "Premium",
+  amazon: "Premium",
+  samsung: "Premium",
+  "cape union mart": "Premium",
+  bathu: "Premium",
+  "drip footwear": "Premium",
+  galxboy: "Premium",
+  veldskoen: "Premium",
+  "freedom of movement": "Premium",
+  "tshepo denim": "Premium",
+  "s.p.c.c": "Premium",
+  "devil's peak beer": "Premium",
+  "inverroche gin": "Premium",
+  "musgrave gin": "Premium",
+  "bos iced tea": "Premium",
+  amarula: "Premium",
+  kwv: "Premium",
 
-  // Industry Giants (Quick-Service Food Chains, Telco conglomerates, Energy majors)
-  kfc: "Industry Giants",
-  "mcdonald's": "Industry Giants",
-  mcdonalds: "Industry Giants",
-  burgerking: "Industry Giants",
-  "burger king": "Industry Giants",
-  subway: "Industry Giants",
-  dominos: "Industry Giants",
-  "domino's": "Industry Giants",
-  starbucks: "Industry Giants",
-  mtn: "Industry Giants",
-  vodacom: "Industry Giants",
-  telkom: "Industry Giants",
-  safaricom: "Industry Giants",
-  shell: "Industry Giants",
-  bp: "Industry Giants",
-  totalenergies: "Industry Giants",
-  dangote: "Industry Giants",
-  emirates: "Industry Giants",
-  "qatar airways": "Industry Giants",
-  uber: "Industry Giants",
-  netflix: "Industry Giants",
-  spotify: "Industry Giants",
-  angloamerican: "Industry Giants",
-  "anglo american": "Industry Giants",
-  sasol: "Industry Giants",
+  // Mass Market ($$)
+  kfc: "Mass Market",
+  "mcdonald's": "Mass Market",
+  mcdonalds: "Mass Market",
+  "coca-cola": "Mass Market",
+  cocacola: "Mass Market",
+  toyota: "Mass Market",
+  zara: "Mass Market",
+  "h&m": "Mass Market",
+  hm: "Mass Market",
+  adidas: "Mass Market",
+  ikea: "Mass Market",
+  mtn: "Mass Market",
+  vodacom: "Mass Market",
+  telkom: "Mass Market",
+  safaricom: "Mass Market",
+  shell: "Mass Market",
+  bp: "Mass Market",
+  totalenergies: "Mass Market",
+  dangote: "Mass Market",
+  emirates: "Mass Market",
+  "qatar airways": "Mass Market",
+  uber: "Mass Market",
+  netflix: "Mass Market",
+  spotify: "Mass Market",
+  shoprite: "Mass Market",
+  checkers: "Mass Market",
+  "pick n pay": "Mass Market",
+  spar: "Mass Market",
+  capitec: "Mass Market",
+  "standard bank": "Mass Market",
+  standardbank: "Mass Market",
+  fnb: "Mass Market",
+  nedbank: "Mass Market",
+  mercadona: "Mass Market",
+  carrefour: "Mass Market",
+  koo: "Mass Market",
+  "black cat": "Mass Market",
+  "jungle oats": "Mass Market",
+  "all gold": "Mass Market",
+  "mrs ball's": "Mass Market",
+  "mrs balls": "Mass Market",
+  tastic: "Mass Market",
+  beacon: "Mass Market",
+  oros: "Mass Market",
+  ceres: "Mass Market",
+  "castle lager": "Mass Market",
+  "savanna cider": "Mass Market",
+  savanna: "Mass Market",
+  clover: "Mass Market",
+  eskort: "Mass Market",
+  "fatti's & moni's": "Mass Market",
+  doom: "Mass Market",
+  sasol: "Mass Market",
+  "anglo american": "Mass Market",
+  angloamerican: "Mass Market",
 
-  // National Champions
-  woolworths: "National Champions",
-  shoprite: "National Champions",
-  "pick n pay": "National Champions",
-  checkers: "National Champions",
-  spar: "National Champions",
-  capitec: "National Champions",
-  "standard bank": "National Champions",
-  standardbank: "National Champions",
-  fnb: "National Champions",
-  nedbank: "National Champions",
-  discovery: "National Champions",
-  sanlam: "National Champions",
-  oldmutual: "National Champions",
-  "old mutual": "National Champions",
-  takealot: "National Champions",
-  jumia: "National Champions",
-  "ethiopian airlines": "National Champions",
-  mercadona: "National Champions",
-  carrefour: "National Champions",
-  "cape union mart": "National Champions",
-
-  // Heritage & Local Icons (Generational staples)
-  koo: "Heritage & Local Icons",
-  "black cat": "Heritage & Local Icons",
-  "jungle oats": "Heritage & Local Icons",
-  "all gold": "Heritage & Local Icons",
-  "mrs ball's": "Heritage & Local Icons",
-  "mrs balls": "Heritage & Local Icons",
-  tastic: "Heritage & Local Icons",
-  beacon: "Heritage & Local Icons",
-  oros: "Heritage & Local Icons",
-  ceres: "Heritage & Local Icons",
-  amarula: "Heritage & Local Icons",
-  "castle lager": "Heritage & Local Icons",
-  "savanna cider": "Heritage & Local Icons",
-  savanna: "Heritage & Local Icons",
-  chappies: "Heritage & Local Icons",
-  niknaks: "Heritage & Local Icons",
-  clover: "Heritage & Local Icons",
-  eskort: "Heritage & Local Icons",
-  "fatti's & moni's": "Heritage & Local Icons",
-  doom: "Heritage & Local Icons",
-  kwv: "Heritage & Local Icons",
-  "bos iced tea": "Heritage & Local Icons",
-
-  // Emerging & Challengers
-  bathu: "Emerging & Challengers",
-  "drip footwear": "Emerging & Challengers",
-  veldskoen: "Emerging & Challengers",
-  galxboy: "Emerging & Challengers",
-  "tshepo denim": "Emerging & Challengers",
-  "s.p.c.c": "Emerging & Challengers",
-  "freedom of movement": "Emerging & Challengers",
-  "loxion kulca": "Emerging & Challengers",
-  "maxhosa africa": "Emerging & Challengers",
-  maxhosa: "Emerging & Challengers",
-  "rich mnisi": "Emerging & Challengers",
-  "thebe magugu": "Emerging & Challengers",
-  pichulik: "Emerging & Challengers",
-  "kirsten goss": "Emerging & Challengers",
-  "devil's peak beer": "Emerging & Challengers",
-  africology: "Emerging & Challengers",
-  "portia m": "Emerging & Challengers",
-  "native child": "Emerging & Challengers",
-  afrobotanics: "Emerging & Challengers",
-  ardmore: "Emerging & Challengers",
-  "inverroche gin": "Emerging & Challengers",
-  "musgrave gin": "Emerging & Challengers",
+  // Budget ($)
+  subway: "Budget",
+  burgerking: "Budget",
+  "burger king": "Budget",
+  dominos: "Budget",
+  "domino's": "Budget",
+  shein: "Budget",
+  temu: "Budget",
+  pep: "Budget",
+  ackermans: "Budget",
+  "mr price": "Budget",
+  mrprice: "Budget",
+  primark: "Budget",
+  "dollar general": "Budget",
+  dollargeneral: "Budget",
+  chappies: "Budget",
+  niknaks: "Budget",
+  "portia m": "Budget",
+  afrobotanics: "Budget",
+  "native child": "Budget",
+  africology: "Budget",
+  takealot: "Budget",
+  jumia: "Budget",
 };
 
 /**
- * Derives the fair competition tier for a brand based on its name, category, and scale.
+ * Derives the fair BrandTierLevel for a brand based on its name and category.
  */
 export function getBrandTier(
   brandName: string | null | undefined,
-  category?: string | null | undefined
-): Exclude<BrandTier, "All tiers"> {
-  if (!brandName?.trim()) return "Emerging & Challengers";
+  category?: string | null | undefined,
+): BrandTierLevel {
+  if (!brandName?.trim()) return "Mass Market";
   const normalized = brandName.trim().toLowerCase();
 
   // 1. Direct dictionary match
@@ -206,36 +337,84 @@ export function getBrandTier(
 
   // 3. Category heuristics
   const cat = (category || "").toLowerCase();
-  if (cat.includes("food service") || cat.includes("restaurant") || cat.includes("fast food")) {
-    return "Industry Giants";
-  }
-  if (cat.includes("telecom") || cat.includes("logistics") || cat.includes("energy")) {
-    return "Industry Giants";
-  }
-  if (cat.includes("banking") || cat.includes("insurance") || cat.includes("retail")) {
-    return "National Champions";
-  }
-  if (cat.includes("luxury") || cat.includes("creator") || cat.includes("influencer")) {
-    return "Emerging & Challengers";
+  if (
+    cat.includes("luxury") ||
+    cat.includes("haute") ||
+    cat.includes("jewelry") ||
+    cat.includes("jewellery") ||
+    cat.includes("couture") ||
+    cat.includes("supercar")
+  ) {
+    return "Luxury";
   }
 
-  return "Emerging & Challengers";
+  if (
+    cat.includes("automotive") ||
+    cat.includes("technology") ||
+    cat.includes("electronics") ||
+    cat.includes("airline") ||
+    cat.includes("lifestyle") ||
+    cat.includes("gourmet")
+  ) {
+    return "Premium";
+  }
+
+  if (
+    cat.includes("discount") ||
+    cat.includes("budget") ||
+    cat.includes("value") ||
+    cat.includes("bargain") ||
+    cat.includes("wholesale")
+  ) {
+    return "Budget";
+  }
+
+  // Default to Mass Market for consumer brands
+  return "Mass Market";
 }
 
 /**
- * Filter matcher for tiers
+ * Returns the full BrandTier interface object for a given tier level.
+ */
+export function getTierInfo(tier: BrandTierLevel | string): BrandTier {
+  if (tier in TIER_METADATA) {
+    return TIER_METADATA[tier as BrandTierLevel];
+  }
+  return TIER_METADATA["Mass Market"];
+}
+
+/**
+ * Convenience method to get the full BrandTier details directly from brand name & category.
+ */
+export function getBrandTierDetails(
+  brandName: string | null | undefined,
+  category?: string | null | undefined,
+): BrandTier {
+  const tierLevel = getBrandTier(brandName, category);
+  return getTierInfo(tierLevel);
+}
+
+/**
+ * Filter matcher for brand tiers.
  */
 export function matchesTier(
-  brandTier: Exclude<BrandTier, "All tiers">,
-  selectedTier: BrandTier
+  brandTier: BrandTierLevel | string,
+  selectedTier: BrandTierFilter | string,
 ): boolean {
-  if (selectedTier === "All tiers") return true;
+  if (!selectedTier || selectedTier === "All tiers") return true;
   return brandTier === selectedTier;
 }
 
 /**
- * Returns the tier metadata object
+ * Compares two brand tiers by economic priority (1 = Luxury ... 4 = Budget).
+ * Useful for sorting brand lists.
  */
-export function getTierInfo(tier: Exclude<BrandTier, "All tiers">): TierInfo {
-  return TIER_METADATA[tier] ?? TIER_METADATA["Emerging & Challengers"];
+export function compareBrandTiers(
+  tierA: BrandTierLevel | string,
+  tierB: BrandTierLevel | string,
+  ascending = true,
+): number {
+  const priorityA = getTierInfo(tierA).priority;
+  const priorityB = getTierInfo(tierB).priority;
+  return ascending ? priorityA - priorityB : priorityB - priorityA;
 }
