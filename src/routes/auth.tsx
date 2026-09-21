@@ -106,8 +106,24 @@ function AuthPage() {
     try {
       setBusy(true);
 
-      // Google, Apple, Microsoft are handled by Lovable Cloud Auth broker
-      if (provider === "google" || provider === "apple" || provider === "microsoft") {
+      const callbackUrl = `${window.location.origin}/auth/callback`;
+
+      // 1. Direct standard Supabase OAuth attempt (works in Vercel, production, and custom domain setups)
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider === "twitter" ? "twitter" : provider,
+        options: {
+          redirectTo: callbackUrl,
+        },
+      });
+
+      if (!error && data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      // 2. If provider is unsupported / missing OAuth secret in current Supabase project,
+      // fall back gracefully to the cloud auth broker
+      if (error && (provider === "google" || provider === "apple" || provider === "microsoft")) {
         const result = await lovable.auth.signInWithOAuth(provider);
         if (result.error) {
           throw result.error;
@@ -120,24 +136,15 @@ function AuthPage() {
         return;
       }
 
-      // Other providers via direct OAuth
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: provider === "twitter" ? "twitter" : provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
       if (error) {
+        if (error.message?.includes("missing OAuth secret") || error.message?.includes("Unsupported provider")) {
+          throw new Error(`${provider.toUpperCase()} OAuth is not enabled in this Supabase project yet. Please configure the Client ID & Secret in your Supabase Auth Providers dashboard, or use Email sign in below.`);
+        }
         throw new Error(error.message);
-      }
-
-      if (data?.url) {
-        window.location.href = data.url;
       }
     } catch (e) {
       const rawMsg = e instanceof Error ? e.message : "";
-      toast.error(rawMsg || t("auth.socialFailed"));
+      toast.error(rawMsg || t("auth.socialFailed"), { duration: 6000 });
     } finally {
       setBusy(false);
     }

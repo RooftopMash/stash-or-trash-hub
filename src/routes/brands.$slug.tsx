@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PeopleTrustFactor } from "@/components/PeopleTrustFactor";
+import { getBrandTier, getTierInfo } from "@/lib/brandTiers";
 
 export const Route = createFileRoute("/brands/$slug")({
   component: BrandPage,
@@ -262,6 +263,20 @@ function BrandPage() {
                     <Award className="h-3 w-3" />
                     People's SOT: {getPeoplesSotGrade(brand.trust_score).grade}
                   </div>
+
+                  {/* SOT Brand Scale Tier Badge */}
+                  {(() => {
+                    const tierName = getBrandTier(brand.name, brand.category);
+                    const tierInfo = getTierInfo(tierName);
+                    return (
+                      <div
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${tierInfo.badgeClass}`}
+                        title={tierInfo.description}
+                      >
+                        Tier: {tierInfo.shortName}
+                      </div>
+                    );
+                  })()}
                 </div>
                 {brand.category && <p className="text-sm text-muted-foreground mt-0.5">{brand.category}</p>}
                 {brand.description && <p className="mt-2 text-sm text-foreground/80 leading-relaxed">{brand.description}</p>}

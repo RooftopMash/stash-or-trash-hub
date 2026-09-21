@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Search, Globe2, BadgeCheck, Plus } from "lucide-react";
+import { Search, Globe2, BadgeCheck, Plus, Layers } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BrandLogo } from "@/components/BrandLogo";
 import { brandCategory, categoryClass, categoryOptions, matchesCategory } from "@/lib/categories";
 import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
+import { BRAND_TIERS, type BrandTier, getBrandTier, getTierInfo, matchesTier } from "@/lib/brandTiers";
 import type { Brand } from "@/lib/brands";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +66,7 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
   const [query, setQuery] = useState("");
   const [countryCode, setCountryCode] = useState("ALL");
   const [category, setCategory] = useState("All categories");
+  const [tier, setTier] = useState<BrandTier>("All tiers");
   const countriesQuery = useQuery({
     queryKey: ["countries"],
     queryFn: fetchCountries,
@@ -87,14 +89,16 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
     const term = query.trim().toLowerCase();
     return brands.filter((brand) => {
       const code = normalizeCountryCode(brand.country);
-      const text = `${brand.name} ${brand.category ?? ""} ${countryName(code)}`.toLowerCase();
+      const brandTier = getBrandTier(brand.name, brand.category);
+      const text = `${brand.name} ${brand.category ?? ""} ${countryName(code)} ${brandTier}`.toLowerCase();
       return (
         (!term || text.includes(term)) &&
         (countryCode === "ALL" || code === countryCode) &&
-        matchesCategory(brandCategory(brand.name, brand.category), category)
+        matchesCategory(brandCategory(brand.name, brand.category), category) &&
+        (tier === "All tiers" || matchesTier(brandTier, tier))
       );
     });
-  }, [brands, category, countryCode, query]);
+  }, [brands, category, countryCode, tier, query]);
 
   return (
     <section className="flex flex-col gap-6">
@@ -160,12 +164,29 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
             </button>
           ))}
         </div>
+        <div className="mt-3 flex items-center gap-2 overflow-x-auto border-t border-border pt-3 pb-1">
+          <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground">
+            <Layers className="size-3.5 text-primary" /> Tier:
+          </span>
+          {BRAND_TIERS.map((item) => (
+            <button
+              key={item}
+              onClick={() => setTier(item)}
+              className={cn(
+                "shrink-0 rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
+                tier === item
+                  ? "bg-primary text-primary-foreground font-semibold"
+                  : "bg-secondary/70 text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
         <div className="mt-5 rounded-2xl border border-stash/20 bg-stash/5 p-4 text-sm">
-          <p className="font-semibold text-foreground">Fair directory standard</p>
+          <p className="font-semibold text-foreground">Fair directory & competition standard</p>
           <p className="mt-1 leading-relaxed text-muted-foreground">
-            Every country is discoverable, including markets with no imported brands. Listings are
-            shown as catalog records until their evidence, ownership, and community signals are
-            reviewed; no missing data is treated as a negative rating.
+            Every country is discoverable, and brands are classified across distinct business tiers (Global Titans, Industry Giants, National Champions, Emerging Challengers, Heritage Icons). No enterprise budget can crowd out local artisans or emerging innovators.
           </p>
         </div>
       </div>
@@ -203,15 +224,31 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
                     <h3 className="truncate font-display text-lg font-bold">{brand.name}</h3>
                     {brand.verified && <BadgeCheck className="size-4 shrink-0 text-primary" />}
                   </div>
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "mt-2 text-[10px]",
-                      categoryClass(brandCategory(brand.name, brand.category)),
-                    )}
-                  >
-                    {brandCategory(brand.name, brand.category)}
-                  </Badge>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "text-[10px]",
+                        categoryClass(brandCategory(brand.name, brand.category)),
+                      )}
+                    >
+                      {brandCategory(brand.name, brand.category)}
+                    </Badge>
+                    {(() => {
+                      const bTier = getBrandTier(brand.name, brand.category);
+                      const tierInfo = getTierInfo(bTier);
+                      return (
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium leading-none",
+                            tierInfo.badgeClass,
+                          )}
+                        >
+                          {tierInfo.shortName}
+                        </span>
+                      );
+                    })()}
+                  </div>
                   <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                     <Flag country />
                     {country?.name.common ?? countryName(code) ?? "Global"}
