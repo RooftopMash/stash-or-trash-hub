@@ -9,7 +9,15 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 export default defineConfig({
   nitro:
     process.env.VERCEL || process.env.NOW_BUILDER
-      ? { preset: "vercel" }
+      ? {
+          preset: "vercel",
+          vercel: {
+            entryFormat: "node",
+            functions: {
+              runtime: "nodejs20.x",
+            },
+          },
+        }
       : process.env.NITRO_PRESET
         ? { preset: process.env.NITRO_PRESET }
         : undefined,
