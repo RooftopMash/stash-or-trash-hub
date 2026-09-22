@@ -110,7 +110,10 @@ function AuthPage() {
       });
 
       if (error) {
-        throw new Error(error.message);
+        if (/missing oauth secret|unsupported provider/i.test(error.message)) {
+          throw new Error("Google sign-in is not configured for this project yet.");
+        }
+        throw new Error("Google sign-in could not be started. Please try again.");
       }
 
       if (data?.url) {
