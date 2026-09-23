@@ -36,7 +36,7 @@ export function buildBrandInvitation(input: {
   slug: string;
   website?: string | null;
 }) {
-  const origin = typeof window === "undefined" ? "https://stash-or-trash-hub.lovable.app" : window.location.origin;
+  const origin = typeof window === "undefined" ? "https://stashortrash.vercel.app" : window.location.origin;
   const brandUrl = `${origin}/brands/${input.slug}`;
   return `Subject: ${input.name} is now on SOT — Stash Or Trash\n\nHello ${input.name} team,\n\nWe have opened a live brand-rating page for ${input.name} on SOT — Stash Or Trash, the Consumer Brand Revolution built to turn everyday customer feedback into a credible reputation signal.\n\nYour page: ${brandUrl}\n${input.website ? `Website we found: ${input.website}\n` : ""}\nConsumers can now Stash or Trash brand experiences in public, and verified brand owners can claim their page, monitor sentiment, and respond directly through the platform.\n\nPlease create an account with your official company email, open the page above, and choose “Claim this brand” so our team can verify your ownership.\n\nRegards,\nSOT — Stash Or Trash\nThe Brand Barometer`;
 }
@@ -85,7 +85,7 @@ async function runQuery(query: string, attempts = 3): Promise<any[]> {
       const res = await fetch(url, {
         headers: {
           Accept: "application/sparql-results+json",
-          "Api-User-Agent": "StashOrTrashHub/1.0 (https://stash-or-trash-hub.lovable.app; contact@stash-or-trash-hub.lovable.app)",
+          "Api-User-Agent": "StashOrTrash/1.0 (https://stashortrash.vercel.app; contact@stashortrash.com)",
         },
       });
       if (!res.ok) throw new Error(`Wikidata returned ${res.status}`);

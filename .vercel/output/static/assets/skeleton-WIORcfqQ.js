@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-dev-runtime-D51Y_GgG.js";import{v as t}from"./dist-Dg-3rZk-.js";var n=e(),r=`/app/applet/src/components/ui/skeleton.tsx`;function i({className:e,...i}){return(0,n.jsxDEV)(`div`,{className:t(`animate-pulse rounded-md bg-primary/10`,e),...i},void 0,!1,{fileName:r,lineNumber:4,columnNumber:10},this)}export{i as t};

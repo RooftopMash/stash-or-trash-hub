@@ -1,8 +1,18 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ArrowRight, Coins, Recycle, Trophy, AlertTriangle, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowRight, Coins, Recycle, Trophy, AlertTriangle, Sparkles, TrendingUp, Layers, Gauge, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFeed } from "@/lib/stash";
+import { fetchBrands } from "@/lib/brands";
+import {
+  BRAND_TIERS,
+  type BrandTierFilter,
+  getBrandTier,
+  getTierInfo,
+  matchesTier,
+  compareBrandTiers,
+} from "@/lib/brandTiers";
+import { BrandLogo } from "@/components/BrandLogo";
 import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import { cn } from "@/lib/utils";
 import coinIcon from "@/assets/icon-coin.png";
@@ -24,6 +34,36 @@ export function SotHomeHero() {
     queryKey: ["feed", "anon"],
     queryFn: () => fetchFeed(null),
   });
+
+  const { data: brands = [] } = useQuery({
+    queryKey: ["brands"],
+    queryFn: fetchBrands,
+  });
+
+  const [barometerTier, setBarometerTier] = useState<BrandTierFilter>("All tiers");
+  const [barometerSort, setBarometerSort] = useState<"trust" | "tier" | "name">("trust");
+
+  const barometerBrands = useMemo(() => {
+    const list = brands.filter((b) => {
+      const bTier = getBrandTier(b.name, b.category);
+      return matchesTier(bTier, barometerTier);
+    });
+
+    return list.sort((a, b) => {
+      if (barometerSort === "trust") {
+        return (Number(b.trust_score) || 0) - (Number(a.trust_score) || 0);
+      }
+      if (barometerSort === "tier") {
+        const comp = compareBrandTiers(
+          getBrandTier(a.name, a.category),
+          getBrandTier(b.name, b.category),
+        );
+        if (comp !== 0) return comp;
+        return (Number(b.trust_score) || 0) - (Number(a.trust_score) || 0);
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [brands, barometerTier, barometerSort]);
 
   const rawStashes = useMemo(
     () => (feedItems ?? []).reduce((sum, item) => sum + (item.stashCount || 0), 0),
@@ -378,6 +418,165 @@ export function SotHomeHero() {
                 className="rounded-r-full bg-gradient-to-r from-slate-700 to-slate-900 transition-all duration-700"
                 style={{ width: `${trashPct}%` }}
               />
+            </div>
+          </div>
+
+          {/* Brand Barometer Interactive Tier Matrix & Pulse */}
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <h3 className="font-display text-sm font-extrabold uppercase tracking-wider text-slate-950">
+                    Barometer Tier Segmentation
+                  </h3>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                    {barometerBrands.length} Brands
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  Filter and compare brand sentiments within defined market tiers (Luxury, Premium, Mass Market, Budget).
+                </p>
+              </div>
+
+              {/* Sorting Control */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500">Sort Barometer:</span>
+                <select
+                  value={barometerSort}
+                  onChange={(e) => setBarometerSort(e.target.value as "trust" | "tier" | "name")}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-800 outline-none hover:bg-slate-100 transition-colors"
+                >
+                  <option value="trust">Highest Trust Score</option>
+                  <option value="tier">By Tier (Luxury → Budget)</option>
+                  <option value="name">Brand Name (A-Z)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Tier Filter Pills */}
+            <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1">
+              {BRAND_TIERS.map((tierOption) => {
+                const info = tierOption !== "All tiers" ? getTierInfo(tierOption) : null;
+                const isSelected = barometerTier === tierOption;
+                return (
+                  <button
+                    key={tierOption}
+                    onClick={() => setBarometerTier(tierOption)}
+                    className={cn(
+                      "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all",
+                      isSelected
+                        ? "bg-slate-950 text-white shadow-xs scale-[1.02]"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-950",
+                    )}
+                  >
+                    {info?.pricePoint && (
+                      <span className="font-mono text-[10px] opacity-75">{info.pricePoint}</span>
+                    )}
+                    <span>{tierOption}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selected Tier Description Banner */}
+            {barometerTier !== "All tiers" && (
+              <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-3 text-xs">
+                <span className="mt-0.5 inline-block size-2 rounded-full shrink-0 bg-primary" />
+                <div className="text-slate-600">
+                  <span className="font-bold text-slate-900">
+                    {getTierInfo(barometerTier).label} ({getTierInfo(barometerTier).pricePoint}):
+                  </span>{" "}
+                  {getTierInfo(barometerTier).description}{" "}
+                  <span className="text-slate-500 italic">
+                    Examples: {getTierInfo(barometerTier).examples.slice(0, 4).join(", ")}.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Top Brands in this Barometer Tier */}
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {barometerBrands.slice(0, 4).map((brand) => {
+                const tierInfo = getTierInfo(getBrandTier(brand.name, brand.category));
+                const trust = Number(brand.trust_score) || 0;
+                return (
+                  <Link
+                    key={brand.id}
+                    to="/brands/$slug"
+                    params={{ slug: brand.slug }}
+                    className="group flex flex-col justify-between rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-xs"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <BrandLogo
+                          name={brand.name}
+                          url={brand.signedLogoUrl}
+                          className="size-8 rounded-lg text-xs"
+                        />
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold leading-none",
+                            tierInfo.badgeClass,
+                          )}
+                        >
+                          <span className="font-mono text-[9px]">{tierInfo.pricePoint}</span>
+                          <span>{tierInfo.shortName}</span>
+                        </span>
+                      </div>
+                      <h4 className="mt-2.5 font-display text-sm font-bold text-slate-950 truncate group-hover:text-primary transition-colors">
+                        {brand.name}
+                      </h4>
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {brand.category || "Consumer Brand"}
+                      </p>
+                    </div>
+
+                    <div className="mt-3 border-t border-slate-100 pt-2.5">
+                      <div className="flex items-center justify-between text-[11px] font-bold">
+                        <span className="text-slate-500">Barometer:</span>
+                        <span
+                          className={
+                            trust >= 75
+                              ? "text-emerald-600"
+                              : trust >= 50
+                                ? "text-amber-600"
+                                : "text-rose-600"
+                          }
+                        >
+                          {trust}% Trust
+                        </span>
+                      </div>
+                      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                        <div
+                          className={cn(
+                            "h-full rounded-full transition-all duration-500",
+                            trust >= 75
+                              ? "bg-emerald-500"
+                              : trust >= 50
+                                ? "bg-amber-500"
+                                : "bg-rose-500",
+                          )}
+                          style={{ width: `${Math.max(5, Math.min(100, trust))}%` }}
+                        />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Action link */}
+            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+              <span className="text-slate-500">
+                Fair comparison: Brands only compete within proportional peer standards.
+              </span>
+              <Link
+                to="/brands"
+                className="font-bold text-primary hover:underline inline-flex items-center gap-1"
+              >
+                Browse all {brands.length} brands <ChevronRight className="size-3.5" />
+              </Link>
             </div>
           </div>
 

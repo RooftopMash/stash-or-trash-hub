@@ -5,11 +5,12 @@ import { useMemo, useState } from "react";
 import { Header } from "@/components/Header";
 import { fetchBrands } from "@/lib/brands";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Award, CalendarClock, CheckCircle2, Crown, Filter, Heart, Map, Search, Sparkles, TrendingUp, Trophy } from "lucide-react";
+import { Award, CalendarClock, CheckCircle2, Crown, Filter, Heart, Layers, Map, Search, Sparkles, TrendingUp, Trophy } from "lucide-react";
 import { brandCategory, categoryOptions } from "@/lib/categories";
 import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 import { PeopleTrustFactorLink } from "@/components/PeopleTrustFactor";
+import { BRAND_TIERS, type BrandTier, type BrandTierFilter, getBrandTier, getTierInfo, matchesTier } from "@/lib/brandTiers";
 
 export const Route = createFileRoute("/awards")({
   head: () => ({
@@ -42,6 +43,7 @@ function AwardsPage() {
 
   const [country, setCountry] = useState("All countries");
   const [category, setCategory] = useState("All categories");
+  const [tier, setTier] = useState<BrandTierFilter>("All tiers");
   const [query, setQuery] = useState("");
   const [period, setPeriod] = useState("Live season");
   const snapshotTime = useMemo(() => new Date(), []);
@@ -52,12 +54,14 @@ function AwardsPage() {
     return (brands ?? []).filter((brand) => {
       const normalizedCountry = normalizeCountryCode(brand.country);
       const normalizedCategory = brandCategory(brand.name, brand.category);
-      const searchable = `${brand.name} ${countryName(normalizedCountry)} ${normalizedCategory}`.toLowerCase();
+      const brandTier = getBrandTier(brand.name, brand.category);
+      const searchable = `${brand.name} ${countryName(normalizedCountry)} ${normalizedCategory} ${brandTier}`.toLowerCase();
       return (country === "All countries" || normalizedCountry === country)
         && (category === "All categories" || normalizedCategory === category)
+        && (tier === "All tiers" || matchesTier(brandTier, tier))
         && (!term || searchable.includes(term));
     }).sort((a, b) => (Number(b.trust_score) || 0) - (Number(a.trust_score) || 0));
-  }, [brands, category, country, query]);
+  }, [brands, category, country, tier, query]);
   const top = filteredBrands.slice(0, 10);
   const regionLabel = country === "All countries" ? "Global awards" : `${countryName(country)} awards`;
 
@@ -119,11 +123,47 @@ function AwardsPage() {
               <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                 {categories.map((item) => <button key={item} onClick={() => setCategory(item)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", category === item ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground")}>{item}</button>)}
               </div>
+              <div className="mt-3 border-t border-border pt-3">
+                <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                    <Layers className="h-3.5 w-3.5 text-primary" /> Fair Competition Tiers
+                  </span>
+                  <span>{tier === "All tiers" ? "Showing all scale tiers" : `Tier: ${tier}`}</span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {BRAND_TIERS.map((item) => {
+                    const info = item !== "All tiers" ? getTierInfo(item) : null;
+                    return (
+                      <button
+                        key={item}
+                        onClick={() => setTier(item)}
+                        className={cn(
+                          "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                          tier === item
+                            ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                            : "bg-secondary/70 text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {info?.pricePoint && (
+                          <span className="font-mono text-[10px] opacity-75">{info.pricePoint}</span>
+                        )}
+                        <span>{item}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
             <div className="rounded-2xl border border-stash/30 bg-stash/5 p-5 shadow-sm md:min-h-[148px]">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-stash"><CheckCircle2 className="h-4 w-4" /> Live snapshot</div>
               <p className="mt-2 font-display text-sm font-bold">{period}</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Updated {snapshotTime.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. Scores remain scoped to {regionLabel.toLowerCase()} and {category === "All categories" ? "all categories" : category}.</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Updated {snapshotTime.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. Scoped to {regionLabel.toLowerCase()}, {category === "All categories" ? "all categories" : category}, and {tier === "All tiers" ? "all competitive tiers" : tier}.</p>
+              {tier !== "All tiers" && (
+                <div className="mt-3 rounded-lg border border-border/60 bg-background/80 p-2.5 text-xs">
+                  <p className="font-semibold text-foreground">{getTierInfo(tier).label} ({getTierInfo(tier).pricePoint})</p>
+                  <p className="mt-0.5 text-muted-foreground">{getTierInfo(tier).description}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -138,30 +178,48 @@ function AwardsPage() {
             ) : top.length === 0 ? (
               <p className="p-8 text-center text-sm text-muted-foreground">{t("brand.noBrands")}</p>
             ) : (
-              top.map((b, i) => (
-                <Link
-                  key={b.id}
-                  to="/brands/$slug"
-                  params={{ slug: b.slug }}
-                  className="flex items-center gap-4 border-b border-border bg-card px-4 py-3 transition-colors last:border-0 hover:bg-secondary/50"
-                >
-                  <span className="w-8 text-center font-display text-lg font-extrabold text-muted-foreground">
-                    {i < 3 ? ["1st", "2nd", "3rd"][i] : i + 1}
-                  </span>
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary text-sm font-bold">
-                    {b.signedLogoUrl ? (
-                      <img src={b.signedLogoUrl} alt={b.name} className="h-full w-full object-cover" />
-                    ) : (
-                      b.name.charAt(0).toUpperCase()
-                    )}
-                  </div>
-                  <span className="flex-1 truncate font-semibold"><span className="block">{b.name}</span><span className="text-xs font-normal text-muted-foreground">{countryName(normalizeCountryCode(b.country))} · {brandCategory(b.name, b.category)}</span></span>
-                  <span className="flex items-center gap-1.5 font-display font-extrabold text-stash">
-                    <TrendingUp className="h-4 w-4" />
-                    {b.trust_score}
-                  </span>
-                </Link>
-              ))
+              top.map((b, i) => {
+                const bTier = getBrandTier(b.name, b.category);
+                const tierInfo = getTierInfo(bTier);
+                return (
+                  <Link
+                    key={b.id}
+                    to="/brands/$slug"
+                    params={{ slug: b.slug }}
+                    className="flex items-center gap-4 border-b border-border bg-card px-4 py-3 transition-colors last:border-0 hover:bg-secondary/50"
+                  >
+                    <span className="w-8 text-center font-display text-lg font-extrabold text-muted-foreground">
+                      {i < 3 ? ["1st", "2nd", "3rd"][i] : i + 1}
+                    </span>
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary text-sm font-bold">
+                      {b.signedLogoUrl ? (
+                        <img src={b.signedLogoUrl} alt={b.name} className="h-full w-full object-cover" />
+                      ) : (
+                        b.name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <span className="flex-1 truncate font-semibold">
+                      <span className="flex items-center gap-2">
+                        <span className="truncate">{b.name}</span>
+                        <span
+                          className={cn("hidden sm:inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold leading-none", tierInfo.badgeClass)}
+                          title={`${tierInfo.name} (${tierInfo.pricePoint}): ${tierInfo.description}`}
+                        >
+                          <span className="font-mono text-[9px] opacity-75">{tierInfo.pricePoint}</span>
+                          <span>{tierInfo.shortName}</span>
+                        </span>
+                      </span>
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {countryName(normalizeCountryCode(b.country))} · {brandCategory(b.name, b.category)}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-1.5 font-display font-extrabold text-stash">
+                      <TrendingUp className="h-4 w-4" />
+                      {b.trust_score}
+                    </span>
+                  </Link>
+                );
+              })
             )}
           </div>
           {top.length === 0 && !isLoading && <p className="mt-4 rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No brands match this award market and category yet. Expand the filters to explore more nominees.</p>}
@@ -169,10 +227,10 @@ function AwardsPage() {
           <div className="mt-6 rounded-2xl border border-stash/20 bg-stash/5 p-5">
             <h3 className="font-display text-lg font-bold">Our fairness and accuracy standard</h3>
             <div className="mt-3 grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
-              <p><strong className="text-foreground">Comparable scope.</strong> Rankings are calculated only within the selected country and category, so smaller markets are not silently compared with global totals.</p>
+              <p><strong className="text-foreground">Tiered competition.</strong> Brands are grouped into clear market tiers (Global Titans, Industry Giants, National Champions, Emerging Challengers, and Heritage Icons) so enterprise reach never eclipses local craft or specialized verticals.</p>
+              <p><strong className="text-foreground">Comparable scope.</strong> Rankings are calculated only within the selected country, category, and tier, ensuring honest, like-for-like comparisons.</p>
               <p><strong className="text-foreground">Evidence before authority.</strong> A score is a community signal, not a government or regulatory finding. Published evidence, methodology version, and timestamp remain visible.</p>
-              <p><strong className="text-foreground">Coverage is not performance.</strong> Countries and brands without enough data remain discoverable but are not penalized for missing participation.</p>
-              <p><strong className="text-foreground">Review and correction.</strong> Conflicts, manipulation reports, and material corrections should create a review record rather than silently changing history.</p>
+              <p><strong className="text-foreground">Coverage is not performance.</strong> Emerging brands without massive budgets remain fully discoverable and compete on equal footing within their tier.</p>
             </div>
           </div>
         </section>

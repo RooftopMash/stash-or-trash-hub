@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { SubmitDialog } from "@/components/SubmitDialog";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BrandVerdict } from "@/components/BrandVerdict";
+import { VerdictTally } from "@/components/VerdictTally";
 import { ItemCard } from "@/components/ItemCard";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -45,6 +46,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PeopleTrustFactor } from "@/components/PeopleTrustFactor";
+import { getBrandTier, getTierInfo } from "@/lib/brandTiers";
 
 export const Route = createFileRoute("/brands/$slug")({
   component: BrandPage,
@@ -262,6 +264,21 @@ function BrandPage() {
                     <Award className="h-3 w-3" />
                     People's SOT: {getPeoplesSotGrade(brand.trust_score).grade}
                   </div>
+
+                  {/* SOT Brand Tier Badge */}
+                  {(() => {
+                    const tierName = getBrandTier(brand.name, brand.category);
+                    const tierInfo = getTierInfo(tierName);
+                    return (
+                      <div
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold border ${tierInfo.badgeClass}`}
+                        title={`${tierInfo.name} (${tierInfo.pricePoint}): ${tierInfo.description}`}
+                      >
+                        <span className="font-mono text-[11px] opacity-80">{tierInfo.pricePoint}</span>
+                        <span>{tierInfo.shortName}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
                 {brand.category && <p className="text-sm text-muted-foreground mt-0.5">{brand.category}</p>}
                 {brand.description && <p className="mt-2 text-sm text-foreground/80 leading-relaxed">{brand.description}</p>}
@@ -337,6 +354,8 @@ function BrandPage() {
             </section>
 
             <BrandVerdict brandId={brand.id} brandName={brand.name} className="mt-6" />
+
+            <VerdictTally brandId={brand.id} brandName={brand.name} className="mt-4" />
 
 
 
