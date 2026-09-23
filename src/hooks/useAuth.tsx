@@ -1,10 +1,10 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import type { User } from "firebase/auth";
+import { firebaseAuth, onAuthStateChanged, signOut as firebaseSignOut } from "@/integrations/firebase/client";
 
 type AuthContextValue = {
   user: User | null;
-  session: Session | null;
+  session: User | null;
   loading: boolean;
   signOut: () => Promise<void>;
 };
@@ -12,30 +12,20 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Register listener first, then hydrate the existing session.
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next);
-      setLoading(false);
-    });
-
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
-
-    return () => sub.subscription.unsubscribe();
-  }, []);
+  useEffect(() => onAuthStateChanged(firebaseAuth, (next) => {
+    setSession(next);
+    setLoading(false);
+  }), []);
 
   const value: AuthContextValue = {
     user: session?.user ?? null,
     session,
     loading,
     signOut: async () => {
-      await supabase.auth.signOut();
+      await firebaseSignOut(firebaseAuth);
     },
   };
 
