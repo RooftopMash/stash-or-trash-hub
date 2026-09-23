@@ -35,6 +35,12 @@ function AuthPage() {
     if (user) navigate({ to: "/" });
   }, [user, navigate]);
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "signup") {
+      setActiveTab("signup");
+    }
+  }, []);
+
   const signIn = async () => {
     const cleanEmail = email.trim();
     if (!cleanEmail || !password) {

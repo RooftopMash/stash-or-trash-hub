@@ -131,9 +131,14 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               </Button>
             </>
           ) : (
-            <Button size="sm" onClick={() => navigate({ to: "/auth" })}>
-              {t("nav.signIn")}
-            </Button>
+            <div className="flex items-center gap-1.5">
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/auth" })}>
+                {t("nav.signIn")}
+              </Button>
+              <Button size="sm" onClick={() => navigate({ to: "/auth", search: { tab: "signup" } })}>
+                Sign up
+              </Button>
+            </div>
           )}
         </div>
       </div>
