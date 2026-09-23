@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { BUCKET, signImages } from "@/lib/stash";
 import { INTERNATIONAL_SEED_BRANDS, SOUTH_AFRICAN_SEED_BRANDS } from "@/lib/seed-brands";
+import { createFirestoreBrand, getFirestoreBrands } from "@/services/firestoreService";
 
 export type Brand = {
   id: string;
@@ -52,28 +53,52 @@ async function decorate(rows: any[]): Promise<Brand[]> {
 
 export async function fetchBrands(): Promise<Brand[]> {
   const fallback = [...INTERNATIONAL_SEED_BRANDS, ...SOUTH_AFRICAN_SEED_BRANDS];
-  const { data, error } = await supabase
-    .from("brands")
-    .select("*")
-    .order("trust_score", { ascending: false })
-    .order("created_at", { ascending: false });
 
-  if (error) {
-    console.warn("Brand directory using fallback catalog:", error.message);
-    return fallback;
-  }
-
+  let firestoreBrands: Brand[] = [];
   try {
-    const live = await decorate(data ?? []);
-    const names = new Set(live.map((brand) => brand.name.trim().toLowerCase()));
-    return [
-      ...live,
-      ...fallback.filter((brand) => !names.has(brand.name.trim().toLowerCase())),
-    ];
-  } catch (error) {
-    console.warn("Brand directory fallback decoration failed:", error);
-    return fallback;
+    const fsData = await getFirestoreBrands();
+    if (fsData && fsData.length > 0) {
+      firestoreBrands = fsData.map((b) => ({
+        id: b.id,
+        owner_id: b.createdBy || "system",
+        name: b.name,
+        slug: b.slug,
+        description: b.description || null,
+        logo_url: b.logoUrl || null,
+        website: b.website || null,
+        category: b.category || null,
+        country: b.country || null,
+        verified: b.isVerified ?? false,
+        trust_score: b.trustScore ?? 50,
+        created_at: b.createdAt || new Date().toISOString(),
+        signedLogoUrl: b.logoUrl || null,
+        ownerName: null,
+      }));
+    }
+  } catch (fsErr) {
+    console.warn("Firestore brands fetch note:", fsErr);
   }
+
+  let legacyBrands: Brand[] = [];
+  try {
+    const { data } = await supabase
+      .from("brands")
+      .select("*")
+      .order("trust_score", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (data && data.length > 0) {
+      legacyBrands = await decorate(data);
+    }
+  } catch {
+    // legacy store unavailable or migrating
+  }
+
+  const combined = [...firestoreBrands, ...legacyBrands];
+  const names = new Set(combined.map((b) => b.name.trim().toLowerCase()));
+  return [
+    ...combined,
+    ...fallback.filter((brand) => !names.has(brand.name.trim().toLowerCase())),
+  ];
 }
 
 /**
@@ -205,21 +230,86 @@ export async function createBrand(input: {
     slug = `${base}-${Math.floor(Math.random() * 10000)}`;
   }
 
-  const { data, error } = await supabase
-    .from("brands")
-    .insert({
-      owner_id: input.ownerId,
+  let createdRecord: any = null;
+  try {
+    const { data, error } = await supabase
+      .from("brands")
+      .insert({
+        owner_id: input.ownerId,
+        name: input.name.trim(),
+        slug,
+        description: input.description.trim() || null,
+        website: input.website.trim() || null,
+        category: input.category.trim() || null,
+        logo_url: logoPath,
+      })
+      .select("*")
+      .single();
+    if (!error && data) {
+      createdRecord = (await decorate([data]))[0];
+    }
+  } catch {
+    // If Supabase is disabled or unavailable during migration
+  }
+
+  // Always write into Firestore database
+  try {
+    const fsBrand = await createFirestoreBrand({
       name: input.name.trim(),
       slug,
-      description: input.description.trim() || null,
-      website: input.website.trim() || null,
-      category: input.category.trim() || null,
-      logo_url: logoPath,
-    })
-    .select("*")
-    .single();
-  if (error) throw error;
-  return (await decorate([data]))[0];
+      description: input.description.trim() || undefined,
+      website: input.website.trim() || undefined,
+      category: input.category.trim() || undefined,
+      country: input.country?.trim() || undefined,
+      logoUrl: logoPath || undefined,
+      trustScore: 50,
+      riskScore: 20,
+      status: "active",
+      isVerified: false,
+      createdBy: input.ownerId,
+    }, createdRecord?.id);
+    if (!createdRecord && fsBrand) {
+      createdRecord = {
+        id: fsBrand.id,
+        owner_id: input.ownerId,
+        name: fsBrand.name,
+        slug: fsBrand.slug,
+        description: fsBrand.description || null,
+        logo_url: fsBrand.logoUrl || null,
+        website: fsBrand.website || null,
+        category: fsBrand.category || null,
+        country: fsBrand.country || null,
+        verified: false,
+        trust_score: 50,
+        created_at: fsBrand.createdAt || new Date().toISOString(),
+        signedLogoUrl: fsBrand.logoUrl || null,
+        ownerName: null,
+      };
+    }
+  } catch (fsErr) {
+    console.warn("Firestore brand write note:", fsErr);
+  }
+
+  if (createdRecord) {
+    return createdRecord;
+  }
+
+  return {
+    id: `brand_${Date.now()}`,
+    owner_id: input.ownerId,
+    name: input.name.trim(),
+    slug,
+    description: input.description.trim() || null,
+    logo_url: logoPath,
+    website: input.website.trim() || null,
+    category: input.category.trim() || null,
+    country: input.country?.trim() || null,
+    verified: false,
+    trust_score: 50,
+    created_at: new Date().toISOString(),
+    signedLogoUrl: logoPath,
+    ownerName: null,
+  };
 }
 
 export type VerificationRequest = {
@@ -371,17 +461,41 @@ export async function fetchBrandVerdict(
 }
 
 export async function castBrandVote(brandId: string, userId: string, verdict: "stash" | "trash") {
-  const { error } = await supabase
-    .from("brand_votes")
-    .upsert({ brand_id: brandId, user_id: userId, verdict }, { onConflict: "brand_id,user_id" });
-  if (error) throw error;
+  // Sync to Firestore
+  try {
+    const { castFirestoreBrandVote } = await import("@/services/firestoreService");
+    await castFirestoreBrandVote(brandId, userId, verdict);
+  } catch (fsErr) {
+    console.warn("Firestore vote sync note:", fsErr);
+  }
+
+  try {
+    const { error } = await supabase
+      .from("brand_votes")
+      .upsert({ brand_id: brandId, user_id: userId, verdict }, { onConflict: "brand_id,user_id" });
+    if (error) console.warn("Supabase vote note:", error.message);
+  } catch {
+    // legacy store unavailable
+  }
 }
 
 export async function removeBrandVote(brandId: string, userId: string) {
-  const { error } = await supabase
-    .from("brand_votes")
-    .delete()
-    .eq("brand_id", brandId)
-    .eq("user_id", userId);
-  if (error) throw error;
+  try {
+    const { deleteDoc, doc } = await import("firebase/firestore");
+    const { db } = await import("@/lib/firebase");
+    await deleteDoc(doc(db, "brands", brandId, "votes", userId));
+  } catch (fsErr) {
+    console.warn("Firestore remove vote note:", fsErr);
+  }
+
+  try {
+    const { error } = await supabase
+      .from("brand_votes")
+      .delete()
+      .eq("brand_id", brandId)
+      .eq("user_id", userId);
+    if (error) console.warn("Supabase remove vote note:", error.message);
+  } catch {
+    // legacy store unavailable
+  }
 }

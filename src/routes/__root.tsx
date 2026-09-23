@@ -16,6 +16,7 @@ import { reportApplicationError } from "../lib/error-reporting";
 import { AuthProvider } from "@/hooks/useAuth";
 import { OfflineStatus } from "@/components/OfflineStatus";
 import { ProductionMonitoring } from "@/components/ProductionMonitoring";
+import { autoSeedFirestoreIfEmpty } from "@/lib/seedFirestore";
 import "@/lib/i18n";
 
 function NotFoundComponent() {
@@ -137,6 +138,10 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    autoSeedFirestoreIfEmpty();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

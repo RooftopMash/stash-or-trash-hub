@@ -2,17 +2,18 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  firebaseAuth,
-  GoogleAuthProvider,
-  FacebookAuthProvider,
-  TwitterAuthProvider,
-  OAuthProvider,
-  signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
-  firebaseErrorMessage,
-} from "@/integrations/firebase/client";
+  signInWithPopup,
+  GoogleAuthProvider,
+  GithubAuthProvider,
+  OAuthProvider,
+  FacebookAuthProvider,
+  TwitterAuthProvider,
+  type AuthProvider as FirebaseAuthProvider,
+} from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,12 +47,6 @@ function AuthPage() {
     if (user) navigate({ to: "/" });
   }, [user, navigate]);
 
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("tab") === "signup") {
-      setActiveTab("signup");
-    }
-  }, []);
-
   const signIn = async () => {
     const cleanEmail = email.trim();
     if (!cleanEmail || !password) {
@@ -60,12 +55,22 @@ function AuthPage() {
     }
     setBusy(true);
     try {
-      await signInWithEmailAndPassword(firebaseAuth, cleanEmail, password);
+      await signInWithEmailAndPassword(auth, cleanEmail, password);
       toast.success(t("auth.welcome"));
       navigate({ to: "/" });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "An unexpected error occurred during sign in.";
-      toast.error(msg);
+    } catch (err: unknown) {
+      const fbErr = err as { code?: string; message?: string };
+      let message = "We could not sign you in right now. Please try again.";
+      if (fbErr.code === "auth/user-not-found" || fbErr.code === "auth/wrong-password" || fbErr.code === "auth/invalid-credential") {
+        message = "Invalid email or password. If you do not have an account yet, click Sign Up.";
+      } else if (fbErr.code === "auth/user-disabled") {
+        message = "This user account has been disabled.";
+      } else if (fbErr.code === "auth/too-many-requests") {
+        message = "Access temporarily blocked due to many failed attempts. Please reset your password or try again later.";
+      } else if (fbErr.message) {
+        message = fbErr.message;
+      }
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -83,33 +88,75 @@ function AuthPage() {
     }
     setBusy(true);
     try {
-      const credential = await createUserWithEmailAndPassword(firebaseAuth, cleanEmail, password);
-      const name = displayName.trim() || cleanEmail.split("@")[0];
-      await updateProfile(credential.user, { displayName: name });
+      const userCred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+      if (displayName.trim()) {
+        await updateProfile(userCred.user, { displayName: displayName.trim() }).catch(() => {});
+      }
       toast.success(t("auth.created"));
       navigate({ to: "/" });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "An unexpected error occurred during sign up.";
-      toast.error(msg);
+    } catch (err: unknown) {
+      const fbErr = err as { code?: string; message?: string };
+      let message = "An unexpected error occurred during sign up.";
+      if (fbErr.code === "auth/email-already-in-use") {
+        message = "This email is already in use. Please sign in instead.";
+      } else if (fbErr.code === "auth/invalid-email") {
+        message = "Please enter a valid email address.";
+      } else if (fbErr.code === "auth/weak-password") {
+        message = "The password is too weak. Please use at least 6 characters.";
+      } else if (fbErr.message) {
+        message = fbErr.message;
+      }
+      toast.error(message);
     } finally {
       setBusy(false);
     }
   };
 
-  type SupportedProvider = "google" | "facebook" | "apple" | "microsoft" | "linkedin" | "twitter";
+  type SupportedProvider = "google" | "facebook" | "apple" | "microsoft" | "linkedin" | "twitter" | "github";
 
-  const runOAuth = async (provider: SupportedProvider) => {
-    setBusy(true);
+  const runOAuth = async (providerName: SupportedProvider) => {
     try {
-      const authProvider = provider === "google" ? new GoogleAuthProvider()
-        : provider === "facebook" ? new FacebookAuthProvider()
-          : provider === "twitter" ? new TwitterAuthProvider()
-            : new OAuthProvider(provider === "apple" ? "apple.com" : provider === "microsoft" ? "microsoft.com" : "oidc.linkedin");
-      await signInWithPopup(firebaseAuth, authProvider);
+      setBusy(true);
+      let provider: FirebaseAuthProvider;
+
+      switch (providerName) {
+        case "google":
+          provider = new GoogleAuthProvider();
+          break;
+        case "github":
+          provider = new GithubAuthProvider();
+          break;
+        case "apple":
+          provider = new OAuthProvider("apple.com");
+          break;
+        case "microsoft":
+          provider = new OAuthProvider("microsoft.com");
+          break;
+        case "facebook":
+          provider = new FacebookAuthProvider();
+          break;
+        case "twitter":
+          provider = new TwitterAuthProvider();
+          break;
+        default:
+          provider = new GoogleAuthProvider();
+      }
+
+      await signInWithPopup(auth, provider);
       toast.success(t("auth.welcome"));
       navigate({ to: "/" });
-    } catch (error) {
-      toast.error(firebaseErrorMessage(error), { duration: 6000 });
+    } catch (e: unknown) {
+      const fbErr = e as { code?: string; message?: string };
+      if (fbErr.code === "auth/popup-closed-by-user" || fbErr.code === "auth/cancelled-popup-request") {
+        return;
+      }
+      if (fbErr.code === "auth/account-exists-with-different-credential") {
+        toast.error("An account already exists with the same email address using a different login provider.");
+      } else if (fbErr.code === "auth/operation-not-allowed") {
+        toast.error(`${providerName.toUpperCase()} sign-in is not enabled yet in your Firebase console. Please enable it in Authentication → Sign-in method.`);
+      } else {
+        toast.error(fbErr.message || t("auth.socialFailed"), { duration: 6000 });
+      }
     } finally {
       setBusy(false);
     }

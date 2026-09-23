@@ -1,0 +1,174 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public user profile and identity information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "username": { "type": "string", "maxLength": 50 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "avatarUrl": { "type": "string", "maxLength": 500 },
+        "bio": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "createdAt"]
+    },
+    "Brand": {
+      "title": "Brand",
+      "description": "Brand record with trust and risk assessment metrics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 200 },
+        "slug": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 100 },
+        "country": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "logoUrl": { "type": "string", "maxLength": 500 },
+        "website": { "type": "string", "maxLength": 500 },
+        "trustScore": { "type": "number" },
+        "riskScore": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "pending", "flagged"] },
+        "isVerified": { "type": "boolean" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "slug", "createdAt"]
+    },
+    "BrandVote": {
+      "title": "BrandVote",
+      "description": "Community vote for a brand: stash or trash",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "brandId": { "type": "string" },
+        "userId": { "type": "string" },
+        "voteType": { "type": "string", "enum": ["stash", "trash"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "brandId", "userId", "voteType", "createdAt"]
+    },
+    "BrandCrisisAlert": {
+      "title": "BrandCrisisAlert",
+      "description": "Real-time brand safety crisis warnings and alerts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "brandId": { "type": "string" },
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "status": { "type": "string", "enum": ["active", "resolved", "investigating"] },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "brandId", "title", "severity", "status", "createdAt"]
+    },
+    "Incident": {
+      "title": "Incident",
+      "description": "Documented incident log associated with a brand",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "brandId": { "type": "string" },
+        "title": { "type": "string", "maxLength": 200 },
+        "details": { "type": "string", "maxLength": 4000 },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "status": { "type": "string", "enum": ["open", "investigating", "resolved", "dismissed"] },
+        "reportedBy": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "brandId", "title", "severity", "status", "createdAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "User direct or community chat message",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "content": { "type": "string", "maxLength": 3000 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "senderId", "content", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notification event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string", "maxLength": 200 },
+        "body": { "type": "string", "maxLength": 1000 },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "read", "createdAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Admin authorization entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "email", "createdAt"]
+    },
+    "ConnectionTest": {
+      "title": "ConnectionTest",
+      "description": "System connectivity heartbeat probe",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile documents keyed by auth UID"
+    },
+    "/brands/{brandId}": {
+      "schema": "Brand",
+      "description": "Catalog of brands with safety and trust ratings"
+    },
+    "/brands/{brandId}/votes/{voteId}": {
+      "schema": "BrandVote",
+      "description": "User stash/trash votes on a brand"
+    },
+    "/brand_crisis_alerts/{alertId}": {
+      "schema": "BrandCrisisAlert",
+      "description": "Active brand safety crisis warnings"
+    },
+    "/incidents/{incidentId}": {
+      "schema": "Incident",
+      "description": "Brand incidents and investigations"
+    },
+    "/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Direct communication messages"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "User notifications"
+    },
+    "/admins/{adminId}": {
+      "schema": "AdminRecord",
+      "description": "Admin authorization records"
+    },
+    "/test/{docId}": {
+      "schema": "ConnectionTest",
+      "description": "Firestore connection health probe"
+    }
+  }
+}

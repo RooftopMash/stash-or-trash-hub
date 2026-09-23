@@ -1,0 +1,183 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net: Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'Borulelo@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Entities validation helpers
+    function isValidUserProfile(data, uid) {
+      return data.keys().hasAll(['id']) &&
+        data.keys().hasOnly(['id', 'email', 'username', 'displayName', 'avatarUrl', 'bio', 'createdAt', 'updatedAt']) &&
+        data.id == uid &&
+        (!('username' in data) || (data.username is string && data.username.size() <= 50)) &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+        (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
+        (!('bio' in data) || (data.bio is string && data.bio.size() <= 500));
+    }
+
+    function isValidBrand(data) {
+      return data.keys().hasAll(['id', 'name', 'slug']) &&
+        data.keys().hasOnly(['id', 'name', 'slug', 'category', 'country', 'description', 'logoUrl', 'website', 'trustScore', 'riskScore', 'status', 'isVerified', 'createdBy', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+        data.slug is string && data.slug.size() > 0 && data.slug.size() <= 200 &&
+        (!('category' in data) || (data.category is string && data.category.size() <= 100)) &&
+        (!('country' in data) || (data.country is string && data.country.size() <= 100)) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
+        (!('status' in data) || (data.status in ['active', 'pending', 'flagged'])) &&
+        (!('isVerified' in data) || (data.isVerified is bool));
+    }
+
+    function isValidBrandVote(data, brandId) {
+      return data.keys().hasAll(['id', 'brandId', 'userId', 'voteType']) &&
+        data.keys().hasOnly(['id', 'brandId', 'userId', 'voteType', 'createdAt']) &&
+        data.userId == request.auth.uid &&
+        data.brandId == brandId &&
+        (data.voteType == 'stash' || data.voteType == 'trash');
+    }
+
+    function isValidCrisisAlert(data) {
+      return data.keys().hasAll(['id', 'brandId', 'title', 'severity', 'status']) &&
+        data.keys().hasOnly(['id', 'brandId', 'title', 'description', 'severity', 'status', 'createdBy', 'createdAt', 'updatedAt']) &&
+        data.title is string && data.title.size() <= 200 &&
+        (data.severity in ['low', 'medium', 'high', 'critical']) &&
+        (data.status in ['active', 'resolved', 'investigating']);
+    }
+
+    function isValidIncident(data) {
+      return data.keys().hasAll(['id', 'brandId', 'title', 'severity', 'status']) &&
+        data.keys().hasOnly(['id', 'brandId', 'title', 'details', 'severity', 'status', 'reportedBy', 'createdAt', 'updatedAt']) &&
+        data.title is string && data.title.size() <= 200 &&
+        (data.severity in ['low', 'medium', 'high', 'critical']) &&
+        (data.status in ['open', 'investigating', 'resolved', 'dismissed']);
+    }
+
+    function isValidChatMessage(data) {
+      return data.keys().hasAll(['id', 'senderId', 'content']) &&
+        data.keys().hasOnly(['id', 'senderId', 'receiverId', 'content', 'createdAt']) &&
+        data.senderId == request.auth.uid &&
+        data.content is string && data.content.size() > 0 && data.content.size() <= 3000;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'read']) &&
+        data.keys().hasOnly(['id', 'userId', 'title', 'body', 'read', 'createdAt']) &&
+        data.title is string && data.title.size() <= 200 &&
+        data.read is bool;
+    }
+
+    // Health / connection test rule
+    match /test/{docId} {
+      allow get: if true;
+      allow write: if isAdmin();
+    }
+
+    // Admins collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Only root provisioned or backend
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow get: if true; // Public profiles
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidUserProfile(incoming(), userId);
+      allow update: if isSignedIn() && isValidId(userId) && (
+        (request.auth.uid == userId && isValidUserProfile(incoming(), userId) && incoming().id == existing().id) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Brands collection
+    match /brands/{brandId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isValidId(brandId) && isValidBrand(incoming());
+      allow update: if isSignedIn() && isValidId(brandId) && (
+        isAdmin() ||
+        (isValidBrand(incoming()) && incoming().id == existing().id && incoming().slug == existing().slug)
+      );
+      allow delete: if isAdmin();
+
+      // Brand subcollection: votes
+      match /votes/{voteId} {
+        allow get, list: if true;
+        allow create: if isSignedIn() && isValidId(voteId) && isValidBrandVote(incoming(), brandId);
+        allow update: if isSignedIn() && isValidId(voteId) && (
+          (request.auth.uid == existing().userId && isValidBrandVote(incoming(), brandId)) ||
+          isAdmin()
+        );
+        allow delete: if isSignedIn() && (request.auth.uid == existing().userId || isAdmin());
+      }
+    }
+
+    // Crisis alerts
+    match /brand_crisis_alerts/{alertId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isValidId(alertId) && (isAdmin() || isValidCrisisAlert(incoming()));
+      allow update: if isSignedIn() && isValidId(alertId) && (isAdmin() || isValidCrisisAlert(incoming()));
+      allow delete: if isAdmin();
+    }
+
+    // Incidents
+    match /incidents/{incidentId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isValidId(incidentId) && isValidIncident(incoming());
+      allow update: if isSignedIn() && isValidId(incidentId) && (isAdmin() || isValidIncident(incoming()));
+      allow delete: if isAdmin();
+    }
+
+    // Messages
+    match /messages/{messageId} {
+      allow get: if isSignedIn() && isValidId(messageId) && (
+        existing().senderId == request.auth.uid ||
+        existing().receiverId == request.auth.uid ||
+        isAdmin()
+      );
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(messageId) && isValidChatMessage(incoming());
+      allow update: if false; // Messages are immutable
+      allow delete: if isSignedIn() && (existing().senderId == request.auth.uid || isAdmin());
+    }
+
+    // Notifications
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() && isValidId(notificationId) && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(notificationId) && isValidNotification(incoming());
+      allow update: if isSignedIn() && isValidId(notificationId) && (
+        (existing().userId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['read'])) ||
+        isAdmin()
+      );
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+    }
+  }
+}
