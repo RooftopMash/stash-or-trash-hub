@@ -39,6 +39,20 @@ function AuthCallbackPage() {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
           if (data.session && active) {
+            if (window.opener && !window.opener.closed) {
+              window.opener.postMessage(
+                {
+                  type: "authorization_response",
+                  response: {
+                    access_token: data.session.access_token,
+                    refresh_token: data.session.refresh_token,
+                  },
+                },
+                "*"
+              );
+              window.close();
+              return;
+            }
             toast.success("Welcome back!");
             navigate({ to: "/" });
             return;
@@ -55,6 +69,20 @@ function AuthCallbackPage() {
           });
           if (error) throw error;
           if (data.session && active) {
+            if (window.opener && !window.opener.closed) {
+              window.opener.postMessage(
+                {
+                  type: "authorization_response",
+                  response: {
+                    access_token: accessToken,
+                    refresh_token: refreshToken || "",
+                  },
+                },
+                "*"
+              );
+              window.close();
+              return;
+            }
             toast.success("Welcome back!");
             navigate({ to: "/" });
             return;

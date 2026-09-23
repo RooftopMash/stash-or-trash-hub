@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,7 +107,6 @@ function AuthPage() {
 
       const callbackUrl = `${window.location.origin}/auth/callback`;
 
-      // 1. Direct standard Supabase OAuth attempt (works in Vercel, production, and custom domain setups)
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider === "twitter" ? "twitter" : provider,
         options: {
@@ -116,35 +114,54 @@ function AuthPage() {
         },
       });
 
-      if (!error && data?.url) {
+      if (error) {
+        throw error;
+      }
+
+      if (data?.url) {
+        // Pre-validate that Supabase has the OAuth credentials configured for this provider
+        // before navigating the browser to avoid dumping the user on an unformatted 400 error page
+        try {
+          const probe = await fetch(data.url, { redirect: "manual" });
+          if (probe.status === 400) {
+            const body = await probe.json().catch(() => null);
+            if (
+              body?.msg?.includes("missing OAuth secret") ||
+              body?.msg?.includes("Unsupported provider") ||
+              body?.error_code === "validation_failed"
+            ) {
+              const currentProj =
+                (import.meta.env.VITE_SUPABASE_PROJECT_ID || "").trim() ||
+                (import.meta.env.VITE_SUPABASE_URL || "").replace("https://", "").replace(".supabase.co", "");
+              throw new Error(
+                `${provider.toUpperCase()} OAuth is not configured with credentials in Supabase project "${currentProj}". Please add your OAuth Client Secret in Supabase → Authentication → Providers.`
+              );
+            }
+          }
+        } catch (probeErr: unknown) {
+          if (probeErr instanceof Error && probeErr.message.includes("OAuth is not configured")) {
+            throw probeErr;
+          }
+          // In case of CORS or network differences on manual redirect, proceed with navigation
+        }
+
         window.location.href = data.url;
         return;
       }
-
-      // 2. If provider is unsupported / missing OAuth secret in current Supabase project,
-      // fall back gracefully to the cloud auth broker
-      if (error && (provider === "google" || provider === "apple" || provider === "microsoft")) {
-        const result = await lovable.auth.signInWithOAuth(provider);
-        if (result.error) {
-          throw result.error;
-        }
-        if (result.redirected) {
-          return;
-        }
-        toast.success(t("auth.welcome") || "Welcome back!");
-        navigate({ to: "/" });
-        return;
-      }
-
-      if (error) {
-        if (error.message?.includes("missing OAuth secret") || error.message?.includes("Unsupported provider")) {
-          throw new Error(`${provider.toUpperCase()} OAuth is not enabled in this Supabase project yet. Please configure the Client ID & Secret in your Supabase Auth Providers dashboard, or use Email sign in below.`);
-        }
-        throw new Error(error.message);
-      }
     } catch (e) {
       const rawMsg = e instanceof Error ? e.message : "";
-      toast.error(rawMsg || t("auth.socialFailed"), { duration: 6000 });
+      if (
+        rawMsg.includes("missing OAuth secret") ||
+        rawMsg.includes("Unsupported provider") ||
+        rawMsg.includes("provider is not enabled")
+      ) {
+        toast.error(
+          `${provider.toUpperCase()} OAuth is not enabled in this Supabase project yet. Please configure the Client ID & Secret in Supabase → Authentication → Providers.`,
+          { duration: 6000 }
+        );
+      } else {
+        toast.error(rawMsg || t("auth.socialFailed"), { duration: 6000 });
+      }
     } finally {
       setBusy(false);
     }

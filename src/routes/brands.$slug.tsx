@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { SubmitDialog } from "@/components/SubmitDialog";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BrandVerdict } from "@/components/BrandVerdict";
+import { VerdictTally } from "@/components/VerdictTally";
 import { ItemCard } from "@/components/ItemCard";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -353,6 +354,8 @@ function BrandPage() {
             </section>
 
             <BrandVerdict brandId={brand.id} brandName={brand.name} className="mt-6" />
+
+            <VerdictTally brandId={brand.id} brandName={brand.name} className="mt-4" />
 
 
 

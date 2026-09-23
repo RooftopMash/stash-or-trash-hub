@@ -63,17 +63,6 @@ function withSecurityHeaders(response: Response): Response {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      const url = new URL(request.url);
-      if (url.pathname.startsWith("/~oauth/")) {
-        const targetUrl = new URL(url.pathname + url.search, "https://stash-or-trash-hub.lovable.app");
-        return fetch(new Request(targetUrl, {
-          method: request.method,
-          headers: request.headers,
-          body: request.body,
-          redirect: "manual",
-        }));
-      }
-
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
