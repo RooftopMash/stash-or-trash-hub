@@ -1,7 +1,18 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  firebaseAuth,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  TwitterAuthProvider,
+  OAuthProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  firebaseErrorMessage,
+} from "@/integrations/firebase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,15 +60,7 @@ function AuthPage() {
     }
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
-      if (error) {
-        const message = /email not confirmed/i.test(error.message)
-          ? "Please confirm your email before signing in."
-          : /invalid login credentials/i.test(error.message)
-            ? "Invalid email or password. If you do not have an account yet, click Sign Up."
-            : error.message || "We could not sign you in right now. Please try again.";
-        return toast.error(message);
-      }
+      await signInWithEmailAndPassword(firebaseAuth, cleanEmail, password);
       toast.success(t("auth.welcome"));
       navigate({ to: "/" });
     } catch (err) {
@@ -80,23 +83,11 @@ function AuthPage() {
     }
     setBusy(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { display_name: displayName.trim() || cleanEmail.split("@")[0] },
-        },
-      });
-      if (error) return toast.error(error.message);
-
-      if (data.session) {
-        toast.success(t("auth.created"));
-        navigate({ to: "/" });
-      } else {
-        toast.success("Account created! You can now sign in.");
-        setActiveTab("signin");
-      }
+      const credential = await createUserWithEmailAndPassword(firebaseAuth, cleanEmail, password);
+      const name = displayName.trim() || cleanEmail.split("@")[0];
+      await updateProfile(credential.user, { displayName: name });
+      toast.success(t("auth.created"));
+      navigate({ to: "/" });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "An unexpected error occurred during sign up.";
       toast.error(msg);
@@ -108,69 +99,17 @@ function AuthPage() {
   type SupportedProvider = "google" | "facebook" | "apple" | "microsoft" | "linkedin" | "twitter";
 
   const runOAuth = async (provider: SupportedProvider) => {
+    setBusy(true);
     try {
-      setBusy(true);
-
-      const callbackUrl = `${window.location.origin}/auth/callback`;
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: provider === "twitter" ? "twitter" : provider,
-        options: {
-          redirectTo: callbackUrl,
-        },
-      });
-
-      if (error) {
-        if (/missing oauth secret|unsupported provider/i.test(error.message)) {
-          throw new Error("Google sign-in is not configured for this project yet.");
-        }
-        throw new Error("Google sign-in could not be started. Please try again.");
-      }
-
-      if (data?.url) {
-        // Pre-validate that Supabase has the OAuth credentials configured for this provider
-        // before navigating the browser to avoid dumping the user on an unformatted 400 error page
-        try {
-          const probe = await fetch(data.url, { redirect: "manual" });
-          if (probe.status === 400) {
-            const body = await probe.json().catch(() => null);
-            if (
-              body?.msg?.includes("missing OAuth secret") ||
-              body?.msg?.includes("Unsupported provider") ||
-              body?.error_code === "validation_failed"
-            ) {
-              const currentProj =
-                (import.meta.env.VITE_SUPABASE_PROJECT_ID || "").trim() ||
-                (import.meta.env.VITE_SUPABASE_URL || "").replace("https://", "").replace(".supabase.co", "");
-              throw new Error(
-                `${provider.toUpperCase()} OAuth is not configured with credentials in Supabase project "${currentProj}". Please add your OAuth Client Secret in Supabase → Authentication → Providers.`
-              );
-            }
-          }
-        } catch (probeErr: unknown) {
-          if (probeErr instanceof Error && probeErr.message.includes("OAuth is not configured")) {
-            throw probeErr;
-          }
-          // In case of CORS or network differences on manual redirect, proceed with navigation
-        }
-
-        window.location.href = data.url;
-        return;
-      }
-    } catch (e) {
-      const rawMsg = e instanceof Error ? e.message : "";
-      if (
-        rawMsg.includes("missing OAuth secret") ||
-        rawMsg.includes("Unsupported provider") ||
-        rawMsg.includes("provider is not enabled")
-      ) {
-        toast.error(
-          `${provider.toUpperCase()} OAuth is not enabled in this Supabase project yet. Please configure the Client ID & Secret in Supabase → Authentication → Providers.`,
-          { duration: 6000 }
-        );
-      } else {
-        toast.error(rawMsg || t("auth.socialFailed"), { duration: 6000 });
-      }
+      const authProvider = provider === "google" ? new GoogleAuthProvider()
+        : provider === "facebook" ? new FacebookAuthProvider()
+          : provider === "twitter" ? new TwitterAuthProvider()
+            : new OAuthProvider(provider === "apple" ? "apple.com" : provider === "microsoft" ? "microsoft.com" : "oidc.linkedin");
+      await signInWithPopup(firebaseAuth, authProvider);
+      toast.success(t("auth.welcome"));
+      navigate({ to: "/" });
+    } catch (error) {
+      toast.error(firebaseErrorMessage(error), { duration: 6000 });
     } finally {
       setBusy(false);
     }

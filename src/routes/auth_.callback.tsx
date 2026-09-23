@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -13,105 +12,13 @@ function AuthCallbackPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    let active = true;
-
-    async function completeAuth() {
-      try {
-        const searchParams = new URLSearchParams(window.location.search);
-        const hashParams = new URLSearchParams(
-          window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash,
-        );
-
-        // Check if OAuth provider returned an error in search or hash
-        const errorDesc =
-          searchParams.get("error_description") ||
-          hashParams.get("error_description") ||
-          searchParams.get("error") ||
-          hashParams.get("error");
-
-        if (errorDesc) {
-          throw new Error(decodeURIComponent(errorDesc));
-        }
-
-        // 1. PKCE Authorization Code flow
-        const code = searchParams.get("code");
-        if (code) {
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
-          if (data.session && active) {
-            if (window.opener && !window.opener.closed) {
-              window.opener.postMessage(
-                {
-                  type: "authorization_response",
-                  response: {
-                    access_token: data.session.access_token,
-                    refresh_token: data.session.refresh_token,
-                  },
-                },
-                "*"
-              );
-              window.close();
-              return;
-            }
-            toast.success("Welcome back!");
-            navigate({ to: "/" });
-            return;
-          }
-        }
-
-        // 2. Implicit hash grant flow (access_token & refresh_token in URL hash)
-        const accessToken = hashParams.get("access_token") || searchParams.get("access_token");
-        const refreshToken = hashParams.get("refresh_token") || searchParams.get("refresh_token");
-        if (accessToken) {
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || "",
-          });
-          if (error) throw error;
-          if (data.session && active) {
-            if (window.opener && !window.opener.closed) {
-              window.opener.postMessage(
-                {
-                  type: "authorization_response",
-                  response: {
-                    access_token: accessToken,
-                    refresh_token: refreshToken || "",
-                  },
-                },
-                "*"
-              );
-              window.close();
-              return;
-            }
-            toast.success("Welcome back!");
-            navigate({ to: "/" });
-            return;
-          }
-        }
-
-        // 3. Fallback: check if session already exists
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData.session && active) {
-          navigate({ to: "/" });
-          return;
-        }
-
-        // If no code, no token, and no session, redirect to /auth
-        if (active) {
-          navigate({ to: "/auth" });
-        }
-      } catch (err: unknown) {
-        if (!active) return;
-        const msg = err instanceof Error ? err.message : "Could not complete sign in.";
-        setErrorMessage(msg);
-        toast.error(msg);
-      }
+    const error = new URLSearchParams(window.location.search).get("error");
+    if (error) {
+      setErrorMessage("Could not complete sign in. Please try again.");
+      toast.error("Could not complete sign in.");
+      return;
     }
-
-    void completeAuth();
-    return () => {
-      active = false;
-    };
+    navigate({ to: "/auth" });
   }, [navigate]);
 
   if (errorMessage) {
