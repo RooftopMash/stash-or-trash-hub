@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AwardsRouteImport } from './routes/awards'
 import { Route as FeedRouteImport } from './routes/feed'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ScanRouteImport } from './routes/scan'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -22,6 +23,7 @@ import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as ApiAgoraTokenRouteImport } from './routes/api.agora-token'
+import { Route as ApiAiScanRouteImport } from './routes/api.ai-scan'
 import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as BrandsIndexRouteImport } from './routes/brands.index'
 import { Route as BrandsSlugRouteImport } from './routes/brands.$slug'
@@ -59,6 +61,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ScanRoute = ScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -93,6 +100,11 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
 const ApiAgoraTokenRoute = ApiAgoraTokenRouteImport.update({
   id: '/api/agora-token',
   path: '/api/agora-token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiScanRoute = ApiAiScanRouteImport.update({
+  id: '/api/ai-scan',
+  path: '/api/ai-scan',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -137,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/awards': typeof AwardsRoute
   '/feed': typeof FeedRoute
   '/privacy': typeof PrivacyRoute
+  '/scan': typeof ScanRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -144,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/api/agora-token': typeof ApiAgoraTokenRoute
+  '/api/ai-scan': typeof ApiAiScanRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
@@ -158,6 +172,7 @@ export interface FileRoutesByTo {
   '/awards': typeof AwardsRoute
   '/feed': typeof FeedRoute
   '/privacy': typeof PrivacyRoute
+  '/scan': typeof ScanRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -165,6 +180,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/api/agora-token': typeof ApiAgoraTokenRoute
+  '/api/ai-scan': typeof ApiAiScanRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
@@ -181,6 +197,7 @@ export interface FileRoutesById {
   '/awards': typeof AwardsRoute
   '/feed': typeof FeedRoute
   '/privacy': typeof PrivacyRoute
+  '/scan': typeof ScanRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -188,6 +205,7 @@ export interface FileRoutesById {
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/api/agora-token': typeof ApiAgoraTokenRoute
+  '/api/ai-scan': typeof ApiAiScanRoute
   '/auth_/callback': typeof AuthCallbackRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/hashtags/$tag': typeof HashtagsTagRoute
@@ -204,6 +222,7 @@ export interface FileRouteTypes {
     | '/awards'
     | '/feed'
     | '/privacy'
+    | '/scan'
     | '/terms'
     | '/admin'
     | '/dashboard'
@@ -211,6 +230,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/api/agora-token'
+    | '/api/ai-scan'
     | '/auth/callback'
     | '/brands/$slug'
     | '/hashtags/$tag'
@@ -225,6 +245,7 @@ export interface FileRouteTypes {
     | '/awards'
     | '/feed'
     | '/privacy'
+    | '/scan'
     | '/terms'
     | '/admin'
     | '/dashboard'
@@ -232,6 +253,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/api/agora-token'
+    | '/api/ai-scan'
     | '/auth/callback'
     | '/brands/$slug'
     | '/hashtags/$tag'
@@ -247,6 +269,7 @@ export interface FileRouteTypes {
     | '/awards'
     | '/feed'
     | '/privacy'
+    | '/scan'
     | '/terms'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
@@ -254,6 +277,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notifications'
     | '/_authenticated/profile'
     | '/api/agora-token'
+    | '/api/ai-scan'
     | '/auth_/callback'
     | '/brands/$slug'
     | '/hashtags/$tag'
@@ -270,8 +294,10 @@ export interface RootRouteChildren {
   AwardsRoute: typeof AwardsRoute
   FeedRoute: typeof FeedRoute
   PrivacyRoute: typeof PrivacyRoute
+  ScanRoute: typeof ScanRoute
   TermsRoute: typeof TermsRoute
   ApiAgoraTokenRoute: typeof ApiAgoraTokenRoute
+  ApiAiScanRoute: typeof ApiAiScanRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   BrandsSlugRoute: typeof BrandsSlugRoute
   HashtagsTagRoute: typeof HashtagsTagRoute
@@ -324,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/scan': {
+      id: '/scan'
+      path: '/scan'
+      fullPath: '/scan'
+      preLoaderRoute: typeof ScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -371,6 +404,13 @@ declare module '@tanstack/react-router' {
       path: '/api/agora-token'
       fullPath: '/api/agora-token'
       preLoaderRoute: typeof ApiAgoraTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai-scan': {
+      id: '/api/ai-scan'
+      path: '/api/ai-scan'
+      fullPath: '/api/ai-scan'
+      preLoaderRoute: typeof ApiAiScanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth_/callback': {
@@ -453,8 +493,10 @@ const rootRouteChildren: RootRouteChildren = {
   AwardsRoute: AwardsRoute,
   FeedRoute: FeedRoute,
   PrivacyRoute: PrivacyRoute,
+  ScanRoute: ScanRoute,
   TermsRoute: TermsRoute,
   ApiAgoraTokenRoute: ApiAgoraTokenRoute,
+  ApiAiScanRoute: ApiAiScanRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   BrandsSlugRoute: BrandsSlugRoute,
   HashtagsTagRoute: HashtagsTagRoute,
