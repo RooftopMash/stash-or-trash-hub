@@ -1,15 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      "User-Agent": "aistudio-build",
-    },
-  },
-});
-
 const CANDIDATE_MODELS = [
   "gemini-flash-latest",
   "gemini-3.8-flash",
@@ -477,11 +468,24 @@ Perform a comprehensive multi-tier forensic evaluation:
             required: ["brandInfo", "authenticity", "counterfeitAssessment"],
           };
 
+          // Keep the route available when Gemini is not configured. Barcode lookups
+          // and the deterministic fallback can still serve the request.
+          const geminiApiKey = process.env.GEMINI_API_KEY;
+          const ai = geminiApiKey
+            ? new GoogleGenAI({
+                apiKey: geminiApiKey,
+                httpOptions: {
+                  headers: { "User-Agent": "aistudio-build" },
+                },
+              })
+            : null;
+
           // Multi-model resilience loop with retry
           let parsed: any = null;
           let lastModelError: any = null;
 
-          for (const modelName of CANDIDATE_MODELS) {
+          if (ai) {
+            for (const modelName of CANDIDATE_MODELS) {
             for (let attempt = 0; attempt < 2; attempt++) {
               try {
                 const response = await ai.models.generateContent({
@@ -509,7 +513,8 @@ Perform a comprehensive multi-tier forensic evaluation:
                 }
               }
             }
-            if (parsed) break;
+              if (parsed) break;
+            }
           }
 
           // If Gemini models succeeded
