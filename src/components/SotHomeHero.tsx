@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowRight, Coins, Recycle, Trophy, AlertTriangle, Sparkles, TrendingUp, Layers, Gauge, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFeed } from "@/lib/stash";
@@ -27,6 +28,7 @@ const cascade = [
 
 export function SotHomeHero() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeObject, setActiveObject] = useState<"coin" | "bin" | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -110,7 +112,7 @@ export function SotHomeHero() {
   const handleCoinClick = () => {
     playCoinSpinSound();
     setActiveObject("coin");
-    setStatusMessage("Spinning Zwepe... watching it lean, chatter and settle flat!");
+    setStatusMessage(t("hero.spinningZwepe", { defaultValue: "Spinning Zwepe... watching it lean, chatter and settle flat!" }));
     window.setTimeout(() => {
       navigate({ to: "/feed", search: { filter: "stash" } });
     }, 2800);
@@ -119,10 +121,27 @@ export function SotHomeHero() {
   const handleTrashClick = () => {
     playTrashSound();
     setActiveObject("bin");
-    setStatusMessage("Randy the Hungry Trash Can chomps! Loading Trashes of the Day...");
+    setStatusMessage(t("hero.droppingBin", { defaultValue: "Randy the Hungry Trash Can chomps! Loading Trashes of the Day..." }));
     window.setTimeout(() => {
       navigate({ to: "/feed", search: { filter: "trash" } });
     }, 1150);
+  };
+
+  const getTierLabel = (tierOption: BrandTierFilter) => {
+    switch (tierOption) {
+      case "All tiers":
+        return t("hero.allTiers", { defaultValue: "All tiers" });
+      case "Super Brands":
+        return t("hero.superBrands", { defaultValue: "Super Brands" });
+      case "National Powerhouses":
+        return t("hero.nationalPowerhouses", { defaultValue: "National Powerhouses" });
+      case "Emerging Challengers":
+        return t("hero.emergingChallengers", { defaultValue: "Emerging Challengers" });
+      case "Local Heroes":
+        return t("hero.localHeroes", { defaultValue: "Local Heroes" });
+      default:
+        return tierOption;
+    }
   };
 
   return (
@@ -137,15 +156,13 @@ export function SotHomeHero() {
         <div className="mx-auto max-w-3xl text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3.5 py-1 text-xs font-extrabold uppercase tracking-[0.18em] text-slate-700">
             <Coins className="h-3.5 w-3.5 text-[#d6a928]" aria-hidden="true" />
-            <span>People-Powered Brand Intelligence</span>
+            <span>{t("hero.badge", { defaultValue: "The Brand Barometer" })}</span>
           </div>
           <h1 className="mt-5 font-display text-4xl font-black tracking-tight sm:text-6xl">
-            Keep what serves you.
-            <span className="block text-[#d6a928]">Challenge what does not.</span>
+            {t("hero.subtitle", { defaultValue: "Vote Stash or Trash on your real brand experiences" })}
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-            Direct public consumer signal where people speak clearly, brands respond
-            responsibly, and the community delivers the verdict.
+            {t("hero.tagline", { defaultValue: "Every verdict brings brands closer to the people they serve. Cast yours. 🔥" })}
           </p>
         </div>
 
@@ -156,7 +173,7 @@ export function SotHomeHero() {
             <div className="group relative flex flex-col items-center rounded-3xl border border-slate-200/80 bg-gradient-to-b from-amber-50/40 to-white p-6 shadow-sm transition hover:border-[#d6a928]/60 hover:shadow-md">
               <button
                 type="button"
-                aria-label="Spin coin for Stashes of the Day"
+                aria-label={t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })}
                 onClick={handleCoinClick}
                 onMouseEnter={() => {
                   if (activeObject !== "coin") {
@@ -165,6 +182,58 @@ export function SotHomeHero() {
                   }
                 }}
                 className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6a928]/60 rounded-2xl p-2 cursor-pointer"
+              >
+                <div className="relative flex h-60 w-full items-center justify-center sm:h-72 [perspective:900px]">
+                  {/* Tabletop contact surface shadow synchronized with Zwepe spin */}
+                  <div
+                    className={cn(
+                      "sot-coin-shadow absolute bottom-5 h-8 w-44 rounded-full bg-slate-950/25 blur-md pointer-events-none",
+                      activeObject === "coin" && "sot-object-active",
+                    )}
+                  />
+
+                  {/* The very same original South African coin icon: spins upright on edge & precesses flat */}
+                  <img
+                    src={coinIcon}
+                    alt="$OrT South African spinning gold coin"
+                    className={cn(
+                      "sot-coin-art relative z-10 w-full max-w-[210px] sm:max-w-[250px] drop-shadow-md transition-transform group-hover:scale-105",
+                      activeObject === "coin" && "sot-object-active",
+                    )}
+                  />
+                </div>
+                <span className="sr-only">{t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })}</span>
+              </button>
+
+              <div className="mt-3 flex flex-col items-center gap-1.5 text-center">
+                <Link
+                  to="/feed"
+                  search={{ filter: "stash" }}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#d6a928] px-5 py-2 text-xs font-black uppercase tracking-wider text-black shadow-sm transition hover:bg-[#c4981e] hover:shadow-md"
+                >
+                  <Coins className="h-4 w-4" />
+                  {t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })} ({totalStashes})
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                <p className="text-xs font-medium text-slate-500">
+                  {t("hero.tapCoin", { defaultValue: "Tap the Gold Coin to view Stashes" })}
+                </p>
+              </div>
+            </div>
+
+            {/* Right Object: Randy The Hungry Trash Can with eager chomping lid */}
+            <div className="group relative flex flex-col items-center rounded-3xl border border-slate-200/80 bg-gradient-to-b from-slate-50 to-white p-6 shadow-sm transition hover:border-slate-400 hover:shadow-md">
+              <button
+                type="button"
+                aria-label={t("feed.trashesOfDay", { defaultValue: "Trashes of the Day" })}
+                onClick={handleTrashClick}
+                onMouseEnter={() => {
+                  if (activeObject !== "bin") {
+                    setActiveObject("bin");
+                    window.setTimeout(() => setActiveObject(null), 1200);
+                  }
+                }}
+                className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 rounded-2xl p-2 cursor-pointer"
               >
                 <div className="relative flex h-60 w-full items-center justify-center sm:h-72 [perspective:900px]">
                   {/* Tabletop contact surface shadow synchronized with Zwepe spin */}
@@ -385,14 +454,14 @@ export function SotHomeHero() {
                 <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
               </span>
               <h2 className="font-display text-lg font-black uppercase tracking-wide text-slate-950">
-                Live Brand Barometer &amp; Daily Verdicts
+                {t("hero.liveSentiment", { defaultValue: "Live Brand Barometer & Daily Verdicts" })}
               </h2>
             </div>
             <div className="flex items-center gap-3 text-xs font-bold text-slate-600">
-              <span>{totalVotes.toLocaleString()} Total Community Votes</span>
+              <span>{totalVotes.toLocaleString()} {t("hero.realPeopleVerdicts", { defaultValue: "Total Community Votes" })}</span>
               <span className="h-3 w-px bg-slate-300" />
               <Link to="/awards" className="text-slate-950 hover:underline">
-                View Awards Leaderboard →
+                {t("hero.seeStandings", { defaultValue: "View Awards Leaderboard →" })}
               </Link>
             </div>
           </div>
@@ -402,11 +471,11 @@ export function SotHomeHero() {
             <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider">
               <span className="flex items-center gap-1.5 text-amber-700">
                 <Coins className="h-4 w-4 text-[#d6a928]" />
-                {stashPct}% Stashed ({totalStashes.toLocaleString()})
+                {stashPct}% {t("vote.stash", { defaultValue: "Stash" })} ({totalStashes.toLocaleString()})
               </span>
               <span className="flex items-center gap-1.5 text-slate-700">
                 <Recycle className="h-4 w-4 text-slate-500" />
-                {trashPct}% Trashed ({totalTrashes.toLocaleString()})
+                {trashPct}% {t("vote.trash", { defaultValue: "Trash" })} ({totalTrashes.toLocaleString()})
               </span>
             </div>
             <div className="mt-2 flex h-3.5 w-full overflow-hidden rounded-full bg-slate-200 p-0.5 shadow-inner">
@@ -428,28 +497,28 @@ export function SotHomeHero() {
                 <div className="flex items-center gap-2">
                   <Layers className="h-4 w-4 text-primary" />
                   <h3 className="font-display text-sm font-extrabold uppercase tracking-wider text-slate-950">
-                    Barometer Tier Segmentation
+                    {t("hero.liveSentiment", { defaultValue: "Barometer Tier Segmentation" })}
                   </h3>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                    {barometerBrands.length} Brands
+                    {barometerBrands.length} {t("nav.brands", { defaultValue: "Brands" })}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-slate-500">
-                  Filter and compare brand sentiments within defined market tiers (Luxury, Premium, Mass Market, Budget).
+                  {t("hero.liveSentimentDesc", { defaultValue: "Filter and compare brand sentiments within defined market tiers." })}
                 </p>
               </div>
 
               {/* Sorting Control */}
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-500">Sort Barometer:</span>
+                <span className="text-xs font-semibold text-slate-500">{t("hero.sortBy", { defaultValue: "Sort Barometer:" })}</span>
                 <select
                   value={barometerSort}
                   onChange={(e) => setBarometerSort(e.target.value as "trust" | "tier" | "name")}
                   className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-800 outline-none hover:bg-slate-100 transition-colors"
                 >
-                  <option value="trust">Highest Trust Score</option>
-                  <option value="tier">By Tier (Luxury → Budget)</option>
-                  <option value="name">Brand Name (A-Z)</option>
+                  <option value="trust">{t("hero.trustScore", { defaultValue: "Highest Trust Score" })}</option>
+                  <option value="tier">{t("hero.brandTier", { defaultValue: "By Tier (Luxury → Budget)" })}</option>
+                  <option value="name">{t("hero.alphabetical", { defaultValue: "Brand Name (A-Z)" })}</option>
                 </select>
               </div>
             </div>
@@ -473,7 +542,7 @@ export function SotHomeHero() {
                     {info?.pricePoint && (
                       <span className="font-mono text-[10px] opacity-75">{info.pricePoint}</span>
                     )}
-                    <span>{tierOption}</span>
+                    <span>{getTierLabel(tierOption)}</span>
                   </button>
                 );
               })}
@@ -489,7 +558,7 @@ export function SotHomeHero() {
                   </span>{" "}
                   {getTierInfo(barometerTier).description}{" "}
                   <span className="text-slate-500 italic">
-                    Examples: {getTierInfo(barometerTier).examples.slice(0, 4).join(", ")}.
+                    {getTierInfo(barometerTier).examples.slice(0, 4).join(", ")}.
                   </span>
                 </div>
               </div>
@@ -534,7 +603,7 @@ export function SotHomeHero() {
 
                     <div className="mt-3 border-t border-slate-100 pt-2.5">
                       <div className="flex items-center justify-between text-[11px] font-bold">
-                        <span className="text-slate-500">Barometer:</span>
+                        <span className="text-slate-500">{t("hero.trustScore", { defaultValue: "Trust score" })}:</span>
                         <span
                           className={
                             trust >= 75
@@ -544,7 +613,7 @@ export function SotHomeHero() {
                                 : "text-rose-600"
                           }
                         >
-                          {trust}% Trust
+                          {trust}%
                         </span>
                       </div>
                       <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
@@ -569,13 +638,13 @@ export function SotHomeHero() {
             {/* Action link */}
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
               <span className="text-slate-500">
-                Fair comparison: Brands only compete within proportional peer standards.
+                {t("hero.realPeopleVerdicts", { defaultValue: "Real consumer verdicts shaping trust scores in real time." })}
               </span>
               <Link
                 to="/brands"
                 className="font-bold text-primary hover:underline inline-flex items-center gap-1"
               >
-                Browse all {brands.length} brands <ChevronRight className="size-3.5" />
+                {t("hero.searchOrBrowse", { defaultValue: "Search brands or browse below" })} <ChevronRight className="size-3.5" />
               </Link>
             </div>
           </div>
@@ -588,10 +657,10 @@ export function SotHomeHero() {
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-black uppercase tracking-wider text-amber-900">
                     <Trophy className="h-3.5 w-3.5 text-amber-700" />
-                    Top Stashed of the Day
+                    {t("hero.gettingStashed", { defaultValue: "Top Stashed of the Day" })}
                   </span>
                   <span className="font-display text-sm font-black text-amber-700">
-                    +{topStashedItem?.stashCount ?? 0} Stashes
+                    +{topStashedItem?.stashCount ?? 0} {t("hero.stashes", { defaultValue: "Stashes" })}
                   </span>
                 </div>
                 <h3 className="mt-3 font-display text-base font-bold text-slate-950 line-clamp-1">
@@ -602,7 +671,7 @@ export function SotHomeHero() {
                 </p>
                 {topStashedItem?.brandName && (
                   <p className="mt-2 text-xs font-semibold text-slate-500">
-                    Brand: <span className="text-slate-900 font-bold">{topStashedItem.brandName}</span>
+                    {t("nav.brands", { defaultValue: "Brand" })}: <span className="text-slate-900 font-bold">{topStashedItem.brandName}</span>
                   </p>
                 )}
               </div>
@@ -612,7 +681,7 @@ export function SotHomeHero() {
                   search={{ filter: "stash" }}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-950 hover:underline"
                 >
-                  Explore all Stashes of the Day <ArrowRight className="h-3.5 w-3.5" />
+                  {t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })} <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </div>
@@ -623,10 +692,10 @@ export function SotHomeHero() {
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-black uppercase tracking-wider text-slate-800">
                     <AlertTriangle className="h-3.5 w-3.5 text-slate-700" />
-                    Top Trashed of the Day
+                    {t("hero.gettingTrashed", { defaultValue: "Top Trashed of the Day" })}
                   </span>
                   <span className="font-display text-sm font-black text-slate-900">
-                    {topTrashedItem?.trashCount ?? 0} Trashed
+                    {topTrashedItem?.trashCount ?? 0} {t("hero.trashes", { defaultValue: "Trashed" })}
                   </span>
                 </div>
                 <h3 className="mt-3 font-display text-base font-bold text-slate-950 line-clamp-1">
@@ -637,7 +706,7 @@ export function SotHomeHero() {
                 </p>
                 {topTrashedItem?.brandName && (
                   <p className="mt-2 text-xs font-semibold text-slate-500">
-                    Brand: <span className="text-slate-900 font-bold">{topTrashedItem.brandName}</span>
+                    {t("nav.brands", { defaultValue: "Brand" })}: <span className="text-slate-900 font-bold">{topTrashedItem.brandName}</span>
                   </p>
                 )}
               </div>
@@ -647,7 +716,7 @@ export function SotHomeHero() {
                   search={{ filter: "trash" }}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-800 hover:text-slate-950 hover:underline"
                 >
-                  Explore all Trashes of the Day <ArrowRight className="h-3.5 w-3.5" />
+                  {t("feed.trashesOfDay", { defaultValue: "Trashes of the Day" })} <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </div>

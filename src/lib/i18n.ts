@@ -4,9 +4,10 @@ import LanguageDetector from "i18next-browser-languagedetector";
 import { en } from "./locale-en";
 import { translations } from "./locales";
 import { socialTranslations } from "./locale-social";
+import { extraTranslations } from "./locales-extra";
+import { appTranslations } from "./locale-app";
 
-// Full list of selectable languages (native names). UI strings fall back to
-// English until a full translation bundle exists for a given code.
+// Full list of 52 selectable launch languages (native names & RTL metadata)
 export const LANGUAGES: { code: string; label: string; native?: string; direction?: "ltr" | "rtl" }[] = [
   { code: "en", label: "English" },
   { code: "es", label: "Español" },
@@ -27,10 +28,10 @@ export const LANGUAGES: { code: string; label: string; native?: string; directio
   { code: "uk", label: "Українська" },
   { code: "ru", label: "Русский" },
   { code: "tr", label: "Türkçe" },
-  { code: "ar", label: "العربية" },
-  { code: "he", label: "עברית" },
-  { code: "fa", label: "فارسی" },
-  { code: "ur", label: "اردو" },
+  { code: "ar", label: "العربية", direction: "rtl" },
+  { code: "he", label: "עברית", direction: "rtl" },
+  { code: "fa", label: "فارسی", direction: "rtl" },
+  { code: "ur", label: "اردو", direction: "rtl" },
   { code: "hi", label: "हिन्दी" },
   { code: "bn", label: "বাংলা" },
   { code: "ta", label: "தமிழ்" },
@@ -67,30 +68,42 @@ export const RTL_LANGUAGES = ["ar", "he", "fa", "ur"];
 export const LANGUAGE_COUNT = LANGUAGES.length;
 
 const resources: Record<string, { translation: typeof en }> = { en: { translation: en } };
-const codes = new Set([...Object.keys(translations), ...Object.keys(socialTranslations)]);
-for (const code of codes) {
-  const bundle: Record<string, unknown> = { ...(translations[code] ?? {}) };
+const allCodes = new Set([
+  ...LANGUAGES.map((l) => l.code),
+  ...Object.keys(translations),
+  ...Object.keys(socialTranslations),
+  ...Object.keys(extraTranslations),
+  ...Object.keys(appTranslations),
+]);
+
+for (const code of allCodes) {
+  const primaryBundle: Record<string, unknown> = { ...(translations[code] ?? {}) };
+  const extraBundle = extraTranslations[code];
   const social = socialTranslations[code];
-  if (social) bundle.social = { ...(bundle.social as object), ...social };
+  const appBundle = appTranslations[code];
+
+  if (social) primaryBundle.social = { ...(primaryBundle.social as object), ...social };
+  if (extraBundle) {
+    for (const [sec, val] of Object.entries(extraBundle)) {
+      primaryBundle[sec] = { ...(primaryBundle[sec] as object), ...(val as object) };
+    }
+  }
+  if (appBundle) {
+    for (const [sec, val] of Object.entries(appBundle)) {
+      primaryBundle[sec] = { ...(primaryBundle[sec] as object), ...(val as object) };
+    }
+  }
+
   const merged: Record<string, unknown> = { ...en };
-  for (const [section, values] of Object.entries(bundle)) {
+  for (const [section, values] of Object.entries(primaryBundle)) {
     merged[section] = { ...(en as Record<string, any>)[section], ...(values as object) };
   }
   resources[code] = { translation: merged as typeof en };
 }
 
-// Regional Chinese variants share the complete Simplified/Traditional UI bundles
-// while remaining separately selectable for future region-specific translations.
+// Regional Chinese variants
 resources["zh-CN"] = resources.zh ?? { translation: en };
 resources["zh-TW"] = resources["zh-TW"] ?? resources.zh ?? { translation: en };
-resources.nso = {
-  translation: {
-    ...en,
-    nav: { ...en.nav, feed: "Dikagare", brands: "Mabrande", awards: "Difofane", signIn: "Tsena" },
-    vote: { ...en.vote, stash: "Boloka", trash: "Lahla", signInPrompt: "Tsena go fana ka kahlolo ya gago." },
-    auth: { ...en.auth, signIn: "Tsena", signUp: "Ingwadise", email: "Imeile", password: "Phasewete", continueGoogle: "Tsena ka Google" },
-  } as typeof en,
-};
 
 if (!i18n.isInitialized) {
   i18n

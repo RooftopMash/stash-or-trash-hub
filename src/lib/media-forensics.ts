@@ -10,6 +10,29 @@ export type MediaAuditReport = {
   provenance: { camera_metadata: boolean; c2pa: boolean; notes: string[] };
   flags: string[];
   detectors: { name: string; activated: boolean }[];
+  aiVerification?: {
+    score: number;
+    isLegitimate: boolean;
+    verdictStatus: string;
+    badgeLabel: string;
+    confidence: string;
+    forensics?: {
+      physicalLighting: string;
+      textureAndNoise: string;
+      textIntegrity: string;
+      aiGenerationMarkers: string;
+    };
+    reasons?: string[];
+    flags?: string[];
+  };
+  brandInfo?: {
+    brandName: string;
+    brandOwner: string;
+    parentCompanyContext: string;
+    productName: string;
+    category: string;
+    marketTier: string;
+  };
 };
 
 const MAX_DIM = 512;

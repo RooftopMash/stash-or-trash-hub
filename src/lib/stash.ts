@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeImage, hamming, type MediaAuditReport } from "@/lib/media-forensics";
+import type { AiScanResult } from "@/lib/ai-scanner";
 
 export type Verdict = "stash" | "trash";
 
@@ -139,6 +140,7 @@ export async function createItem(input: {
   brandId?: string | null;
   category?: string | null;
   verdict?: Verdict | null;
+  aiScanResult?: AiScanResult | null;
 }) {
   let imagePath: string | null = null;
   let audit: MediaAuditReport | null = null;
@@ -180,6 +182,28 @@ export async function createItem(input: {
         /* dedup is best-effort; never block posting */
       }
     }
+  }
+
+  // Attach AI Verification report and corporate brand ownership if provided
+  if (input.aiScanResult) {
+    const ai = input.aiScanResult;
+    audit = {
+      ...(audit || {
+        tier: ai.authenticity.isLegitimate ? "clean" : "flagged",
+        sha256: null,
+        phash: null,
+        width: null,
+        height: null,
+        bytes: input.file?.size || 0,
+        mime: input.file?.type || "image/jpeg",
+        provenance: { camera_metadata: true, c2pa: false, notes: ["Scanned and verified via Gemini AI"] },
+        flags: ai.authenticity.flags || [],
+        detectors: [],
+      }),
+      tier: ai.authenticity.isLegitimate ? "clean" : "flagged",
+      aiVerification: ai.authenticity,
+      brandInfo: ai.brandInfo,
+    };
   }
 
   const base = {

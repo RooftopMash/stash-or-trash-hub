@@ -1,13 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Search, Globe2, BadgeCheck, Plus, Layers } from "lucide-react";
+import { Search, Globe2, BadgeCheck, Plus, Layers, Scan, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BrandLogo } from "@/components/BrandLogo";
+import { ProductScannerModal } from "@/components/ProductScannerModal";
 import { brandCategory, categoryClass, categoryOptions, matchesCategory } from "@/lib/categories";
 import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { BRAND_TIERS, type BrandTier, type BrandTierFilter, getBrandTier, getTierInfo, matchesTier, compareBrandTiers } from "@/lib/brandTiers";
@@ -63,6 +64,7 @@ function logoDomain(brand: Brand) {
 
 export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknown }) {
   const navigate = useNavigate();
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [countryCode, setCountryCode] = useState("ALL");
   const [category, setCategory] = useState("All categories");
@@ -129,9 +131,18 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
               Browse {countries.length}+ countries and discover companies by origin.
             </p>
           </div>
-          <Button onClick={() => navigate({ to: user ? "/brands/new" : "/auth" })}>
-            <Plus data-icon="inline-start" /> Add a brand
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setScannerOpen(true)}
+              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5"
+            >
+              <Scan className="size-4" /> Scan Product / QR
+            </Button>
+            <Button onClick={() => navigate({ to: user ? "/brands/new" : "/auth" })}>
+              <Plus data-icon="inline-start" /> Add a brand
+            </Button>
+          </div>
         </div>
         <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_280px]">
           <label className="flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-3">
@@ -328,6 +339,8 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
           Country data could not be refreshed, so a starter country list is being shown.
         </p>
       )}
+
+      <ProductScannerModal open={scannerOpen} onOpenChange={setScannerOpen} />
     </section>
   );
 }

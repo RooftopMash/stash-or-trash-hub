@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRoles } from "@/hooks/useRoles";
-import { LiveCollaborationPanel } from "@/components/LiveCollaborationPanel";
 
 export const Route = createFileRoute("/_authenticated/messages")({
   validateSearch: (search: Record<string, unknown>): { to?: string } => ({
@@ -135,7 +134,6 @@ function MessagesPage() {
               <div className="border-b border-border px-4 py-3 font-semibold">
                 {activeName ?? t("messages.to")}
               </div>
-              <LiveCollaborationPanel partnerName={activeName ?? "your collaborator"} partnerId={active!} isBrandWorkspace={isBrand} />
               <div className="flex-1 space-y-2 overflow-y-auto p-4">
                 {(thread ?? []).map((m) => (
                   <div

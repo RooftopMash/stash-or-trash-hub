@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Recycle, Coins, CheckCircle2 } from "lucide-react";
 import { Header } from "@/components/Header";
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/feed")({
 
 function Feed() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const search = Route.useSearch();
   const [verdictFilter, setVerdictFilter] = useState<"all" | "stash" | "trash">(
     search.filter ?? "all",
@@ -101,16 +103,15 @@ function Feed() {
       <Header onPosted={() => void refetch()} />
       <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-stash">Community pulse</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-stash">{t("feed.pulse", { defaultValue: "Community pulse" })}</p>
           <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight">
-            Stash Or Trash
+            {t("feed.title", { defaultValue: "Stash Or Trash" })}
           </h1>
           <p className="mt-2 max-w-3xl text-lg font-semibold leading-7 text-foreground">
-            The Brand Barometer. Post anything about a brand and let the community deliver its
-            verdict in real time — the CX &amp; PR signal that matters.
+            {t("feed.subtitle", { defaultValue: "The Brand Barometer. Post anything about a brand and let the community deliver its verdict in real time — the CX & PR signal that matters." })}
           </p>
           <p className="mt-2 max-w-2xl text-muted-foreground">
-            Every verdict brings brands closer to the people they serve. Cast yours.
+            {t("feed.hook", { defaultValue: "Every verdict brings brands closer to the people they serve. Cast yours." })}
           </p>
         </div>
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
@@ -127,11 +128,11 @@ function Feed() {
                 />
                 <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-border bg-background px-3 md:max-w-sm">
                   <Search className="h-4 w-4 text-muted-foreground" />
-                  <span className="sr-only">Search feed</span>
+                  <span className="sr-only">{t("feed.searchPlaceholder", { defaultValue: "Search posts or brands" })}</span>
                   <input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search posts or brands"
+                    placeholder={t("feed.searchPlaceholder", { defaultValue: "Search posts or brands" })}
                     className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                   />
                 </label>
@@ -164,7 +165,7 @@ function Feed() {
                         : "bg-secondary text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    All verdicts ({localFeed.length})
+                    {t("feed.allVerdicts", { defaultValue: "All verdicts" })} ({localFeed.length})
                   </button>
                   <button
                     type="button"
@@ -177,7 +178,7 @@ function Feed() {
                     )}
                   >
                     <Coins className="h-3.5 w-3.5" />
-                    Stashes of the Day ({stashCountTotal})
+                    {t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })} ({stashCountTotal})
                   </button>
                   <button
                     type="button"
@@ -190,7 +191,7 @@ function Feed() {
                     )}
                   >
                     <Recycle className="h-3.5 w-3.5" />
-                    Trashes of the Day ({trashCountTotal})
+                    {t("feed.trashesOfDay", { defaultValue: "Trashes of the Day" })} ({trashCountTotal})
                   </button>
                 </div>
                 {verdictFilter !== "all" && (
@@ -199,7 +200,7 @@ function Feed() {
                     onClick={() => setVerdictFilter("all")}
                     className="text-xs font-medium text-muted-foreground hover:text-foreground underline underline-offset-4"
                   >
-                    Reset filter
+                    {t("feed.resetFilter", { defaultValue: "Reset filter" })}
                   </button>
                 )}
               </div>
@@ -209,9 +210,9 @@ function Feed() {
               <div className="mb-4 flex items-center justify-between rounded-xl border border-stash/30 bg-stash/10 px-4 py-2.5 text-xs font-semibold text-stash">
                 <span className="flex items-center gap-2">
                   <Coins className="h-4 w-4" />
-                  Showing <strong>Stashes of the Day</strong> — Brands and products with positive community momentum
+                  <span>{t("feed.showingStashes", { defaultValue: "Showing Stashes of the Day — Brands and products with positive community momentum" })}</span>
                 </span>
-                <span className="text-[11px] font-normal opacity-80">Sorted by highest stash margins</span>
+                <span className="text-[11px] font-normal opacity-80">{t("feed.sortedStashMargins", { defaultValue: "Sorted by highest stash margins" })}</span>
               </div>
             )}
 
@@ -219,9 +220,9 @@ function Feed() {
               <div className="mb-4 flex items-center justify-between rounded-xl border border-trash/30 bg-trash/10 px-4 py-2.5 text-xs font-semibold text-trash">
                 <span className="flex items-center gap-2">
                   <Recycle className="h-4 w-4" />
-                  Showing <strong>Trashes of the Day</strong> — Public complaints, issues, and calls for accountability
+                  <span>{t("feed.showingTrashes", { defaultValue: "Showing Trashes of the Day — Public complaints, issues, and calls for accountability" })}</span>
                 </span>
-                <span className="text-[11px] font-normal opacity-80">Sorted by highest trash margins</span>
+                <span className="text-[11px] font-normal opacity-80">{t("feed.sortedTrashMargins", { defaultValue: "Sorted by highest trash margins" })}</span>
               </div>
             )}
             {isLoading ? (
@@ -239,9 +240,9 @@ function Feed() {
             ) : (
               <div className="rounded-2xl border border-dashed border-border py-16 text-center">
                 <Recycle className="mx-auto h-10 w-10 text-muted-foreground" />
-                <p className="mt-4 font-display text-lg font-semibold">No conversations found</p>
+                <p className="mt-4 font-display text-lg font-semibold">{t("feed.emptyTitle", { defaultValue: "No conversations found" })}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Try another country, category, or search term.
+                  {t("feed.emptyBody", { defaultValue: "Try another country, category, or search term." })}
                 </p>
               </div>
             )}

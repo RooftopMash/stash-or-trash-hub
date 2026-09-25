@@ -4,7 +4,7 @@ import type { FeedItem, Verdict } from "@/lib/stash";
 import { castVote, removeVote, deleteItem } from "@/lib/stash";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { X, Building2 } from "lucide-react";
 import coinIcon from "@/assets/icon-coin.png";
 import binIcon from "@/assets/icon-bin.png";
 import { cn } from "@/lib/utils";
@@ -118,6 +118,12 @@ export function ItemCard({
                   <Badge variant="secondary" className="text-[10px]">
                     {item.category}
                   </Badge>
+                )}
+                {item.audit?.brandInfo?.brandOwner && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+                    <Building2 className="h-3 w-3" />
+                    <span>Owner: {item.audit.brandInfo.brandOwner}</span>
+                  </span>
                 )}
                 {item.audit && <AuditBadge audit={item.audit} />}
               </div>
