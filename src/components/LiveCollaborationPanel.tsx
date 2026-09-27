@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import AgoraRTC, {
-  type IAgoraRTCClient,
-  type ICameraVideoTrack,
-  type IMicrophoneAudioTrack,
+import type {
+  IAgoraRTCClient,
+  ICameraVideoTrack,
+  IMicrophoneAudioTrack,
 } from "agora-rtc-sdk-ng";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -245,6 +245,7 @@ export function LiveCollaborationPanel({
 
       if (payload.provider === "agora" && payload.appId && payload.token && payload.uid) {
         setEngineLabel("Agora RTC + Google STUN");
+        const { default: AgoraRTC } = await import("agora-rtc-sdk-ng");
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         clientRef.current = client;
         client.on("user-published", async (remoteUser, mediaType) => {

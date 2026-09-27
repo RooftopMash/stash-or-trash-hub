@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import AgoraRTC, {
-  type IAgoraRTCClient,
-  type ICameraVideoTrack,
-  type IMicrophoneAudioTrack,
+import type {
+  IAgoraRTCClient,
+  ICameraVideoTrack,
+  IMicrophoneAudioTrack,
 } from "agora-rtc-sdk-ng";
 import {
   Dialog,
@@ -41,9 +41,9 @@ import type { AiScanResult } from "@/lib/ai-scanner";
 interface LiveBroadcastModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  brandName: string;
-  brandOwner: string;
-  productName: string;
+  brandName?: string;
+  brandOwner?: string;
+  productName?: string;
   scanResult?: AiScanResult | null;
 }
 
@@ -56,9 +56,9 @@ const GOOGLE_STUN_SERVERS: RTCIceServer[] = [
 export function LiveBroadcastModal({
   open,
   onOpenChange,
-  brandName,
-  brandOwner,
-  productName,
+  brandName = "SOT Community Studio",
+  brandOwner = "Verified Trust Network",
+  productName = "Live Session",
   scanResult,
 }: LiveBroadcastModalProps) {
   const [isLive, setIsLive] = useState(false);
@@ -236,6 +236,7 @@ export function LiveBroadcastModal({
 
       if (tokenData.provider === "agora" && tokenData.appId && tokenData.token && tokenData.uid) {
         setEngineUsed("Agora RTC + Google STUN");
+        const { default: AgoraRTC } = await import("agora-rtc-sdk-ng");
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         agoraClientRef.current = client;
         client.on("user-published", async (remoteUser, mediaType) => {

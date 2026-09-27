@@ -28,7 +28,11 @@ import { toast } from "sonner";
 import type { FeedItem } from "@/lib/stash";
 
 interface FormalEscalationModalProps {
-  item: FeedItem;
+  item?: FeedItem;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  brandName?: string;
+  itemTitle?: string;
 }
 
 function generateSotReference(itemId: string, createdAt: string): string {
@@ -38,8 +42,30 @@ function generateSotReference(itemId: string, createdAt: string): string {
   return `SOT-${year}-${suffix}`;
 }
 
-export function FormalEscalationModal({ item }: FormalEscalationModalProps) {
-  const [open, setOpen] = useState(false);
+export function FormalEscalationModal({
+  item: propItem,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  brandName,
+  itemTitle,
+}: FormalEscalationModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange !== undefined ? controlledOnOpenChange : setInternalOpen;
+
+  const item = useMemo(
+    () =>
+      propItem ?? {
+        id: brandName ? `brand-${brandName}` : "sot-849201",
+        created_at: new Date().toISOString(),
+        brandName: brandName || "Brand Management",
+        title: itemTitle || `${brandName || "Brand"} Product Authenticity & Consumer Resolution`,
+        description: "Consumer verification & CPA Section 69 resolution inquiry.",
+        trashCount: 1,
+        stashCount: 1,
+      },
+    [propItem, brandName, itemTitle],
+  );
   const [activeTab, setActiveTab] = useState<"counterfeit" | "education" | "dossier">("counterfeit");
   const [issueClassification, setIssueClassification] = useState<"counterfeit" | "genuine_defect">(
     "counterfeit",
@@ -172,16 +198,18 @@ export function FormalEscalationModal({ item }: FormalEscalationModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary/70 px-2 py-0.5 text-[10px] font-bold text-foreground transition hover:border-foreground/40 hover:bg-secondary whitespace-nowrap"
-          title="Counterfeit Batch Verifier, Brand Recovery & CPA/CGSO Education Hub"
-        >
-          <Scale className="h-3 w-3 text-stash" />
-          <span>Verify &amp; CPA Guide · #{refNumber}</span>
-        </button>
-      </DialogTrigger>
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary/70 px-2 py-0.5 text-[10px] font-bold text-foreground transition hover:border-foreground/40 hover:bg-secondary whitespace-nowrap"
+            title="Counterfeit Batch Verifier, Brand Recovery & CPA/CGSO Education Hub"
+          >
+            <Scale className="h-3 w-3 text-stash" />
+            <span>Verify &amp; CPA Guide · #{refNumber}</span>
+          </button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-2">
