@@ -13,8 +13,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertTriangle, Download } from "lucide-react";
+import { AlertTriangle, Download, Phone, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
 import {
   fetchBrandTrend,
   fetchBrandTopVoices,
@@ -30,6 +31,11 @@ const WINDOWS = [7, 30, 90] as const;
 export function BrandAnalytics({ brandId, brandName }: { brandId: string; brandName: string }) {
   const { t } = useTranslation();
   const [days, setDays] = useState<(typeof WINDOWS)[number]>(30);
+  const [callClient, setCallClient] = useState<{
+    id: string;
+    name: string;
+    mode: "voice_call" | "video_call";
+  } | null>(null);
 
   const { data: trend } = useQuery({
     queryKey: ["brand-trend", brandId, days],
@@ -203,11 +209,53 @@ export function BrandAnalytics({ brandId, brandName }: { brandId: string; brandN
                   })}
                 </span>
                 <span className="text-xs font-semibold text-stash">{v.trust_score ?? 0}</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCallClient({
+                      id: v.user_id,
+                      name: v.display_name ?? "Client",
+                      mode: "voice_call",
+                    })
+                  }
+                  className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 hover:bg-emerald-500/20"
+                  title="Call this user on SOT (Brand-to-User Voice Call)"
+                >
+                  <Phone className="h-3 w-3" /> Call Client
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCallClient({
+                      id: v.user_id,
+                      name: v.display_name ?? "Client",
+                      mode: "video_call",
+                    })
+                  }
+                  className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary hover:bg-primary/20"
+                  title="Video call this user on SOT"
+                >
+                  <Video className="h-3 w-3" /> Video
+                </button>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      <LiveBroadcastModal
+        open={!!callClient}
+        onOpenChange={(o) => {
+          if (!o) setCallClient(null);
+        }}
+        brandName={brandName}
+        brandOwner={`${brandName} Brand Owner Outreach`}
+        productName={`Direct Brand-to-User Call with ${callClient?.name ?? "Client"}`}
+        recipientId={callClient?.id}
+        recipientName={callClient?.name}
+        defaultMode={callClient?.mode ?? "voice_call"}
+        callDirection="brand_to_user"
+      />
     </div>
   );
 }

@@ -33,10 +33,29 @@ import {
   AlertTriangle,
   MapPin,
   Hash,
+  UserCheck,
+  BellRing,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { fetchFeed } from "@/lib/stash";
+import { sendMessage } from "@/lib/messages";
 import type { AiScanResult } from "@/lib/ai-scanner";
+
+export interface IncomingSotCallPayload {
+  callId: string;
+  callerId: string;
+  callerName: string;
+  callDirection: "brand_to_user" | "user_to_user" | "user_to_brand";
+  recipientId: string;
+  recipientName: string;
+  brandName: string;
+  topic: string;
+  mode: "voice_call" | "video_call" | "broadcast";
+  roomChannel: string;
+  timestamp: string;
+}
 
 interface LiveBroadcastModalProps {
   open: boolean;
@@ -45,6 +64,11 @@ interface LiveBroadcastModalProps {
   brandOwner?: string;
   productName?: string;
   scanResult?: AiScanResult | null;
+  recipientId?: string;
+  recipientName?: string;
+  defaultMode?: "broadcast" | "video_call" | "voice_call";
+  customRoomChannel?: string;
+  callDirection?: "brand_to_user" | "user_to_user" | "user_to_brand";
 }
 
 const GOOGLE_STUN_SERVERS: RTCIceServer[] = [
@@ -60,9 +84,25 @@ export function LiveBroadcastModal({
   brandOwner = "Verified Trust Network",
   productName = "Live Session",
   scanResult,
+  recipientId: initialRecipientId,
+  recipientName: initialRecipientName,
+  defaultMode = "video_call",
+  customRoomChannel,
+  callDirection: initialCallDirection = "brand_to_user",
 }: LiveBroadcastModalProps) {
+  const { user } = useAuth();
   const [isLive, setIsLive] = useState(false);
-  const [sessionMode, setSessionMode] = useState<"broadcast" | "video_call" | "voice_call">("broadcast");
+  const [sessionMode, setSessionMode] = useState<"broadcast" | "video_call" | "voice_call">(defaultMode);
+  const [callDirection, setCallDirection] = useState<"brand_to_user" | "user_to_user" | "user_to_brand">(
+    initialCallDirection,
+  );
+  const [targetRecipientId, setTargetRecipientId] = useState<string>(initialRecipientId || "");
+  const [targetRecipientName, setTargetRecipientName] = useState<string>(initialRecipientName || "");
+  const [platformContacts, setPlatformContacts] = useState<
+    Array<{ id: string; name: string; context: string }>
+  >([]);
+  const [ringingSent, setRingingSent] = useState(false);
+
   const [cameraOn, setCameraOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
   const [screenSharing, setScreenSharing] = useState(false);
@@ -125,12 +165,56 @@ export function LiveBroadcastModal({
     setScreenSharing(false);
   }, []);
 
+  // Sync props when opened for a specific User or Brand
+  useEffect(() => {
+    if (open) {
+      if (initialRecipientId) setTargetRecipientId(initialRecipientId);
+      if (initialRecipientName) setTargetRecipientName(initialRecipientName);
+      if (defaultMode) setSessionMode(defaultMode);
+      if (initialCallDirection) setCallDirection(initialCallDirection);
+      setRingingSent(false);
+
+      // Load active users/authors from feed so Brand Owners or Users can pick a client/peer to call
+      void fetchFeed(null)
+        .then((items) => {
+          const seen = new Set<string>();
+          const list: Array<{ id: string; name: string; context: string }> = [];
+          for (const it of items) {
+            if (it.user_id && !seen.has(it.user_id)) {
+              seen.add(it.user_id);
+              list.push({
+                id: it.user_id,
+                name: it.authorName || `User ${it.user_id.slice(0, 6)}`,
+                context: `${it.brandName ? `${it.brandName}: ` : ""}${it.title.slice(0, 40)}`,
+              });
+            }
+          }
+          if (list.length === 0) {
+            list.push(
+              { id: "client-thabo", name: "Thabo M. (Verified Client)", context: "Reported batch inquiry on SOT" },
+              { id: "client-lerato", name: "Lerato K. (Active Voter)", context: "Recent Stash/Trash reviewer" },
+            );
+          }
+          setPlatformContacts(list.slice(0, 20));
+          if (!initialRecipientName && list[0]) {
+            setTargetRecipientId(list[0].id);
+            setTargetRecipientName(list[0].name);
+          }
+        })
+        .catch(() => {
+          // ignore
+        });
+    }
+  }, [open, initialRecipientId, initialRecipientName, defaultMode, initialCallDirection]);
+
   // Setup camera/mic preview when modal is opened
   useEffect(() => {
     let active = true;
     if (open) {
-      const slug = brandName.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 24) || "sot";
-      setRoomChannel(`sot-live-${slug}`);
+      const slug =
+        customRoomChannel ||
+        `sot-call-${(targetRecipientId || brandName).toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 22)}`;
+      setRoomChannel(slug);
       navigator.mediaDevices
         ?.getUserMedia({ video: sessionMode !== "voice_call", audio: true })
         .then((s) => {
@@ -154,7 +238,78 @@ export function LiveBroadcastModal({
     return () => {
       active = false;
     };
-  }, [open, brandName, sessionMode, cleanupSession]);
+  }, [open, brandName, targetRecipientId, customRoomChannel, sessionMode, cleanupSession]);
+
+  const ringRecipientOnPlatform = useCallback(
+    async (channelToRing: string) => {
+      const resolvedRecipientName = targetRecipientName.trim() || brandName || "SOT User";
+      const resolvedRecipientId = targetRecipientId.trim() || "sot-community-member";
+      const callerDisplay =
+        callDirection === "brand_to_user"
+          ? `${brandName} (Brand Owner / CX Desk)`
+          : user?.email?.split("@")[0] || "SOT Member";
+
+      const ringPayload: IncomingSotCallPayload = {
+        callId: `call-${Date.now()}`,
+        callerId: user?.id || "brand-operator",
+        callerName: callerDisplay,
+        callDirection,
+        recipientId: resolvedRecipientId,
+        recipientName: resolvedRecipientName,
+        brandName,
+        topic: productName || `${brandName} Resolution Call`,
+        mode: sessionMode,
+        roomChannel: channelToRing,
+        timestamp: new Date().toISOString(),
+      };
+
+      // 1. Ring in real-time via BroadcastChannel (same browser / multi-tab preview)
+      if (typeof BroadcastChannel !== "undefined") {
+        const ringBc = new BroadcastChannel("sot-call-ring");
+        ringBc.postMessage(ringPayload);
+        ringBc.close();
+      }
+
+      // 2. Ring across devices via Supabase Realtime broadcast channel
+      try {
+        const ringChan = supabase.channel("sot-call-ring");
+        ringChan.subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            void ringChan.send({
+              type: "broadcast",
+              event: "incoming-call",
+              payload: ringPayload,
+            });
+          }
+        });
+      } catch {
+        // ignore
+      }
+
+      // 3. Also drop an automatic Direct Call Alert in the user's SOT Inbox (in case they aren't on their phone)
+      if (user?.id && resolvedRecipientId && resolvedRecipientId !== user.id) {
+        const origin = typeof window !== "undefined" ? window.location.origin : "https://sort.app";
+        const callLink = `${origin}/messages?to=${encodeURIComponent(user.id)}&room=${encodeURIComponent(channelToRing)}`;
+        const modeLabel =
+          sessionMode === "voice_call"
+            ? "Voice Call"
+            : sessionMode === "video_call"
+              ? "Video Call"
+              : "Live Situation Broadcast";
+        void sendMessage({
+          senderId: user.id,
+          recipientId: resolvedRecipientId,
+          body: `📞 INCOMING ${modeLabel.toUpperCase()} ON SOT from ${callerDisplay} (regarding ${brandName} — ${productName}). Couldn't reach your phone directly — click to answer or join our live room (${channelToRing}): ${callLink}`,
+        });
+      }
+
+      setRingingSent(true);
+      toast.success(
+        `Ringing ${resolvedRecipientName} directly on SOT (${sessionMode === "voice_call" ? "Voice" : "Video"}) + sent direct call link to their SOT Inbox!`,
+      );
+    },
+    [targetRecipientName, targetRecipientId, brandName, productName, callDirection, sessionMode, user],
+  );
 
   const toggleCamera = () => {
     const next = !cameraOn;
@@ -341,17 +496,11 @@ export function LiveBroadcastModal({
       }
 
       setIsLive(true);
-      toast.success(
-        sessionMode === "voice_call"
-          ? `Voice call room active for ${brandName}!`
-          : sessionMode === "video_call"
-            ? `2-Way Video Call active for ${brandName}!`
-            : `Broadcasting your situation live for ${brandName}!`,
-      );
+      await ringRecipientOnPlatform(channel);
       setChatMessages([
         {
           sender: "SOT Live Studio",
-          text: `Session active (${engineUsed}). Topic: ${brandName} (${brandOwner})${batchNumber ? ` · Batch #${batchNumber}` : ""}${storeLocation ? ` · Store: ${storeLocation}` : ""}.`,
+          text: `Dialing ${targetRecipientName || brandName} (${callDirection === "brand_to_user" ? "Brand → User Direct Call" : callDirection === "user_to_user" ? "User → User Peer Call" : "User → Brand Call"}) via ${engineUsed}. Direct SOT Inbox alert also delivered in case they are away from their phone.`,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -438,11 +587,79 @@ export function LiveBroadcastModal({
                 type="button"
                 size="sm"
                 variant="outline"
+                onClick={() => void ringRecipientOnPlatform(roomChannel || "sot-live-room")}
+                className="h-8 gap-1.5 text-xs font-bold border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10"
+              >
+                <BellRing className="h-3.5 w-3.5" />
+                {ringingSent ? "Ring Sent (Ring Again)" : `Ring ${targetRecipientName || "User"} on SOT`}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
                 onClick={() => void shareRoomLink()}
                 className="h-8 gap-1.5 text-xs font-semibold"
               >
-                <Share2 className="h-3.5 w-3.5" /> Invite Peer / Brand
+                <Share2 className="h-3.5 w-3.5" /> Copy Call Link
               </Button>
+            </div>
+          </div>
+
+          {/* Direct User-to-User & Brand-to-User Dialer Bar (For when Brand Owner can't reach User on their phone) */}
+          <div className="mt-3 rounded-xl border border-[#d6a928]/40 bg-[#d6a928]/5 p-2.5 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-foreground">
+                <UserCheck className="h-3.5 w-3.5 text-[#d6a928]" />
+                Direct Platform Calling (No Phone Number Needed — Rings User In-App + SOT Inbox)
+              </span>
+              <div className="flex items-center gap-1 rounded-lg bg-background/80 p-0.5 border border-border/60">
+                {(
+                  [
+                    ["brand_to_user", "Brand → User (Reach Client)"],
+                    ["user_to_user", "User → User (Peer Call)"],
+                    ["user_to_brand", "User → Brand"],
+                  ] as const
+                ).map(([dirKey, dirLabel]) => (
+                  <button
+                    key={dirKey}
+                    type="button"
+                    onClick={() => setCallDirection(dirKey)}
+                    className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition ${
+                      callDirection === dirKey
+                        ? "bg-slate-950 text-[#d6a928]"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {dirLabel}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <select
+                value={targetRecipientId}
+                onChange={(e) => {
+                  const chosen = platformContacts.find((c) => c.id === e.target.value);
+                  setTargetRecipientId(e.target.value);
+                  if (chosen) setTargetRecipientName(chosen.name);
+                }}
+                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs font-semibold outline-none"
+              >
+                <option value="">Select SOT User / Client from recent posts...</option>
+                {platformContacts.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} — ({c.context})
+                  </option>
+                ))}
+              </select>
+
+              <Input
+                value={targetRecipientName}
+                onChange={(e) => setTargetRecipientName(e.target.value)}
+                placeholder="Or type User / Client name or handle to call..."
+                className="h-8 text-xs bg-background"
+              />
             </div>
           </div>
 

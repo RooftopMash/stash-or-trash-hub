@@ -15,6 +15,7 @@ import {
   MicOff,
   MonitorUp,
   Phone,
+  PhoneCall,
   PhoneOff,
   Radio,
   ShieldCheck,
@@ -22,12 +23,17 @@ import {
   VideoOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { sendMessage } from "@/lib/messages";
+import type { IncomingSotCallPayload } from "@/components/LiveBroadcastModal";
 import { toast } from "sonner";
 
 type LiveCollaborationPanelProps = {
   partnerName: string;
   isBrandWorkspace: boolean;
   partnerId: string;
+  initialCallMode?: "voice" | "video" | null;
+  customRoom?: string;
+  onOpenFullDialer?: (mode: "voice_call" | "video_call") => void;
 };
 
 const DEFAULT_GOOGLE_ICE: RTCIceServer[] = [
@@ -40,6 +46,9 @@ export function LiveCollaborationPanel({
   partnerName,
   isBrandWorkspace,
   partnerId,
+  initialCallMode,
+  customRoom,
+  onOpenFullDialer,
 }: LiveCollaborationPanelProps) {
   const { user, session } = useAuth();
   const [requestedMode, setRequestedMode] = useState<"voice" | "video" | "broadcast" | null>(null);
@@ -211,6 +220,61 @@ export function LiveCollaborationPanel({
     sendSignal({ type: "ready", sender: user?.id ?? "anon" });
   };
 
+  const ringRecipientOnSot = useCallback(
+    async (room: string, mode: "voice" | "video" | "broadcast") => {
+      const callerDisplayName =
+        user?.user_metadata?.full_name ||
+        user?.email?.split("@")[0] ||
+        (isBrandWorkspace ? "Verified Brand Representative" : "SOT Community Member");
+
+      const ringPayload: IncomingSotCallPayload = {
+        callId: `call-${Date.now()}`,
+        callerId: user?.id || "sot-caller",
+        callerName: callerDisplayName,
+        recipientId: partnerId || "community",
+        recipientName: partnerName || "SOT Member",
+        brandName: isBrandWorkspace ? callerDisplayName : partnerName,
+        topic: isBrandWorkspace
+          ? "Brand Owner reaching out via SOT Messaging (No Phone Number Needed)"
+          : "Direct User-to-User Call via SOT Messaging",
+        roomChannel: room,
+        mode: mode === "voice" ? "voice_call" : "video_call",
+        callDirection: isBrandWorkspace ? "brand_to_user" : "user_to_user",
+        timestamp: new Date().toISOString(),
+      };
+
+      if (typeof BroadcastChannel !== "undefined") {
+        const ringBc = new BroadcastChannel("sot-call-ring");
+        ringBc.postMessage(ringPayload);
+        ringBc.close();
+      }
+
+      const ringChan = supabase.channel("sot-call-ring");
+      ringChan.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          void ringChan.send({
+            type: "broadcast",
+            event: "incoming-call",
+            payload: ringPayload,
+          });
+        }
+      });
+
+      if (user?.id && partnerId && partnerId !== "sot-community-desk" && partnerId !== user.id) {
+        try {
+          await sendMessage({
+            senderId: user.id,
+            recipientId: partnerId,
+            body: `📞 Incoming ${mode === "voice" ? "Voice Call" : "Video Call"} on SOT from ${callerDisplayName} — Open this thread to join live room (${room}).`,
+          });
+        } catch {
+          // Non-blocking if partnerId is a virtual channel
+        }
+      }
+    },
+    [user, isBrandWorkspace, partnerId, partnerName],
+  );
+
   const requestCall = async (mode: "voice" | "video" | "broadcast") => {
     setRequestedMode(mode);
     setCameraOn(mode !== "voice");
@@ -224,7 +288,7 @@ export function LiveCollaborationPanel({
           ...(session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {}),
         },
         body: JSON.stringify({
-          partnerId: partnerId || "community-room",
+          partnerId: customRoom || partnerId || "community-room",
           callerId: user?.id || "sot-client",
           mode,
         }),
@@ -240,8 +304,11 @@ export function LiveCollaborationPanel({
         iceServers?: RTCIceServer[];
       };
 
-      const resolvedChannel = payload.channelName || `sot-${partnerId || "live"}`;
+      const resolvedChannel = customRoom || payload.channelName || `sot-${partnerId || "live"}`;
       setChannelName(resolvedChannel);
+
+      // Ring the target user or brand across SOT immediately
+      void ringRecipientOnSot(resolvedChannel, mode);
 
       if (payload.provider === "agora" && payload.appId && payload.token && payload.uid) {
         setEngineLabel("Agora RTC + Google STUN");
@@ -377,15 +444,42 @@ export function LiveCollaborationPanel({
 
   return (
     <div className="border-b border-border bg-secondary/40 px-4 py-3">
+      {initialCallMode && !requestedMode && (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2.5 text-xs">
+          <div>
+            <p className="font-bold text-foreground">
+              Ready to place {initialCallMode === "voice" ? "Voice Call" : "Video Call"} to{" "}
+              <span className="text-emerald-600">{partnerName}</span>
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Rings {partnerName} directly on SOT (no personal phone number required).
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => void requestCall(initialCallMode)}
+            className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700 font-bold"
+          >
+            {initialCallMode === "voice" ? (
+              <PhoneCall className="h-3.5 w-3.5" />
+            ) : (
+              <Video className="h-3.5 w-3.5" />
+            )}
+            Dial {partnerName} Now
+          </Button>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold">
-            Live Voice, Video &amp; Situation Broadcast · {partnerName}
+            Direct Voice &amp; Video Calling · {partnerName}
           </p>
           <p className="text-xs text-muted-foreground">
             {isBrandWorkspace
-              ? "Verify counterfeit batches, resolve CPA disputes, or speak face-to-face with your client."
-              : "Call the brand or peer directly via Voice, Video, or broadcast your product situation live."}
+              ? "Call your client directly on SOT when you cannot reach their phone number."
+              : "User-to-User & User-to-Brand Voice and Video Calling inside SOT Messaging."}
           </p>
         </div>
         {!requestedMode ? (
@@ -395,9 +489,9 @@ export function LiveCollaborationPanel({
               size="sm"
               variant="outline"
               onClick={() => void requestCall("voice")}
-              className="gap-1.5 font-semibold"
+              className="gap-1.5 border-emerald-500/40 bg-emerald-500/10 font-semibold text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400"
             >
-              <Phone className="h-3.5 w-3.5 text-emerald-600" /> Voice Call
+              <Phone className="h-3.5 w-3.5" /> Voice Call
             </Button>
             <Button
               type="button"
@@ -407,26 +501,42 @@ export function LiveCollaborationPanel({
             >
               <Video className="h-3.5 w-3.5" /> Video Call
             </Button>
+            {onOpenFullDialer && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onOpenFullDialer("voice_call")}
+                className="gap-1.5 font-semibold"
+              >
+                <PhoneCall className="h-3.5 w-3.5 text-[#d6a928]" /> Call Studio
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
             <Button
               type="button"
               size="sm"
               variant="outline"
-              onClick={() => void requestCall("broadcast")}
-              className="gap-1.5 border-rose-500/40 font-semibold text-rose-600 hover:bg-rose-500/10"
+              onClick={() => {
+                void ringRecipientOnSot(channelName, requestedMode);
+                toast.success(`Ringing ${partnerName} on SOT...`);
+              }}
+              className="gap-1.5 border-emerald-500/40 text-xs font-semibold text-emerald-600"
             >
-              <Radio className="h-3.5 w-3.5" /> Broadcast Situation
+              <PhoneCall className="h-3.5 w-3.5" /> Ring Again
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              onClick={() => void leaveCall()}
+              className="gap-1.5 font-semibold"
+            >
+              <PhoneOff className="h-3.5 w-3.5" /> End ({formatDuration(callSeconds)})
             </Button>
           </div>
-        ) : (
-          <Button
-            type="button"
-            size="sm"
-            variant="destructive"
-            onClick={() => void leaveCall()}
-            className="gap-1.5 font-semibold"
-          >
-            <PhoneOff className="h-3.5 w-3.5" /> End ({formatDuration(callSeconds)})
-          </Button>
         )}
       </div>
 

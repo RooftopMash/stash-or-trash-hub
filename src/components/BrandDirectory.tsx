@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Globe2, BadgeCheck, Plus, Layers, Scan, Download, Sparkles, Loader2 } from "lucide-react";
+import { Search, Globe2, BadgeCheck, Plus, Layers, Scan, Download, Sparkles, Loader2, Video, Radio } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BrandLogo } from "@/components/BrandLogo";
 import { ProductScannerModal } from "@/components/ProductScannerModal";
+import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
 import { brandCategory, categoryClass, categoryOptions, matchesCategory } from "@/lib/categories";
 import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { BRAND_TIERS, type BrandTierFilter, getBrandTier, getTierInfo, matchesTier, compareBrandTiers } from "@/lib/brandTiers";
@@ -68,6 +69,7 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [countryCode, setCountryCode] = useState("ALL");
   const [category, setCategory] = useState("All categories");
@@ -162,7 +164,15 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
               Browse {countries.length}+ countries and discover companies by origin.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={() => setBroadcastOpen(true)}
+              className="gap-1.5 bg-rose-600 text-white hover:bg-rose-700 font-bold"
+            >
+              <Video className="size-4" />
+              <Radio className="size-3.5 animate-pulse" />
+              Video Cam / Broadcast Situation
+            </Button>
             <Button
               variant="outline"
               onClick={() => setScannerOpen(true)}
@@ -445,6 +455,14 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
       )}
 
       <ProductScannerModal open={scannerOpen} onOpenChange={setScannerOpen} />
+      <LiveBroadcastModal
+        open={broadcastOpen}
+        onOpenChange={setBroadcastOpen}
+        brandName={query.trim() || "Global Brand Directory Broadcast"}
+        brandOwner="Verified Brand & Consumer Directory"
+        productName="Brand Counterfeit / CX Situation Broadcast"
+        defaultMode="broadcast"
+      />
     </section>
   );
 }

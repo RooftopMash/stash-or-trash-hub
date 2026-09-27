@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
-import { Megaphone, Send, Image as ImageIcon, Video, Mic, MapPin, Loader2 } from "lucide-react";
+import { Megaphone, Send, Image as ImageIcon, Video, Mic, MapPin, Loader2, Phone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { BrandSearch } from "@/components/BrandSearch";
+import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
@@ -61,6 +62,13 @@ function MediaView({ incident }: { incident: Incident }) {
 export function LiveIncidents() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const [callTarget, setCallTarget] = useState<{
+    userId: string;
+    authorName: string;
+    brandName: string;
+    title: string;
+    mode: "voice_call" | "video_call";
+  } | null>(null);
   const {
     data: incidents,
     isLoading,
@@ -125,11 +133,59 @@ export function LiveIncidents() {
                 <p className="mt-1 text-sm text-muted-foreground">{inc.description}</p>
               )}
               <MediaView incident={inc} />
-              <p className="mt-2 text-[10px] text-muted-foreground">by {inc.authorName}</p>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[11px] font-medium text-muted-foreground">by {inc.authorName}</p>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCallTarget({
+                        userId: inc.user_id,
+                        authorName: inc.authorName || "Reporter",
+                        brandName: inc.brandName || "Incident Desk",
+                        title: inc.title,
+                        mode: "voice_call",
+                      })
+                    }
+                    className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 hover:bg-emerald-500/20"
+                  >
+                    <Phone className="h-2.5 w-2.5" /> Call {inc.authorName || "User"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCallTarget({
+                        userId: inc.user_id,
+                        authorName: inc.authorName || "Reporter",
+                        brandName: inc.brandName || "Incident Desk",
+                        title: inc.title,
+                        mode: "video_call",
+                      })
+                    }
+                    className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary hover:bg-primary/20"
+                  >
+                    <Video className="h-2.5 w-2.5" /> Video
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      <LiveBroadcastModal
+        open={!!callTarget}
+        onOpenChange={(o) => {
+          if (!o) setCallTarget(null);
+        }}
+        brandName={callTarget?.brandName || "Live Incident Call"}
+        brandOwner="Brand-to-User Incident Outreach"
+        productName={callTarget?.title || "Incident Follow-up"}
+        recipientId={callTarget?.userId}
+        recipientName={callTarget?.authorName}
+        defaultMode={callTarget?.mode ?? "voice_call"}
+        callDirection="brand_to_user"
+      />
     </section>
   );
 }

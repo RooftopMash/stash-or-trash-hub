@@ -16,12 +16,17 @@ import {
   ArrowUpRight,
   ArrowUp,
   ArrowDown,
+  Video,
+  Radio,
+  Phone,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { ItemCard } from "@/components/ItemCard";
 import { BrandLogo } from "@/components/BrandLogo";
 import { LocationAwareFeed } from "@/components/LocationAwareFeed";
 import { TrendingHashtags } from "@/components/TrendingHashtags";
+import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchFeed } from "@/lib/stash";
@@ -60,6 +65,7 @@ function Feed() {
   const [selectedCategory, setSelectedCategory] = useState("All categories");
   const [resultScope, setResultScope] = useState<"all" | "brands" | "posts">("all");
   const [showAllMatchingBrands, setShowAllMatchingBrands] = useState(false);
+  const [feedBroadcastOpen, setFeedBroadcastOpen] = useState(false);
 
   useEffect(() => {
     if (search.filter) {
@@ -313,25 +319,49 @@ function Feed() {
     <div className="min-h-screen bg-background">
       <Header onPosted={() => void refetch()} />
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-stash">
-            {t("feed.pulse", { defaultValue: "Community pulse" })}
-          </p>
-          <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight">
-            {t("feed.title", { defaultValue: "Stash Or Trash" })}
-          </h1>
-          <p className="mt-2 max-w-3xl text-lg font-semibold leading-7 text-foreground">
-            {t("feed.subtitle", {
-              defaultValue:
-                "The Brand Barometer. Post anything about a brand and let the community deliver its verdict in real time — the CX & PR signal that matters.",
-            })}
-          </p>
-          <p className="mt-1.5 max-w-2xl text-muted-foreground">
-            {t("feed.hook", {
-              defaultValue:
-                "Every verdict brings brands closer to the people they serve. Cast yours.",
-            })}
-          </p>
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-stash">
+              {t("feed.pulse", { defaultValue: "Community pulse" })}
+            </p>
+            <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight">
+              {t("feed.title", { defaultValue: "Stash Or Trash" })}
+            </h1>
+            <p className="mt-2 max-w-3xl text-lg font-semibold leading-7 text-foreground">
+              {t("feed.subtitle", {
+                defaultValue:
+                  "The Brand Barometer. Post anything about a brand and let the community deliver its verdict in real time — the CX & PR signal that matters.",
+              })}
+            </p>
+            <p className="mt-1.5 max-w-2xl text-muted-foreground">
+              {t("feed.hook", {
+                defaultValue:
+                  "Every verdict brings brands closer to the people they serve. Cast yours.",
+              })}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              onClick={() => setFeedBroadcastOpen(true)}
+              className="gap-1.5 bg-rose-600 text-white hover:bg-rose-700 font-bold shadow-sm"
+            >
+              <Video className="h-4 w-4" />
+              <Radio className="h-3.5 w-3.5 animate-pulse" />
+              Video Cam / Broadcast Situation
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              asChild
+              className="gap-1.5 border-emerald-500/40 bg-emerald-500/10 font-bold text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400"
+            >
+              <Link to="/messages">
+                <Phone className="h-3.5 w-3.5" /> Call Users / Brands (Messages)
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* PROMINENT REAL-TIME SEARCH BAR AT THE TOP OF THE FEED */}
@@ -872,6 +902,15 @@ function Feed() {
           </aside>
         </div>
       </main>
+
+      <LiveBroadcastModal
+        open={feedBroadcastOpen}
+        onOpenChange={setFeedBroadcastOpen}
+        brandName={activeBrandObj?.name ?? "Community Feed Broadcast"}
+        brandOwner="Public Consumer & Brand Feed"
+        productName="Live Product / Service Situation Broadcast"
+        defaultMode="broadcast"
+      />
     </div>
   );
 }

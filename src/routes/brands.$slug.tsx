@@ -353,9 +353,26 @@ function BrandPage() {
                   <Button
                     size="sm"
                     onClick={() => setLiveCallModalOpen(true)}
-                    className="gap-1.5 bg-slate-950 text-[#d6a928] hover:bg-slate-900 font-bold"
+                    className="gap-1.5 bg-rose-600 text-white hover:bg-rose-700 font-bold"
                   >
-                    <Video className="h-4 w-4" /> Call / Broadcast Situation
+                    <Video className="h-4 w-4" /> Video Cam / Broadcast Situation
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 border-emerald-500/40 bg-emerald-500/10 font-bold text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400"
+                    onClick={() =>
+                      navigate({
+                        to: "/messages",
+                        search: {
+                          to: brand.owner_id || `brand-${brand.slug}`,
+                          name: brand.name,
+                          call: "voice",
+                        },
+                      })
+                    }
+                  >
+                    <Phone className="h-4 w-4" /> Call / Message in Messaging
                   </Button>
                   <Button
                     size="sm"
@@ -365,16 +382,6 @@ function BrandPage() {
                   >
                     <ShieldCheck className="h-4 w-4 text-[#d6a928]" /> Counterfeit & CPA Guide
                   </Button>
-                  {user && !isOwner && brand.verified && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5"
-                      onClick={() => navigate({ to: "/messages", search: { to: brand.owner_id } })}
-                    >
-                      <MessageCircle className="h-4 w-4" /> {t("brand.message")}
-                    </Button>
-                  )}
                   {user && !isOwner && !brand.verified && (
                     <Button
                       size="sm"
@@ -795,11 +802,12 @@ function BrandPage() {
         )}
       </main>
 
-      {/* LIVE VOICE / VIDEO CALL & SITUATION BROADCAST MODAL */}
+      {/* LIVE SITUATION BROADCAST CAM MODAL FOR THIS BRAND */}
       <LiveBroadcastModal
         open={liveCallModalOpen}
         onOpenChange={setLiveCallModalOpen}
         brandName={brand?.name}
+        defaultMode="broadcast"
       />
 
       {/* STRATEGY C: COUNTERFEIT VERIFIER & CPA / CGSO CONSUMER AWARENESS MODAL */}

@@ -4,7 +4,7 @@ import type { FeedItem, Verdict } from "@/lib/stash";
 import { castVote, removeVote, deleteItem } from "@/lib/stash";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, Building2, ArrowUp, ArrowDown } from "lucide-react";
+import { X, Building2, ArrowUp, ArrowDown, Phone, Video } from "lucide-react";
 import coinIcon from "@/assets/icon-coin.png";
 import binIcon from "@/assets/icon-bin.png";
 import { cn } from "@/lib/utils";
@@ -18,8 +18,10 @@ import { PostText } from "@/components/PostText";
 import { AuditBadge } from "@/components/AuditBadge";
 import { BrandResponses } from "@/components/BrandResponses";
 import { FormalEscalationModal } from "@/components/FormalEscalationModal";
+import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
 import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
+import { useRoles } from "@/hooks/useRoles";
 
 export function ItemCard({
   item,
@@ -35,11 +37,13 @@ export function ItemCard({
   sentimentTrend?: "up" | "down";
 }) {
   const { user } = useAuth();
+  const { isBrand } = useRoles();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(defaultCommentsOpen);
   const [stashCelebration, setStashCelebration] = useState(false);
+  const [broadcastSituationOpen, setBroadcastSituationOpen] = useState(false);
 
   const total = item.stashCount + item.trashCount;
   const stashPct = total === 0 ? 50 : Math.round((item.stashCount / total) * 100);
@@ -201,13 +205,33 @@ export function ItemCard({
                 <PostText text={item.title} disableLinks />
               </Link>
             </h3>
-            <Link
-              to="/users/$id"
-              params={{ id: item.user_id }}
-              className="mt-0.5 block text-xs text-muted-foreground hover:underline"
-            >
-              {t("vote.by", { name: item.authorName })}
-            </Link>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Link
+                to="/users/$id"
+                params={{ id: item.user_id }}
+                className="text-xs font-medium text-muted-foreground hover:underline"
+              >
+                {t("vote.by", { name: item.authorName })}
+              </Link>
+              <Link
+                to="/messages"
+                search={{ to: item.user_id, name: item.authorName, call: "voice" }}
+                className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition"
+                title={`Call ${item.authorName} in SOT Messaging Services`}
+              >
+                <Phone className="h-2.5 w-2.5" />
+                <span>Call in Messages</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setBroadcastSituationOpen(true)}
+                className="inline-flex items-center gap-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold text-rose-600 hover:bg-rose-500/20 transition"
+                title={`Video Cam / Broadcast Situation for ${item.brandName || item.title}`}
+              >
+                <Video className="h-2.5 w-2.5" />
+                <span>Broadcast Cam</span>
+              </button>
+            </div>
           </div>
           {user?.id === item.user_id && (
             <button
@@ -297,6 +321,18 @@ export function ItemCard({
           </div>
         )}
       </div>
+
+      <LiveBroadcastModal
+        open={broadcastSituationOpen}
+        onOpenChange={setBroadcastSituationOpen}
+        brandName={item.brandName || "Community Feed Broadcast"}
+        brandOwner={item.audit?.brandInfo?.brandOwner || "Brand & Consumer Desk"}
+        productName={item.title}
+        recipientId={item.user_id}
+        recipientName={item.authorName}
+        defaultMode="broadcast"
+        callDirection={isBrand ? "brand_to_user" : "user_to_user"}
+      />
     </article>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,10 +8,11 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { Button } from "@/components/ui/button";
 import { SubmitDialog } from "@/components/SubmitDialog";
 import { ProductScannerModal } from "@/components/ProductScannerModal";
-import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
+import { LiveBroadcastModal, type IncomingSotCallPayload } from "@/components/LiveBroadcastModal";
 import { LanguageSwitcher, TopLanguageStrip } from "@/components/LanguageSwitcher";
-import { Bell, LayoutDashboard, MessageCircle, Shield, Scan, Video } from "lucide-react";
+import { Bell, LayoutDashboard, MessageCircle, Shield, Scan, Video, PhoneIncoming, PhoneOff } from "lucide-react";
 import { SotWordmark } from "@/components/SotWordmark";
+import { supabase } from "@/integrations/supabase/client";
 import type { AiScanResult } from "@/lib/ai-scanner";
 
 export function Header({ onPosted }: { onPosted?: () => void }) {
@@ -24,7 +25,42 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const [liveStudioOpen, setLiveStudioOpen] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<IncomingSotCallPayload | null>(null);
+  const [activeCallRoom, setActiveCallRoom] = useState<string | undefined>(undefined);
+  const [activeCallMode, setActiveCallMode] = useState<"broadcast" | "video_call" | "voice_call">("video_call");
+  const [activeCallPartner, setActiveCallPartner] = useState<string | undefined>(undefined);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
+
+  // Listen for real-time Brand-to-User and User-to-User incoming calls on SOT
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleIncoming = (payload: IncomingSotCallPayload) => {
+      if (!payload || !payload.roomChannel) return;
+      // Show ring banner if targeted to this user, or if testing in another tab
+      if (!user?.id || payload.recipientId === user.id || payload.callerId !== user.id) {
+        setIncomingCall(payload);
+      }
+    };
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== "undefined") {
+      bc = new BroadcastChannel("sot-call-ring");
+      bc.onmessage = (ev) => handleIncoming(ev.data as IncomingSotCallPayload);
+    }
+
+    const chan = supabase
+      .channel("sot-call-ring")
+      .on("broadcast", { event: "incoming-call" }, ({ payload }) => {
+        if (payload) handleIncoming(payload as IncomingSotCallPayload);
+      })
+      .subscribe();
+
+    return () => {
+      bc?.close();
+      void supabase.removeChannel(chan);
+    };
+  }, [user?.id]);
   const [prefilledPost, setPrefilledPost] = useState<{
     brandName: string;
     brandOwner: string;
@@ -134,17 +170,6 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setLiveStudioOpen(true)}
-            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap border-rose-500/40 bg-rose-500/10 px-2.5 text-xs font-bold text-foreground hover:bg-rose-500/20 sm:px-3"
-            title="Start a Voice Call, Video Call, or Live Situation Broadcast"
-          >
-            <Video className="h-3.5 w-3.5 text-rose-500" />
-            <span className="hidden lg:inline">Call / Broadcast</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
             onClick={() => setScannerOpen(true)}
             className="flex shrink-0 items-center gap-1.5 whitespace-nowrap border-[#d6a928]/50 px-2.5 text-xs font-bold text-foreground hover:bg-[#d6a928]/10 sm:px-3"
             title="Scan Product Barcodes or Logos for Authenticity"
@@ -201,8 +226,8 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
                 size="icon"
                 className="relative shrink-0"
                 onClick={() => navigate({ to: "/messages" })}
-                aria-label={t("nav.messages", { defaultValue: "Messages" })}
-                title={t("nav.messages", { defaultValue: "Messages" })}
+                aria-label={t("nav.messages", { defaultValue: "Messages & Calling" })}
+                title={t("nav.messages", { defaultValue: "Messages & Voice/Video Calls" })}
               >
                 <MessageCircle className="h-4 w-4" />
                 {unread > 0 && (
@@ -253,6 +278,53 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
         </div>
       </div>
 
+      {/* Real-Time Incoming Brand-to-User / User-to-User Call Alert Banner */}
+      {incomingCall && (
+        <div className="bg-emerald-950 text-white border-b border-emerald-500/40 px-4 py-2.5 shadow-lg">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-slate-950 animate-bounce">
+                <PhoneIncoming className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="font-display font-extrabold">
+                  Incoming {incomingCall.mode === "voice_call" ? "Voice Call" : "Video Call"} from{" "}
+                  <span className="text-[#f5d061]">{incomingCall.callerName}</span>
+                </p>
+                <p className="text-[11px] text-emerald-200">
+                  {incomingCall.callDirection === "brand_to_user"
+                    ? `Brand Owner reaching out on SOT regarding ${incomingCall.brandName} (${incomingCall.topic})`
+                    : `Direct SOT User-to-User Call · Room: ${incomingCall.roomChannel}`}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => {
+                  setActiveCallRoom(incomingCall.roomChannel);
+                  setActiveCallMode(incomingCall.mode);
+                  setActiveCallPartner(incomingCall.callerName);
+                  setIncomingCall(null);
+                  setLiveStudioOpen(true);
+                }}
+                className="h-8 gap-1.5 bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-extrabold text-xs"
+              >
+                <PhoneIncoming className="h-3.5 w-3.5" /> Answer Call on SOT
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIncomingCall(null)}
+                className="h-8 gap-1 border-white/30 bg-transparent text-white hover:bg-white/10 text-xs"
+              >
+                <PhoneOff className="h-3.5 w-3.5" /> Decline
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Global Product Scanner Modal */}
       <ProductScannerModal
         open={scannerOpen}
@@ -264,6 +336,10 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
       <LiveBroadcastModal
         open={liveStudioOpen}
         onOpenChange={setLiveStudioOpen}
+        brandName={activeCallPartner || "Direct User / Brand Call"}
+        defaultMode={activeCallMode}
+        customRoomChannel={activeCallRoom}
+        callDirection={isBrand ? "brand_to_user" : "user_to_user"}
       />
 
       {/* Submit Dialog opened with prefilled scanner data */}
