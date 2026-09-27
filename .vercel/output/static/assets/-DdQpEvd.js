@@ -1,0 +1,1 @@
+import{r as e}from"./ByJ6_rwb.js";import{S as t}from"./l0ULRUoA.js";import{t as n}from"./BNCNGOtC.js";var r=e();function i(){let{t:e}=t();return(0,r.jsxs)(`div`,{className:`min-h-screen`,children:[(0,r.jsx)(n,{}),(0,r.jsx)(`main`,{className:`mx-auto max-w-2xl px-4 py-16 text-center text-muted-foreground`,children:e(`social.postNotFound`)})]})}export{i as notFoundComponent};

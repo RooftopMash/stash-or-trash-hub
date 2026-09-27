@@ -17,6 +17,7 @@ import { CommentThread } from "@/components/CommentThread";
 import { PostText } from "@/components/PostText";
 import { AuditBadge } from "@/components/AuditBadge";
 import { BrandResponses } from "@/components/BrandResponses";
+import { FormalEscalationModal } from "@/components/FormalEscalationModal";
 import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 
@@ -192,6 +193,7 @@ export function ItemCard({
                   </span>
                 )}
                 {item.audit && <AuditBadge audit={item.audit} />}
+                <FormalEscalationModal item={item} />
               </div>
             )}
             <h3 className="font-display text-xl font-bold leading-tight">

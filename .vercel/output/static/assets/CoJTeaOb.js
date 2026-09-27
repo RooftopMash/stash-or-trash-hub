@@ -1,0 +1,1 @@
+import{r as e}from"./ByJ6_rwb.js";import{O as t}from"./DygaP9om.js";var n=e(),r=()=>(0,n.jsx)(t,{});export{r as component};

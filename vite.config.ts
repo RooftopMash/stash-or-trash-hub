@@ -6,6 +6,8 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import type { Plugin } from "vite";
+import fs from "node:fs";
+import path from "node:path";
 
 /**
  * Production code protection & console-stripping plugin:
@@ -25,7 +27,7 @@ function sotProductionShieldPlugin(): Plugin {
       if (id.includes("node_modules")) return null;
       if (!/\.[cm]?[jt]sx?$/.test(id)) return null;
 
-      let transformed = code
+      const transformed = code
         .replace(/\bdebugger\s*;?/g, "")
         .replace(
           /\bconsole\.(log|debug|info|trace|table|dir)\s*\([^;]*?\)\s*;?/g,
@@ -49,8 +51,42 @@ export default defineConfig({
       ? {
           preset: "vercel",
           vercel: {
+            entryFormat: "node",
             functions: {
               runtime: "nodejs20.x",
+            },
+          },
+          hooks: {
+            compiled() {
+              try {
+                const entryPath = path.resolve(
+                  process.cwd(),
+                  ".vercel/output/functions/__server.func/index.mjs",
+                );
+                if (fs.existsSync(entryPath)) {
+                  let content = fs.readFileSync(entryPath, "utf8");
+                  // Guard Object.defineProperty(e.socket, "remoteAddress", ...) with configurable:true and try/catch
+                  content = content.replace(
+                    /Object\.defineProperty\(([a-zA-Z0-9_$]+)\.socket,"remoteAddress",\{get\(\)\{/g,
+                    'try{if($1&&$1.socket)Object.defineProperty($1.socket,"remoteAddress",{configurable:!0,get(){',
+                  );
+                  content = content.replace(
+                    /Object\.defineProperty\(([a-zA-Z0-9_$]+)\.socket, "remoteAddress", \{ get\(\) \{/g,
+                    'try { if ($1 && $1.socket) Object.defineProperty($1.socket, "remoteAddress", { configurable: true, get() {',
+                  );
+                  content = content.replace(
+                    /\}\}\);let ([a-zA-Z0-9_$]+)=([a-zA-Z0-9_$]+)\(([a-zA-Z0-9_$]+)\.url/g,
+                    '}})}catch{};let $1=$2($3.url',
+                  );
+                  content = content.replace(
+                    /\}\s*\}\);\s*const isrURL/g,
+                    '} }); } catch {}\n\tconst isrURL',
+                  );
+                  fs.writeFileSync(entryPath, content, "utf8");
+                }
+              } catch {
+                // Non-fatal post-build safeguard
+              }
             },
           },
         }
@@ -77,11 +113,6 @@ export default defineConfig({
       minify: true,
       chunkSizeWarningLimit: 2500,
       rollupOptions: {
-        output: {
-          entryFileNames: "assets/[hash].js",
-          chunkFileNames: "assets/[hash].js",
-          assetFileNames: "assets/[hash][extname]",
-        },
         onwarn(warning, warn) {
           if (
             warning.code === "MODULE_LEVEL_DIRECTIVE" ||
