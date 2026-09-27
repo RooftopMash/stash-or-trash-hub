@@ -1,1 +1,0 @@
-import{o as e}from"../_runtime.mjs";import{u as t}from"./@floating-ui/react-dom+[...].mjs";import{m as n}from"./@radix-ui/react-checkbox+[...].mjs";var r=e(t(),1);n();var i=Object.defineProperty,a=(e,t)=>i(e,`name`,{value:t,configurable:!0}),o=r.createContext(void 0);function s(e){let t=r.useContext(o);return e||t||`ltr`}a(s,`useDirection`);export{s as t};

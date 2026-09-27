@@ -50,45 +50,58 @@ export default defineConfig({
     process.env.VERCEL || process.env.NOW_BUILDER
       ? {
           preset: "vercel",
+          compatibilityDate: "2025-05-01",
+          noExternals: true,
           vercel: {
             entryFormat: "node",
             functions: {
               runtime: "nodejs20.x",
             },
           },
-          hooks: {
-            compiled() {
-              try {
-                const entryPath = path.resolve(
-                  process.cwd(),
-                  ".vercel/output/functions/__server.func/index.mjs",
-                );
-                if (fs.existsSync(entryPath)) {
-                  let content = fs.readFileSync(entryPath, "utf8");
-                  // Guard Object.defineProperty(e.socket, "remoteAddress", ...) with configurable:true and try/catch
-                  content = content.replace(
-                    /Object\.defineProperty\(([a-zA-Z0-9_$]+)\.socket,"remoteAddress",\{get\(\)\{/g,
-                    'try{if($1&&$1.socket)Object.defineProperty($1.socket,"remoteAddress",{configurable:!0,get(){',
+          modules: [
+            (nitro) => {
+              nitro.hooks.hook("compiled", () => {
+                try {
+                  const entryPath = path.resolve(
+                    process.cwd(),
+                    ".vercel/output/functions/__server.func/index.mjs",
                   );
-                  content = content.replace(
-                    /Object\.defineProperty\(([a-zA-Z0-9_$]+)\.socket, "remoteAddress", \{ get\(\) \{/g,
-                    'try { if ($1 && $1.socket) Object.defineProperty($1.socket, "remoteAddress", { configurable: true, get() {',
-                  );
-                  content = content.replace(
-                    /\}\}\);let ([a-zA-Z0-9_$]+)=([a-zA-Z0-9_$]+)\(([a-zA-Z0-9_$]+)\.url/g,
-                    '}})}catch{};let $1=$2($3.url',
-                  );
-                  content = content.replace(
-                    /\}\s*\}\);\s*const isrURL/g,
-                    '} }); } catch {}\n\tconst isrURL',
-                  );
-                  fs.writeFileSync(entryPath, content, "utf8");
+                  if (fs.existsSync(entryPath)) {
+                    let content = fs.readFileSync(entryPath, "utf8");
+                    // 1. Guard Object.defineProperty(e.socket, "remoteAddress", ...) with configurable:true and try/catch
+                    content = content.replace(
+                      /Object\.defineProperty\(([a-zA-Z0-9_$]+)\.socket,"remoteAddress",\{get\(\)\{/g,
+                      'try{if($1&&$1.socket)Object.defineProperty($1.socket,"remoteAddress",{configurable:!0,get(){',
+                    );
+                    content = content.replace(
+                      /Object\.defineProperty\(([a-zA-Z0-9_$]+)\.socket, "remoteAddress", \{ get\(\) \{/g,
+                      'try { if ($1 && $1.socket) Object.defineProperty($1.socket, "remoteAddress", { configurable: true, get() {',
+                    );
+                    content = content.replace(
+                      /\}\}\);let ([a-zA-Z0-9_$]+)=([a-zA-Z0-9_$]+)\(([a-zA-Z0-9_$]+)\.url/g,
+                      '}})}catch{};let $1=$2($3.url',
+                    );
+                    content = content.replace(
+                      /\}\s*\}\);\s*const isrURL/g,
+                      '} }); } catch {}\n\tconst isrURL',
+                    );
+                    // 2. Support both Node (req, res) and Web Fetch ({ fetch } or (Request)) invocation in Vercel runtime
+                    content = content.replace(
+                      /function w\(([a-zA-Z0-9_$]+),([a-zA-Z0-9_$]+)\)\{/g,
+                      'function w($1,$2){if($1&&typeof $1.headers?.get==="function"&&(!$2||typeof $2.end!=="function"))return S.fetch($1);',
+                    );
+                    content = content.replace(
+                      /export\{w as default\};/g,
+                      'w.fetch=(req)=>S.fetch(req);export{w as default};',
+                    );
+                    fs.writeFileSync(entryPath, content, "utf8");
+                  }
+                } catch {
+                  // Non-fatal post-build safeguard
                 }
-              } catch {
-                // Non-fatal post-build safeguard
-              }
+              });
             },
-          },
+          ],
         }
       : process.env.NITRO_PRESET
         ? { preset: process.env.NITRO_PRESET }

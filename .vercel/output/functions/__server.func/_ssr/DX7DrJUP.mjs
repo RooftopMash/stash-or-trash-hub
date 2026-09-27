@@ -1,1 +1,0 @@
-import{m as e}from"../_libs/@radix-ui/react-checkbox+[...].mjs";import{h as t}from"../_libs/@tanstack/react-router+[...].mjs";var n=e(),r=()=>(0,n.jsx)(t,{});export{r as component};
