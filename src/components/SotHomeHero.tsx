@@ -249,41 +249,157 @@ export function SotHomeHero() {
               </div>
             </div>
 
-            {/* Right Object: Heavy-Duty Stainless Steel Trash Can with Slam & Rattle Physics */}
+            {/* Right Object: Randy The Trash Can — Disconnected Free-Floating Lid & Squash-and-Stretch Barrel */}
             <div className="group relative flex flex-col items-center rounded-3xl border-2 border-slate-900/25 bg-gradient-to-b from-slate-100/90 via-slate-50/50 to-white p-6 shadow-[0_12px_32px_-12px_rgba(15,23,42,0.22)] transition hover:border-slate-950 hover:shadow-[0_18px_40px_-10px_rgba(15,23,42,0.35)]">
               <button
                 type="button"
                 aria-label="Slam trash can for Trashes of the Day"
                 onClick={handleTrashClick}
+                onMouseEnter={() => {
+                  if (activeObject !== "bin") {
+                    setActiveObject("bin");
+                    window.setTimeout(() => setActiveObject(null), 1350);
+                  }
+                }}
                 className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 rounded-2xl p-2 cursor-pointer"
               >
                 <div className="relative flex h-60 w-full items-center justify-center sm:h-72">
-                  {/* Grounded contact shadow & impact shockwave ring */}
+                  {/* Grounded floor contact shadow */}
                   <div
                     aria-hidden="true"
                     className={cn(
-                      "sot-bin-shadow pointer-events-none absolute bottom-3 h-7 w-40 rounded-full bg-slate-950/30 blur-md sm:w-44",
-                      activeObject === "bin" && "sot-object-active",
-                    )}
-                  />
-                  <div
-                    aria-hidden="true"
-                    className={cn(
-                      "sot-bin-shockwave pointer-events-none absolute bottom-4 h-8 w-36 rounded-full border-2 border-slate-900/0 opacity-0 sm:w-44",
+                      "sot-bin-shadow pointer-events-none absolute bottom-2 h-7 w-40 rounded-full bg-slate-950/30 blur-md sm:w-44",
                       activeObject === "bin" && "sot-object-active",
                     )}
                   />
 
-                  {/* Intact 3D Stainless Steel Trash Can with heavy slam & rim-rattle physics */}
-                  <div className="sot-bin-stage relative flex items-center justify-center">
-                    <img
-                      src={binIcon}
-                      alt="SOrT solid stainless steel metallic trash can"
+                  <div className="randy-can-stage relative flex h-56 w-48 items-center justify-center sm:h-64 sm:w-56">
+                    {/* Dark 3D elliptical interior barrel mouth revealed when the loose lid pops up */}
+                    <div
+                      aria-hidden="true"
                       className={cn(
-                        "sot-bin-art h-52 w-52 object-contain select-none sm:h-64 sm:w-64",
-                        activeObject === "bin" && "sot-object-active",
+                        "randy-mouth-cavity pointer-events-none absolute top-[15.5%] left-[13%] right-[13%] z-5 h-9 rounded-[50%] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 shadow-[inset_0_6px_12px_rgba(0,0,0,0.95)] ring-2 ring-slate-400/40",
+                        activeObject === "bin" && "randy-active",
                       )}
                     />
+
+                    {/* Overflowing Junk inside Randy's barrel mouth */}
+                    <div
+                      className={cn(
+                        "randy-junk-contents pointer-events-none absolute top-[10.5%] left-[14%] right-[14%] z-10 flex items-end justify-center select-none",
+                        activeObject === "bin" && "randy-active",
+                      )}
+                    >
+                      <svg
+                        viewBox="0 0 160 55"
+                        className="h-11 w-full overflow-visible drop-shadow-md"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        {/* Crumpled callout note */}
+                        <g transform="translate(18, 6) rotate(-12)">
+                          <polygon
+                            points="0,0 26,-4 32,22 4,24"
+                            fill="#f8fafc"
+                            stroke="#94a3b8"
+                            strokeWidth="1.4"
+                          />
+                          <line x1="4" y1="5" x2="22" y2="2" stroke="#94a3b8" strokeWidth="1" />
+                          <line x1="5" y1="9" x2="24" y2="7" stroke="#94a3b8" strokeWidth="1" />
+                          <rect
+                            x="4"
+                            y="14"
+                            width="16"
+                            height="5"
+                            rx="1"
+                            fill="#ef4444"
+                            fillOpacity="0.25"
+                            stroke="#ef4444"
+                            strokeWidth="0.9"
+                          />
+                        </g>
+                        {/* Crushed tin can */}
+                        <g transform="translate(56, 9) rotate(10)">
+                          <rect
+                            x="0"
+                            y="0"
+                            width="18"
+                            height="22"
+                            rx="3"
+                            fill="#dc2626"
+                            stroke="#991b1b"
+                            strokeWidth="1.2"
+                          />
+                          <ellipse
+                            cx="9"
+                            cy="0"
+                            rx="7"
+                            ry="2"
+                            fill="#e2e8f0"
+                            stroke="#94a3b8"
+                            strokeWidth="0.8"
+                          />
+                        </g>
+                        {/* Fishbone */}
+                        <g transform="translate(86, 4) rotate(-18)">
+                          <line
+                            x1="0"
+                            y1="12"
+                            x2="32"
+                            y2="12"
+                            stroke="#f1f5f9"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                          <polygon
+                            points="32,12 41,7 41,17"
+                            fill="#f1f5f9"
+                            stroke="#94a3b8"
+                            strokeWidth="1"
+                          />
+                          <line x1="8" y1="6" x2="8" y2="18" stroke="#f1f5f9" strokeWidth="1.8" strokeLinecap="round" />
+                          <line x1="16" y1="5" x2="16" y2="19" stroke="#f1f5f9" strokeWidth="1.8" strokeLinecap="round" />
+                          <line x1="24" y1="6" x2="24" y2="18" stroke="#f1f5f9" strokeWidth="1.8" strokeLinecap="round" />
+                        </g>
+                      </svg>
+                    </div>
+
+                    {/* Randy Trash Can Barrel Body (3D curved elliptical rim cut + weighty squash-and-stretch) */}
+                    <div
+                      className={cn(
+                        "randy-body absolute inset-0 z-15 drop-shadow-md",
+                        activeObject === "bin" && "randy-active",
+                      )}
+                      style={{
+                        clipPath:
+                          "polygon(0% 17%, 12% 19.8%, 26% 21.8%, 42% 23%, 50% 23.3%, 58% 23%, 74% 21.8%, 88% 19.8%, 100% 17%, 100% 100%, 0% 100%)",
+                      }}
+                    >
+                      <img
+                        src={binIcon}
+                        alt="SOrT solid stainless steel metallic trash can"
+                        className="h-full w-full object-contain select-none"
+                      />
+                    </div>
+
+                    {/* Randy Free-Floating Disconnected Metal Lid (pops vertically up & down, tilts, and jiggles on rim impact) */}
+                    <div
+                      className={cn(
+                        "randy-lid absolute inset-0 z-20",
+                        activeObject === "bin" && "randy-active",
+                      )}
+                      style={{
+                        clipPath:
+                          "polygon(0% 0%, 100% 0%, 100% 18.2%, 88% 21%, 74% 23%, 58% 24.2%, 50% 24.5%, 42% 24.2%, 26% 23%, 12% 21%, 0% 18.2%)",
+                      }}
+                    >
+                      <img
+                        src={binIcon}
+                        alt=""
+                        aria-hidden="true"
+                        className="h-full w-full object-contain select-none"
+                      />
+                    </div>
                   </div>
                 </div>
                 <span className="sr-only">Slam trash can for Trashes of the Day</span>

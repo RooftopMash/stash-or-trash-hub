@@ -149,99 +149,147 @@
   }
 }
 
-/* Randy The Hungry Trash Can: Lid chomps like a hungry cartoon creature */
+/* Randy The Hungry Trash Can:
+   - The lid and barrel are NOT bolted/hinged together: the lid is a separate free-floating metal piece resting on the rim.
+   - It pops vertically up & down into the air, tilts, slams onto the steel rim, and jiggles/springs back up and down as it settles.
+   - The barrel body reacts with weighty squash-and-stretch physics on every lift and impact. */
 @keyframes randy-lid-chomp {
   0% {
-    transform: rotate(0deg);
+    transform: translate3d(0, 0, 0) rotateZ(0deg) rotateX(0deg) scale3d(1, 1, 1);
+    filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.2));
   }
-  10% {
-    /* Mouth flies wide open: hungry anticipation! */
-    transform: rotate(-62deg);
+  7% {
+    /* Pre-launch compression: lid presses tightly into rim before popping off */
+    transform: translate3d(0, 4px, 0) rotateZ(1.5deg) scale3d(1.03, 0.95, 1);
   }
-  22% {
-    /* Holds wide open: AAAAAAAH! */
-    transform: rotate(-65deg);
+  18% {
+    /* POP 1: Lid launches vertically UP off the barrel, detaching in mid-air */
+    transform: translate3d(-4px, -34px, 18px) rotateZ(-18deg) rotateX(14deg) scale3d(1.04, 1.03, 1);
+    filter: drop-shadow(0 18px 14px rgba(15, 23, 42, 0.38));
   }
-  32% {
-    /* CHOMP 1: Sharp hungry bite snap shut! */
-    transform: rotate(2deg);
+  26% {
+    /* Mid-air hover & opposite tilt while disconnected from barrel */
+    transform: translate3d(5px, -38px, 22px) rotateZ(12deg) rotateX(16deg) scale3d(1.05, 1.04, 1);
+    filter: drop-shadow(0 22px 16px rgba(15, 23, 42, 0.42));
   }
-  44% {
-    /* Mouth pops open again for bite 2! */
-    transform: rotate(-48deg);
+  35% {
+    /* CHOMP 1 IMPACT: Heavy metal lid slams down onto barrel rim */
+    transform: translate3d(0, 5px, 0) rotateZ(-2deg) scale3d(1.06, 0.92, 1);
+    filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.3));
   }
-  55% {
-    /* CHOMP 2: Snaps shut! */
-    transform: rotate(1deg);
+  46% {
+    /* POP 2: Second big vertical pop & chomp opening */
+    transform: translate3d(3px, -28px, 14px) rotateZ(-14deg) rotateX(12deg) scale3d(1.03, 1.03, 1);
+    filter: drop-shadow(0 15px 12px rgba(15, 23, 42, 0.35));
   }
-  67% {
-    /* Mouth opens EXTRA wide for big gulp bite 3! */
-    transform: rotate(-74deg);
+  56% {
+    /* CHOMP 2 SLAM: Heavy downward crash onto the steel barrel lip */
+    transform: translate3d(0, 6px, 0) rotateZ(1.5deg) scale3d(1.07, 0.91, 1);
+    filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.35));
   }
-  78% {
-    /* BIG GULP CHOMP 3: Slams shut flush with can rim! */
-    transform: rotate(0deg);
+  65% {
+    /* SPRING-BACK JIGGLE 1 (Up): Loose metal lid bounces up off the rim */
+    transform: translate3d(-2px, -15px, 8px) rotateZ(7.5deg) rotateX(8deg) scale3d(0.98, 1.03, 1);
+    filter: drop-shadow(0 10px 9px rgba(15, 23, 42, 0.3));
   }
-  85% {
-    /* Lid rebound shudder */
-    transform: rotate(-5deg);
+  73% {
+    /* RIM CLANG 1 (Down): Lid drops back onto rim */
+    transform: translate3d(1px, 3px, 0) rotateZ(-4.5deg) scale3d(1.03, 0.96, 1);
   }
-  92% {
-    transform: rotate(1.5deg);
-  }
-  100% {
-    transform: rotate(0deg);
-  }
-}
-
-/* Randy The Hungry Trash Can: Body squashes and stretches with every chomp */
-@keyframes randy-body-swallow {
-  0% {
-    transform: scale(1, 1) translateY(0);
-  }
-  10%, 22% {
-    /* Mouth wide open: body stretches upward in hungry anticipation */
-    transform: scale(0.95, 1.08) translateY(-4px);
-  }
-  32% {
-    /* CHOMP 1 impact: squashes down */
-    transform: scale(1.08, 0.92) translateY(3px);
-  }
-  44% {
-    /* Stretch */
-    transform: scale(0.96, 1.05) translateY(-2px);
-  }
-  55% {
-    /* CHOMP 2 impact */
-    transform: scale(1.06, 0.94) translateY(2px);
-  }
-  67% {
-    /* Big stretch for big bite */
-    transform: scale(0.93, 1.10) translateY(-6px);
-  }
-  78% {
-    /* BIG CHOMP 3 slam impact */
-    transform: scale(1.12, 0.88) translateY(5px);
+  80% {
+    /* SPRING-BACK JIGGLE 2 (Up): Secondary vertical lid hop */
+    transform: translate3d(1.5px, -8px, 4px) rotateZ(4deg) rotateX(4deg) scale3d(0.99, 1.02, 1);
   }
   86% {
-    /* Satisfied swallow wobble / burp */
-    transform: scale(0.98, 1.02) translateY(-1px);
+    /* RIM CLANG 2 (Down): Lid clatters on opposite lip */
+    transform: translate3d(-1px, 1.5px, 0) rotateZ(-2.2deg) scale3d(1.01, 0.98, 1);
   }
-  94% {
-    transform: scale(1.01, 0.99) translateY(0);
+  91% {
+    /* MICRO-JIGGLE 3 (Up): Subtle metal rim vibration */
+    transform: translate3d(0.5px, -3.5px, 2px) rotateZ(1.4deg) scale3d(1, 1.01, 1);
+  }
+  96% {
+    transform: translate3d(-0.5px, 0.8px, 0) rotateZ(-0.6deg) scale3d(1, 1, 1);
   }
   100% {
-    transform: scale(1, 1) translateY(0);
+    transform: translate3d(0, 0, 0) rotateZ(0deg) rotateX(0deg) scale3d(1, 1, 1);
+    filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.2));
   }
 }
 
-/* Randy idle breathing: mouth slightly ajar, eager for trash */
+/* Randy The Hungry Trash Can: Weighty Body Squash-and-Stretch synchronized with the disconnected lid */
+@keyframes randy-body-swallow {
+  0% {
+    transform: translate3d(0, 0, 0) scale3d(1, 1, 1) rotateZ(0deg);
+  }
+  7% {
+    /* Coils down in anticipation before launching the lid */
+    transform: translate3d(0, 6px, 0) scale3d(1.07, 0.92, 1) rotateZ(-1deg);
+  }
+  18%, 26% {
+    /* Upward stretch as the lid pops off into the air */
+    transform: translate3d(0, -8px, 0) scale3d(0.93, 1.08, 1) rotateZ(1.5deg);
+  }
+  35% {
+    /* Heavy squash absorbing Chomp 1 lid impact */
+    transform: translate3d(0, 8px, 0) scale3d(1.1, 0.89, 1) rotateZ(-1.8deg);
+  }
+  46% {
+    /* Rebound stretch for Pop 2 */
+    transform: translate3d(0, -5px, 0) scale3d(0.95, 1.06, 1) rotateZ(1.2deg);
+  }
+  56% {
+    /* Deep weighty squash absorbing Chomp 2 slam */
+    transform: translate3d(0, 9px, 0) scale3d(1.12, 0.87, 1) rotateZ(-1.2deg);
+  }
+  65% {
+    /* Elastic spring-back stretch as lid bounces up */
+    transform: translate3d(0, -4px, 0) scale3d(0.96, 1.04, 1) rotateZ(1deg);
+  }
+  73% {
+    /* Secondary compression as lid clangs back down */
+    transform: translate3d(0, 3px, 0) scale3d(1.04, 0.96, 1) rotateZ(-0.8deg);
+  }
+  80% {
+    transform: translate3d(0, -1.5px, 0) scale3d(0.99, 1.02, 1) rotateZ(0.5deg);
+  }
+  86% {
+    transform: translate3d(0, 1px, 0) scale3d(1.02, 0.98, 1) rotateZ(-0.3deg);
+  }
+  93% {
+    transform: translate3d(0, -0.5px, 0) scale3d(0.995, 1.005, 1) rotateZ(0deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale3d(1, 1, 1) rotateZ(0deg);
+  }
+}
+
+/* Randy idle lid jiggle: loose metal lid pops up & down slightly on the barrel rim */
 @keyframes randy-idle-lid {
   0%, 100% {
-    transform: rotate(0deg);
+    transform: translate3d(0, 0, 0) rotateZ(0deg);
+  }
+  22% {
+    transform: translate3d(0, -6px, 4px) rotateZ(-3.2deg);
+  }
+  32% {
+    transform: translate3d(0, 0.5px, 0) rotateZ(1.4deg);
+  }
+  42% {
+    transform: translate3d(0, -3px, 2px) rotateZ(-1.2deg);
+  }
+  52% {
+    transform: translate3d(0, 0, 0) rotateZ(0deg);
+  }
+}
+
+/* Hover jiggle: when user hovers, loose lid levitates up and jiggles eagerly above the barrel */
+@keyframes randy-hover-lid-jiggle {
+  0%, 100% {
+    transform: translate3d(0, -16px, 10px) rotateZ(-6deg) rotateX(8deg);
   }
   50% {
-    transform: rotate(-10deg);
+    transform: translate3d(0, -21px, 12px) rotateZ(5deg) rotateX(10deg);
   }
 }
 
@@ -272,48 +320,86 @@
   animation: sot-zwepe-shadow 2.9s cubic-bezier(0.18, 0.8, 0.24, 1) forwards;
 }
 
-/* Randy The Hungry Trash Can: Junk inside mouth shakes & gulps down on chomp */
+/* Randy The Hungry Trash Can: Junk inside mouth pops up when lid detaches & gulps down on chomp */
 @keyframes randy-junk-gulp {
   0% {
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 8px, 0) scale(0.92);
+    opacity: 0.75;
+  }
+  18%, 26% {
+    /* Lid popped high in the air: junk rises visibly in the barrel mouth */
+    transform: translate3d(0, -10px, 6px) scale(1.06) rotate(-2deg);
     opacity: 1;
   }
-  10%, 22% {
-    /* Mouth wide open: junk rises up eagerly */
-    transform: translateY(-5px) scale(1.06) rotate(-2deg);
-    opacity: 1;
+  35% {
+    /* Chomp 1 slam compresses junk down */
+    transform: translate3d(0, 6px, 0) scale(0.92) rotate(2deg);
   }
-  32% {
-    /* Chomp 1: compressed down */
-    transform: translateY(2px) scale(0.95) rotate(2deg);
+  46% {
+    /* Pop 2 */
+    transform: translate3d(0, -7px, 4px) scale(1.03) rotate(-1.5deg);
   }
-  44% {
-    /* Pop up */
-    transform: translateY(-3px) scale(1.03) rotate(-1deg);
+  56% {
+    /* Chomp 2 slam swallows junk down into the barrel */
+    transform: translate3d(0, 10px, 0) scale(0.88) rotate(0deg);
   }
-  55% {
-    /* Chomp 2 */
-    transform: translateY(3px) scale(0.92) rotate(1deg);
-  }
-  67% {
-    /* Big gulp anticipation */
-    transform: translateY(-6px) scale(1.08) rotate(-3deg);
-  }
-  78% {
-    /* Slam swallowed */
-    transform: translateY(1px) scale(0.96) rotate(0deg);
+  65% {
+    transform: translate3d(0, -2px, 0) scale(0.96);
   }
   100% {
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 8px, 0) scale(0.92);
+    opacity: 0.75;
   }
 }
 
 .randy-junk-contents {
   transform-origin: 50% 100%;
-  transition: transform 0.2s ease;
+  transform: translate3d(0, 8px, 0) scale(0.92);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
 }
 .randy-junk-contents.randy-active {
-  animation: randy-junk-gulp 1.15s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+  animation: randy-junk-gulp 1.3s cubic-bezier(0.22, 0.9, 0.3, 1) forwards;
+}
+
+.randy-can-stage {
+  perspective: 950px;
+}
+
+.randy-mouth-cavity {
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.randy-mouth-cavity.randy-active {
+  animation: randy-body-swallow 1.3s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+
+.randy-body {
+  transform-origin: 50% 92%;
+  will-change: transform;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.randy-body.randy-active {
+  animation: randy-body-swallow 1.3s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+.group:hover .randy-body:not(.randy-active) {
+  transform: translate3d(0, 3px, 0) scale3d(1.03, 0.97, 1);
+}
+
+.randy-lid {
+  /* Centered origin on the lid mass so it lifts and bounces vertically as an unconnected piece */
+  transform-origin: 50% 18%;
+  will-change: transform;
+  animation: randy-idle-lid 3.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease;
+}
+.randy-lid.randy-active {
+  animation: randy-lid-chomp 1.3s cubic-bezier(0.22, 0.9, 0.3, 1) forwards;
+}
+.group:hover .randy-lid:not(.randy-active) {
+  animation: randy-hover-lid-jiggle 0.9s ease-in-out infinite;
+  filter: drop-shadow(0 14px 12px rgba(15, 23, 42, 0.32));
+}
+.group:hover .randy-junk-contents:not(.randy-active) {
+  transform: translate3d(0, -4px, 0) scale(1.02);
 }
 
 /* Heavy-Duty Stainless Steel Trash Can Physics:

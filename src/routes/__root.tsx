@@ -13,12 +13,18 @@ import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { reportApplicationError } from "../lib/error-reporting";
+import { installProductionSecurityShield } from "../lib/security-shield";
+import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { AuthProvider } from "@/hooks/useAuth";
 import { OfflineStatus } from "@/components/OfflineStatus";
 import { ProductionMonitoring } from "@/components/ProductionMonitoring";
 import { VerdictSuccess } from "@/components/VerdictSuccess";
 import { autoSeedFirestoreIfEmpty } from "@/lib/seedFirestore";
 import "@/lib/i18n";
+
+if (typeof window !== "undefined") {
+  installProductionSecurityShield();
+}
 
 function NotFoundComponent() {
   return (
@@ -43,17 +49,16 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
   const router = useRouter();
   useEffect(() => {
     reportApplicationError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
+    <div role="alert" className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          Something went wrong, please refresh
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Something went wrong on our end. You can try refreshing or head back home.
@@ -141,19 +146,22 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
+    installProductionSecurityShield();
     autoSeedFirestoreIfEmpty();
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <VerdictSuccess listenGlobal />
-        <Toaster position="top-center" richColors />
-        <OfflineStatus />
-        <ProductionMonitoring />
-      </AuthProvider>
-    </QueryClientProvider>
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <VerdictSuccess listenGlobal />
+          <Toaster position="top-center" richColors />
+          <OfflineStatus />
+          <ProductionMonitoring />
+        </AuthProvider>
+      </QueryClientProvider>
+    </AppErrorBoundary>
   );
 }

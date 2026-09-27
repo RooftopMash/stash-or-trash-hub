@@ -593,19 +593,13 @@ Perform a comprehensive multi-tier forensic evaluation:
             },
           };
 
-          if (lastModelError) {
-            console.warn("AI Scan models fell back to deterministic registry:", lastModelError);
-          }
-
           return Response.json({
             success: true,
             data: fallbackResult,
           });
-        } catch (err: unknown) {
-          console.error("AI Scan Fatal Error:", err);
-          const msg = err instanceof Error ? err.message : String(err);
+        } catch {
           return Response.json(
-            { error: "AI Verification service encountered an issue.", details: msg },
+            { error: "AI Verification service encountered a temporary issue. Please try again." },
             { status: 500 }
           );
         }
