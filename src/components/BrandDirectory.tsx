@@ -1,9 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Search, Globe2, BadgeCheck, Plus, Layers, Scan, Sparkles } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Search, Globe2, BadgeCheck, Plus, Layers, Scan, Download, Sparkles, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +12,8 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { ProductScannerModal } from "@/components/ProductScannerModal";
 import { brandCategory, categoryClass, categoryOptions, matchesCategory } from "@/lib/categories";
 import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
-import { BRAND_TIERS, type BrandTier, type BrandTierFilter, getBrandTier, getTierInfo, matchesTier, compareBrandTiers } from "@/lib/brandTiers";
+import { BRAND_TIERS, type BrandTierFilter, getBrandTier, getTierInfo, matchesTier, compareBrandTiers } from "@/lib/brandTiers";
+import { publishBrandsFromWikidata, SUPPORTED_IMPORT_COUNTRIES } from "@/lib/wikidata-import";
 import type { Brand } from "@/lib/brands";
 import { cn } from "@/lib/utils";
 
@@ -64,12 +66,41 @@ function logoDomain(brand: Brand) {
 
 export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknown }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [scannerOpen, setScannerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [countryCode, setCountryCode] = useState("ALL");
   const [category, setCategory] = useState("All categories");
   const [tier, setTier] = useState<BrandTierFilter>("All tiers");
   const [sortBy, setSortBy] = useState<"tier" | "trust" | "name">("tier");
+  const [sourcingCountry, setSourcingCountry] = useState("ZA");
+  const [sourcing, setSourcing] = useState(false);
+
+  const handleSourceCountryBrands = async (targetCountry?: string, searchKeyword?: string) => {
+    const code = (targetCountry && targetCountry !== "ALL" ? targetCountry : sourcingCountry).toUpperCase();
+    setSourcing(true);
+    try {
+      const ownerId = (user as { id?: string } | null)?.id ?? "admin-wikidata-importer";
+      const res = await publishBrandsFromWikidata({
+        countryCode: code,
+        limit: 40,
+        ownerId,
+        searchQuery: searchKeyword?.trim() || undefined,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["brands"] });
+      await queryClient.invalidateQueries({ queryKey: ["local-brands"] });
+      setCountryCode(code);
+      toast.success(
+        res.published > 0
+          ? `Sourced ${res.published} brands for ${countryName(code) || code} (${res.sourceSummary ?? "Wikidata"}).`
+          : `Loaded verified ${countryName(code) || code} brands (${res.skipped} already in directory).`,
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not source brands for country.");
+    } finally {
+      setSourcing(false);
+    }
+  };
   const countriesQuery = useQuery({
     queryKey: ["countries"],
     queryFn: fetchCountries,
@@ -241,11 +272,58 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
           </div>
         )}
 
-        <div className="mt-5 rounded-2xl border border-stash/20 bg-stash/5 p-4 text-sm">
-          <p className="font-semibold text-foreground">Fair directory & competition standard</p>
-          <p className="mt-1 leading-relaxed text-muted-foreground">
-            Every country is discoverable, and brands are classified across defined market tiers (Luxury, Premium, Mass Market, Budget). Luxury maisons and premium tech giants never crowd out mass-market essentials or budget champions.
-          </p>
+        <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-[#d6a928]/40 bg-slate-950/90 p-4 text-white sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[#d6a928]">
+              <Sparkles className="size-3.5" />
+              <span>Global Brand Sourcing Engine · Wikidata + Country Atlas</span>
+            </div>
+            <p className="text-xs text-slate-300">
+              Source and publish verified national & global brands from any country directly into the live directory.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={countryCode !== "ALL" ? countryCode : sourcingCountry}
+              onChange={(e) => {
+                setSourcingCountry(e.target.value);
+                setCountryCode(e.target.value);
+              }}
+              aria-label="Select country to source brands"
+              className="h-9 rounded-lg border border-[#d6a928]/40 bg-slate-900 px-2.5 text-xs font-semibold text-white outline-none"
+            >
+              {SUPPORTED_IMPORT_COUNTRIES.map(([code, label]) => (
+                <option key={code} value={code}>
+                  {label}
+                </option>
+              ))}
+              {countries
+                .filter((c) => !SUPPORTED_IMPORT_COUNTRIES.some(([sc]) => sc === c.cca2))
+                .map((c) => (
+                  <option key={c.cca2} value={c.cca2}>
+                    {c.name.common} ({c.cca2})
+                  </option>
+                ))}
+            </select>
+            <Button
+              size="sm"
+              disabled={sourcing}
+              onClick={() =>
+                void handleSourceCountryBrands(
+                  countryCode !== "ALL" ? countryCode : sourcingCountry,
+                  query,
+                )
+              }
+              className="h-9 gap-1.5 bg-[#d6a928] font-bold text-slate-950 hover:bg-[#e5b935]"
+            >
+              {sourcing ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
+              <span>
+                {sourcing
+                  ? "Sourcing Brands..."
+                  : `Source ${countryName(countryCode !== "ALL" ? countryCode : sourcingCountry) || "Country"} Brands`}
+              </span>
+            </Button>
+          </div>
         </div>
       </div>
       {countriesQuery.isLoading ? (
@@ -326,12 +404,38 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
           })}
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed border-border py-16 text-center">
-          <Globe2 className="mx-auto size-8 text-muted-foreground" />
-          <p className="mt-3 font-display font-semibold">No brands match these filters</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Try another country, category, or search term.
+        <div className="rounded-2xl border border-dashed border-border py-16 text-center px-4">
+          <Globe2 className="mx-auto size-8 text-[#d6a928]" />
+          <p className="mt-3 font-display text-lg font-bold">
+            No brands loaded yet for {countryCode !== "ALL" ? countryName(countryCode) : "this filter"}
           </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Pull live brands for {countryCode !== "ALL" ? countryName(countryCode) : "any country"} from Wikidata & our Global Country Atlas in one click.
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <Button
+              disabled={sourcing}
+              onClick={() =>
+                void handleSourceCountryBrands(
+                  countryCode !== "ALL" ? countryCode : sourcingCountry,
+                  query,
+                )
+              }
+              className="gap-1.5 bg-[#d6a928] font-bold text-slate-950 hover:bg-[#e5b935]"
+            >
+              {sourcing ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+              <span>
+                {sourcing
+                  ? "Fetching from Wikidata..."
+                  : `Fetch ${countryCode !== "ALL" ? countryName(countryCode) : countryName(sourcingCountry)} Brands Now`}
+              </span>
+            </Button>
+            {countryCode !== "ALL" && (
+              <Button variant="outline" onClick={() => setCountryCode("ALL")}>
+                Show All Countries
+              </Button>
+            )}
+          </div>
         </div>
       )}
       {countriesQuery.isError && (

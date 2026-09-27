@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeImage, hamming, type MediaAuditReport } from "@/lib/media-forensics";
 import type { AiScanResult } from "@/lib/ai-scanner";
+import { INTERNATIONAL_SEED_BRANDS, SOUTH_AFRICAN_SEED_BRANDS } from "@/lib/seed-brands";
+import { getLocalImportedBrands } from "@/lib/wikidata-import";
 
 export type Verdict = "stash" | "trash";
 
@@ -18,6 +20,7 @@ export type FeedItem = {
   brandSlug: string | null;
   brandLogoUrl: string | null;
   brandCountry: string | null;
+  brandTrustScore?: number | null;
   stashCount: number;
   trashCount: number;
   myVerdict: Verdict | null;
@@ -80,13 +83,40 @@ export async function fetchFeed(
     supabase.from("votes").select("item_id, user_id, verdict").in("item_id", itemIds),
     supabase.from("profiles").select("id, display_name").in("id", authorIds),
     brandIds.length
-      ? supabase.from("brands").select("id, name, slug, logo_url, country").in("id", brandIds)
-      : Promise.resolve({ data: [] as { id: string; name: string; slug: string; logo_url: string | null }[] }),
+      ? supabase.from("brands").select("id, name, slug, logo_url, country, trust_score").in("id", brandIds)
+      : Promise.resolve({ data: [] as { id: string; name: string; slug: string; logo_url: string | null; country?: string | null; trust_score?: number | null }[] }),
     signImages(items.map((i) => i.image_url)),
   ]);
 
   const nameById = new Map((profiles ?? []).map((p) => [p.id, p.display_name]));
-  const brandById = new Map((brandsRes.data ?? []).map((b) => [b.id, b]));
+  const brandById = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      slug: string;
+      logo_url?: string | null;
+      country?: string | null;
+      trust_score?: number | null;
+    }
+  >();
+  for (const b of [
+    ...SOUTH_AFRICAN_SEED_BRANDS,
+    ...INTERNATIONAL_SEED_BRANDS,
+    ...getLocalImportedBrands(),
+  ]) {
+    brandById.set(b.id, {
+      id: b.id,
+      name: b.name,
+      slug: b.slug,
+      logo_url: b.logo_url ?? b.signedLogoUrl ?? null,
+      country: b.country ?? null,
+      trust_score: b.trust_score ?? 75,
+    });
+  }
+  for (const b of brandsRes.data ?? []) {
+    brandById.set(b.id, b);
+  }
   const brandLogos = await signImages(
     (brandsRes.data ?? [])
       .map((b) => (b as { logo_url?: string | null }).logo_url ?? null)
@@ -102,6 +132,8 @@ export async function fetchFeed(
       brandName: brand?.name ?? null,
       brandSlug: brand?.slug ?? null,
       brandCountry: (brand as { country?: string | null } | null)?.country ?? null,
+      brandTrustScore:
+        typeof brand?.trust_score === "number" ? brand.trust_score : null,
       brandLogoUrl: (() => {
         const logo = (brand as { logo_url?: string | null } | null)?.logo_url ?? null;
         if (!logo) return null;

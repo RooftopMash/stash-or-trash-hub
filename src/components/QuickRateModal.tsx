@@ -23,6 +23,7 @@ import {
 import coinIcon from "@/assets/icon-coin.png";
 import binIcon from "@/assets/icon-bin.png";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
+import { triggerVerdictSuccess } from "@/components/VerdictSuccess";
 import { useAuth } from "@/hooks/useAuth";
 import { createItem } from "@/lib/stash";
 import { toast } from "sonner";
@@ -162,6 +163,10 @@ export function QuickRateModal({
                 onClick={() => {
                   playStashSound();
                   setVerdict("stash");
+                  triggerVerdictSuccess({
+                    label: "STASH SELECTED!",
+                    sublabel: `${brandName} · Keep what serves you`,
+                  });
                 }}
                 className={`gap-2 font-bold ${verdict === "stash" ? "ring-2 ring-emerald-500 scale-[1.02]" : "opacity-60"}`}
               >

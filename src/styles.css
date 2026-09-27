@@ -560,3 +560,118 @@
   object-fit: contain;
   filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.35));
 }
+
+/* =========================================================================
+   VERDICT SUCCESS — GOLD-DUST & BLACK CELEBRATION ANIMATION
+   ========================================================================= */
+@keyframes verdict-gold-dust-burst {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.2) rotate(0deg);
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+    transform: translate3d(calc(var(--tx, 0px) * 0.35), calc(var(--ty, 0px) * 0.25 - 12px), 0) scale(1.35) rotate(60deg);
+  }
+  65% {
+    opacity: 0.95;
+    transform: translate3d(calc(var(--tx, 0px) * 0.88), calc(var(--ty, 0px) * 0.78), 0) scale(1) rotate(190deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--tx, 0px), calc(var(--ty, 0px) + 24px), 0) scale(0.15) rotate(320deg);
+  }
+}
+
+@keyframes verdict-shockwave {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.95;
+  }
+  70% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(2.85);
+    opacity: 0;
+  }
+}
+
+@keyframes verdict-crest-entrance {
+  0% {
+    transform: scale(0.72) translateY(16px);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(1.05) translateY(-2px);
+    opacity: 1;
+  }
+  28% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  84% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.94) translateY(-8px);
+    opacity: 0;
+  }
+}
+
+@keyframes verdict-aura-pulse {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.75;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.verdict-gold-dust-particle {
+  animation-name: verdict-gold-dust-burst;
+  animation-timing-function: cubic-bezier(0.16, 0.84, 0.32, 1);
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+
+.verdict-shockwave-ring {
+  animation: verdict-shockwave 1.15s cubic-bezier(0.16, 0.84, 0.32, 1) forwards;
+  box-shadow: 0 0 28px rgba(214, 169, 40, 0.65), inset 0 0 18px rgba(214, 169, 40, 0.35);
+}
+
+.verdict-shockwave-ring-delayed {
+  animation: verdict-shockwave 1.35s 0.12s cubic-bezier(0.16, 0.84, 0.32, 1) forwards;
+  opacity: 0;
+}
+
+.verdict-crest-pop {
+  animation: verdict-crest-entrance 2.35s cubic-bezier(0.2, 0.9, 0.25, 1) forwards;
+}
+
+.verdict-gold-aura {
+  background: radial-gradient(
+    circle at center,
+    rgba(214, 169, 40, 0.22) 0%,
+    rgba(11, 11, 15, 0.14) 42%,
+    transparent 72%
+  );
+  animation: verdict-aura-pulse 2.35s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict-gold-dust-particle,
+  .verdict-shockwave-ring,
+  .verdict-shockwave-ring-delayed {
+    animation: none;
+    opacity: 0;
+  }
+}
+

@@ -33,6 +33,7 @@ import coinIcon from "@/assets/icon-coin.png";
 import binIcon from "@/assets/icon-bin.png";
 import { cn } from "@/lib/utils";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
+import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
 import type { Verdict } from "@/lib/stash";
 import type { AiScanResult } from "@/lib/ai-scanner";
 import { toast } from "sonner";
@@ -293,7 +294,14 @@ export function SubmitDialog({
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="relative space-y-2 overflow-hidden rounded-xl">
+              <VerdictSuccess
+                active={verdict === "stash"}
+                inline
+                duration={1800}
+                label="STASH SELECTED!"
+                sublabel="Keep what serves you · Gold standard"
+              />
               <Label>{t("submit.verdict")}</Label>
               <div className="grid grid-cols-2 gap-3">
                 <Button
@@ -303,6 +311,10 @@ export function SubmitDialog({
                   onClick={() => {
                     playStashSound();
                     setVerdict("stash");
+                    triggerVerdictSuccess({
+                      label: "STASH VERDICT!",
+                      sublabel: "Keep what serves you · Gold standard selected",
+                    });
                   }}
                   className={cn(
                     "gap-2",

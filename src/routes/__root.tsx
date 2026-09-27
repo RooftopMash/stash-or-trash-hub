@@ -16,6 +16,7 @@ import { reportApplicationError } from "../lib/error-reporting";
 import { AuthProvider } from "@/hooks/useAuth";
 import { OfflineStatus } from "@/components/OfflineStatus";
 import { ProductionMonitoring } from "@/components/ProductionMonitoring";
+import { VerdictSuccess } from "@/components/VerdictSuccess";
 import { autoSeedFirestoreIfEmpty } from "@/lib/seedFirestore";
 import "@/lib/i18n";
 
@@ -148,6 +149,7 @@ function RootComponent() {
       <AuthProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
+        <VerdictSuccess listenGlobal />
         <Toaster position="top-center" richColors />
         <OfflineStatus />
         <ProductionMonitoring />

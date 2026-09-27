@@ -11,6 +11,7 @@ import coinIcon from "@/assets/icon-coin.png";
 import binIcon from "@/assets/icon-bin.png";
 import { cn } from "@/lib/utils";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
+import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
 
 /**
  * One-tap Stash / Trash on a brand itself. `compact` renders just the two
@@ -32,6 +33,7 @@ export function BrandVerdict({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [stashCelebration, setStashCelebration] = useState(false);
 
   const { data, refetch } = useQuery({
     queryKey: ["brand-verdict", brandId, user?.id ?? "anon"],
@@ -42,6 +44,13 @@ export function BrandVerdict({
   const pct = data?.stash_pct ?? 50;
 
   const vote = async (verdict: "stash" | "trash") => {
+    if (verdict === "stash" && mine !== "stash") {
+      setStashCelebration(true);
+      triggerVerdictSuccess({
+        label: `STASHED ${brandName.toUpperCase()}!`,
+        sublabel: "Keep what serves you · Brand gold verdict recorded",
+      });
+    }
     if (!user) {
       toast.info(t("vote.signInPrompt"));
       navigate({ to: "/auth" });
@@ -106,13 +115,32 @@ export function BrandVerdict({
     </div>
   );
 
-  if (compact) return <div className={className}>{buttons}</div>;
+  if (compact)
+    return (
+      <div className={cn("relative", className)}>
+        <VerdictSuccess
+          active={stashCelebration}
+          onComplete={() => setStashCelebration(false)}
+          inline
+          label="STASHED!"
+          sublabel="Keep what serves you"
+        />
+        {buttons}
+      </div>
+    );
 
   return (
     <section
-      className={cn("rounded-2xl border border-border bg-card p-5", className)}
+      className={cn("relative overflow-hidden rounded-2xl border border-border bg-card p-5", className)}
       aria-label={t("brand.verdictTitle", { brand: brandName })}
     >
+      <VerdictSuccess
+        active={stashCelebration}
+        onComplete={() => setStashCelebration(false)}
+        inline
+        label={`STASHED ${brandName.toUpperCase()}!`}
+        sublabel="Keep what serves you · Gold standard"
+      />
       <h2 className="font-display text-xl font-extrabold">
         {t("brand.verdictTitle", { brand: brandName })}
       </h2>

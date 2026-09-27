@@ -1,5 +1,4 @@
 import jsQR from "jsqr";
-import { BrowserMultiFormatReader } from "@zxing/library";
 
 const ZXING_FORMAT_NAMES: Record<number, string> = {
   0: "aztec",
@@ -17,13 +16,21 @@ const ZXING_FORMAT_NAMES: Record<number, string> = {
   15: "upc_e",
 };
 
-// Cache ZXing reader configured with retail 1D + 2D formats
-let cachedZxingReader: BrowserMultiFormatReader | null = null;
-function getZxingReader(): BrowserMultiFormatReader | null {
+type ZxingReaderLike = {
+  decodeFromCanvas: (canvas: HTMLCanvasElement) => {
+    getText: () => string;
+    getBarcodeFormat: () => number;
+  };
+};
+
+// Cache ZXing reader configured with retail 1D + 2D formats (loaded client-side only)
+let cachedZxingReader: ZxingReaderLike | null = null;
+async function getZxingReader(): Promise<ZxingReaderLike | null> {
   if (typeof window === "undefined") return null;
   if (!cachedZxingReader) {
     try {
-      cachedZxingReader = new BrowserMultiFormatReader();
+      const mod = await import("@zxing/library");
+      cachedZxingReader = new mod.BrowserMultiFormatReader() as unknown as ZxingReaderLike;
     } catch {
       // Fallback if reader fails to initialize
     }
@@ -98,7 +105,7 @@ export async function fileToOptimizedBase64(
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         let w = img.width;
         let h = img.height;
         if (w > maxDim || h > maxDim) {
@@ -125,7 +132,7 @@ export async function fileToOptimizedBase64(
         let barcodeData: string | null = null;
 
         try {
-          const zx = getZxingReader();
+          const zx = await getZxingReader();
           if (zx) {
             const zxRes = zx.decodeFromCanvas(canvas);
             if (zxRes && zxRes.getText()) {
@@ -184,7 +191,7 @@ export async function extractFrameFromVideo(
       video.currentTime = Math.min(1.0, video.duration > 0 ? video.duration / 4 : 0.5);
     };
 
-    video.onseeked = () => {
+    video.onseeked = async () => {
       try {
         const maxDim = 1280;
         let w = video.videoWidth || 640;
@@ -208,7 +215,7 @@ export async function extractFrameFromVideo(
         let barcodeData: string | null = null;
 
         try {
-          const zx = getZxingReader();
+          const zx = await getZxingReader();
           if (zx) {
             const zxRes = zx.decodeFromCanvas(canvas);
             if (zxRes && zxRes.getText()) {
@@ -311,7 +318,7 @@ export async function detectBarcodeOrQr(
 
   // 2. Fallback to ZXing MultiFormat Reader (handles 1D barcodes like Coca Cola UPC-A/EAN-13 everywhere)
   try {
-    const reader = getZxingReader();
+    const reader = await getZxingReader();
     if (reader) {
       let targetCanvas: HTMLCanvasElement | null = null;
 

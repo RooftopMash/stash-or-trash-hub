@@ -4,7 +4,7 @@ import type { FeedItem, Verdict } from "@/lib/stash";
 import { castVote, removeVote, deleteItem } from "@/lib/stash";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, Building2 } from "lucide-react";
+import { X, Building2, ArrowUp, ArrowDown } from "lucide-react";
 import coinIcon from "@/assets/icon-coin.png";
 import binIcon from "@/assets/icon-bin.png";
 import { cn } from "@/lib/utils";
@@ -17,27 +17,59 @@ import { CommentThread } from "@/components/CommentThread";
 import { PostText } from "@/components/PostText";
 import { AuditBadge } from "@/components/AuditBadge";
 import { BrandResponses } from "@/components/BrandResponses";
+import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 
 export function ItemCard({
   item,
   onChange,
   defaultCommentsOpen = false,
+  brandTrustScore,
+  sentimentTrend,
 }: {
   item: FeedItem;
   onChange: () => void;
   defaultCommentsOpen?: boolean;
+  brandTrustScore?: number | null;
+  sentimentTrend?: "up" | "down";
 }) {
   const { user } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(defaultCommentsOpen);
+  const [stashCelebration, setStashCelebration] = useState(false);
 
   const total = item.stashCount + item.trashCount;
   const stashPct = total === 0 ? 50 : Math.round((item.stashCount / total) * 100);
+  const resolvedTrust =
+    typeof brandTrustScore === "number"
+      ? brandTrustScore
+      : typeof item.brandTrustScore === "number"
+        ? item.brandTrustScore
+        : total > 0
+          ? stashPct
+          : null;
+  const resolvedTrend: "up" | "down" =
+    sentimentTrend ??
+    (item.stashCount !== item.trashCount
+      ? item.stashCount > item.trashCount
+        ? "up"
+        : "down"
+      : (resolvedTrust ?? 50) >= 60
+        ? "up"
+        : "down");
 
   const vote = async (verdict: Verdict) => {
+    if (verdict === "stash" && item.myVerdict !== "stash") {
+      setStashCelebration(true);
+      triggerVerdictSuccess({
+        label: "STASHED!",
+        sublabel: item.brandName
+          ? `${item.brandName} · Keep what serves you`
+          : "Keep what serves you · Gold standard verdict recorded",
+      });
+    }
     if (!user) {
       toast.info(t("vote.signInPrompt"));
       navigate({ to: "/auth" });
@@ -75,7 +107,14 @@ export function ItemCard({
   };
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-border bg-card">
+    <article className="relative overflow-hidden rounded-2xl border border-border bg-card">
+      <VerdictSuccess
+        active={stashCelebration}
+        onComplete={() => setStashCelebration(false)}
+        inline
+        label="STASHED!"
+        sublabel="Keep what serves you · Gold standard"
+      />
       {item.signedImageUrl ? (
         <Link to="/items/$id" params={{ id: item.id }}>
           <img
@@ -109,9 +148,36 @@ export function ItemCard({
                   <Link
                     to="/brands/$slug"
                     params={{ slug: item.brandSlug }}
-                    className="text-xs font-semibold text-primary hover:underline"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
                   >
-                    {item.brandName}
+                    <span>{item.brandName}</span>
+                    {resolvedTrust !== null && (
+                      <span
+                        title={
+                          resolvedTrend === "up"
+                            ? `${resolvedTrust}% trust score · Sentiment trending positively`
+                            : `${resolvedTrust}% trust score · Sentiment trending negatively`
+                        }
+                        aria-label={
+                          resolvedTrend === "up"
+                            ? `Trust score ${resolvedTrust} percent, trending positively`
+                            : `Trust score ${resolvedTrust} percent, trending negatively`
+                        }
+                        className={cn(
+                          "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-extrabold leading-none no-underline",
+                          resolvedTrend === "up"
+                            ? "bg-emerald-500/15 text-emerald-500"
+                            : "bg-rose-500/15 text-rose-500",
+                        )}
+                      >
+                        <span>{resolvedTrust}%</span>
+                        {resolvedTrend === "up" ? (
+                          <ArrowUp className="h-2.5 w-2.5 stroke-[2.75]" aria-hidden="true" />
+                        ) : (
+                          <ArrowDown className="h-2.5 w-2.5 stroke-[2.75]" aria-hidden="true" />
+                        )}
+                      </span>
+                    )}
                   </Link>
                 )}
                 {item.category && (

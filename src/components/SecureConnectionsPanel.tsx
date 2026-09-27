@@ -15,16 +15,20 @@ export function SecureConnectionsPanel({ userId }: { userId: string }) {
   const { data: connections = [] } = useQuery({
     queryKey: ["provider-connections", userId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("provider_connections" as never)
-        .select("provider,status,last_verified_at")
-        .eq("user_id", userId);
-      if (error) throw error;
-      return (data ?? []) as Array<{
-        provider: string;
-        status: string;
-        last_verified_at: string | null;
-      }>;
+      try {
+        const { data, error } = await supabase
+          .from("provider_connections" as never)
+          .select("provider,status,last_verified_at")
+          .eq("user_id", userId);
+        if (error) return [];
+        return (data ?? []) as Array<{
+          provider: string;
+          status: string;
+          last_verified_at: string | null;
+        }>;
+      } catch {
+        return [];
+      }
     },
     enabled: Boolean(userId),
   });

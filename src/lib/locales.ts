@@ -3,7 +3,7 @@ import type { PartialBundle } from "./locale-en";
 // Full UI translations. Any key omitted here falls back to English.
 export const translations: Record<string, PartialBundle> = {
   es: {
-    nav: { feed: "Inicio", brands: "Marcas", messages: "Mensajes", admin: "Admin", dashboard: "Panel", awards: "Premios", post: "Publicar", signIn: "Entrar", signOut: "Salir", profile: "Perfil" },
+    nav: { home: "Inicio", feed: "Muro", scan: "Escanear", brands: "Marcas", messages: "Mensajes", admin: "Admin", dashboard: "Panel", awards: "Premios", post: "Publicar", signIn: "Entrar", signUp: "Registrarse", signOut: "Salir", profile: "Perfil" },
     home: { subtitle: "El barómetro de marcas. Publica cualquier cosa sobre una marca y deja que la comunidad dé su veredicto en tiempo real: la señal de CX y RP que importa.", hook: "Cada veredicto acerca las marcas a las personas. Da el tuyo. 🔥", emptyTitle: "Todavía no hay nada que juzgar", emptyBodyUser: "Sé el primero: pulsa Publicar.", emptyBodyGuest: "Sé el primero: inicia sesión y publica algo." },
     engagement: { streak: "Racha de {{count}} días", today: "{{count}} hoy", total: "{{count}} en total", next: "{{count}} veredictos más para tu próxima insignia", topCritic: "Eres un crítico destacado: las marcas te escuchan. 👑" },
     vote: { stash: "Guardar", trash: "Tirar", noVotes: "Aún sin votos", stashPct: "{{pct}}% guardar", stashCount: "{{count}} guardar", trashCount: "{{count}} tirar", signInPrompt: "Inicia sesión para dar tu veredicto.", by: "por {{name}}", deletePost: "Eliminar publicación", deleted: "Eliminado.", voteFailed: "Error al votar.", deleteFailed: "Error al eliminar." },
@@ -17,7 +17,7 @@ export const translations: Record<string, PartialBundle> = {
     common: { cancel: "Cancelar", save: "Guardar", loading: "Cargando…" },
   },
   fr: {
-    nav: { feed: "Accueil", brands: "Marques", messages: "Messages", admin: "Admin", dashboard: "Tableau de bord", awards: "Prix", post: "Publier", signIn: "Connexion", signOut: "Déconnexion", profile: "Profil" },
+    nav: { home: "Accueil", feed: "Fil", scan: "Scanner", brands: "Marques", messages: "Messages", admin: "Admin", dashboard: "Tableau de bord", awards: "Prix", post: "Publier", signIn: "Connexion", signUp: "S'inscrire", signOut: "Déconnexion", profile: "Profil" },
     home: { subtitle: "Le baromètre des marques. Publiez ce que vous voulez sur une marque et laissez la communauté rendre son verdict en direct — le signal CX & RP qui compte.", hook: "Chaque verdict rapproche les marques de leurs clients. Donnez le vôtre. 🔥", emptyTitle: "Rien à juger pour l'instant", emptyBodyUser: "Soyez le premier — appuyez sur Publier.", emptyBodyGuest: "Soyez le premier — connectez-vous et publiez." },
     engagement: { streak: "Série de {{count}} jours", today: "{{count}} aujourd'hui", total: "{{count}} au total", next: "Encore {{count}} verdicts avant votre prochain badge", topCritic: "Vous êtes un critique de premier plan — les marques écoutent. 👑" },
     vote: { stash: "Garder", trash: "Jeter", noVotes: "Aucun vote", stashPct: "{{pct}} % garder", stashCount: "{{count}} garder", trashCount: "{{count}} jeter", signInPrompt: "Connectez-vous pour rendre votre verdict.", by: "par {{name}}", deletePost: "Supprimer la publication", deleted: "Supprimé.", voteFailed: "Échec du vote.", deleteFailed: "Échec de la suppression." },
@@ -31,7 +31,7 @@ export const translations: Record<string, PartialBundle> = {
     common: { cancel: "Annuler", save: "Enregistrer", loading: "Chargement…" },
   },
   de: {
-    nav: { feed: "Feed", brands: "Marken", messages: "Nachrichten", admin: "Admin", dashboard: "Dashboard", awards: "Awards", post: "Posten", signIn: "Anmelden", signOut: "Abmelden", profile: "Profil" },
+    nav: { home: "Start", feed: "Feed", scan: "Scannen", brands: "Marken", messages: "Nachrichten", admin: "Admin", dashboard: "Dashboard", awards: "Awards", post: "Posten", signIn: "Anmelden", signUp: "Registrieren", signOut: "Abmelden", profile: "Profil" },
     home: { subtitle: "Das Marken-Barometer. Poste alles über eine Marke und lass die Community in Echtzeit ihr Urteil fällen – das CX- und PR-Signal, das zählt.", hook: "Jedes Urteil bringt Marken näher an ihre Menschen. Gib deins ab. 🔥", emptyTitle: "Noch nichts zu bewerten", emptyBodyUser: "Sei die/der Erste – tippe auf Posten.", emptyBodyGuest: "Sei die/der Erste – melde dich an und poste etwas." },
     engagement: { streak: "{{count}}-Tage-Serie", today: "{{count}} heute", total: "{{count}} gesamt", next: "Noch {{count}} Urteile bis zum nächsten Abzeichen", topCritic: "Du bist Top-Kritiker – Marken hören zu. 👑" },
     vote: { stash: "Behalten", trash: "Wegwerfen", noVotes: "Noch keine Stimmen", stashPct: "{{pct}} % behalten", stashCount: "{{count}} behalten", trashCount: "{{count}} wegwerfen", signInPrompt: "Melde dich an, um dein Urteil abzugeben.", by: "von {{name}}", deletePost: "Beitrag löschen", deleted: "Gelöscht.", voteFailed: "Abstimmung fehlgeschlagen.", deleteFailed: "Löschen fehlgeschlagen." },
@@ -45,7 +45,7 @@ export const translations: Record<string, PartialBundle> = {
     common: { cancel: "Abbrechen", save: "Speichern", loading: "Lädt…" },
   },
   pt: {
-    nav: { feed: "Início", brands: "Marcas", messages: "Mensagens", admin: "Admin", dashboard: "Painel", awards: "Prémios", post: "Publicar", signIn: "Entrar", signOut: "Sair", profile: "Perfil" },
+    nav: { home: "Início", feed: "Feed", scan: "Digitalizar", brands: "Marcas", messages: "Mensagens", admin: "Admin", dashboard: "Painel", awards: "Prémios", post: "Publicar", signIn: "Entrar", signUp: "Registar", signOut: "Sair", profile: "Perfil" },
     home: { subtitle: "O barómetro das marcas. Publica qualquer coisa sobre uma marca e deixa a comunidade dar o veredicto em tempo real — o sinal de CX e RP que importa.", hook: "Cada veredicto aproxima as marcas das pessoas. Dá o teu. 🔥", emptyTitle: "Ainda não há nada para julgar", emptyBodyUser: "Sê o primeiro — toca em Publicar.", emptyBodyGuest: "Sê o primeiro — entra e publica algo." },
     engagement: { streak: "Sequência de {{count}} dias", today: "{{count}} hoje", total: "{{count}} no total", next: "Mais {{count}} veredictos para o próximo distintivo", topCritic: "És um crítico de topo — as marcas estão a ouvir. 👑" },
     vote: { stash: "Guardar", trash: "Deitar fora", noVotes: "Ainda sem votos", stashPct: "{{pct}}% guardar", stashCount: "{{count}} guardar", trashCount: "{{count}} deitar fora", signInPrompt: "Entra para dares o teu veredicto.", by: "por {{name}}", deletePost: "Eliminar publicação", deleted: "Eliminado.", voteFailed: "Falha ao votar.", deleteFailed: "Falha ao eliminar." },
@@ -227,7 +227,7 @@ export const translations: Record<string, PartialBundle> = {
     common: { cancel: "Ghairi", save: "Hifadhi", loading: "Inapakia…" },
   },
   zu: {
-    nav: { feed: "Ifidi", brands: "Amabhrendi", messages: "Imilayezo", admin: "Umlawuli", dashboard: "Ideshubhodi", awards: "Imiklomelo", post: "Thumela", signIn: "Ngena", signOut: "Phuma", profile: "Iphrofayela" },
+    nav: { home: "Ikhaya", feed: "Ifidi", scan: "Skena", brands: "Amabhrendi", messages: "Imilayezo", admin: "Umlawuli", dashboard: "Ideshubhodi", awards: "Imiklomelo", post: "Thumela", signIn: "Ngena", signUp: "Bhalisa", signOut: "Phuma", profile: "Iphrofayela" },
     home: { subtitle: "Isikali samabhrendi. Thumela noma yini ngebhrendi bese uvumela umphakathi unikeze isinqumo sawo ngesikhathi sangempela — uphawu lwe-CX ne-PR olubalulekile.", hook: "Sonke isinqumo siletha amabhrendi eduze nabantu. Nikeza esakho. 🔥", emptyTitle: "Ayikho into yokwahlulela okwamanje", emptyBodyUser: "Yiba owokuqala — cindezela u-Thumela.", emptyBodyGuest: "Yiba owokuqala — ngena bese uthumela." },
     engagement: { streak: "Uchungechunge lwezinsuku ezingu-{{count}}", today: "{{count}} namuhla", total: "{{count}} sekukonke", next: "Izinqumo ezingu-{{count}} ukuze uthole ibheji elilandelayo", topCritic: "Ungumhluzi ophezulu — amabhrendi ayalalela. 👑" },
     vote: { stash: "Gcina", trash: "Lahla", noVotes: "Awekho amavoti okwamanje", stashPct: "{{pct}}% gcina", stashCount: "{{count}} gcina", trashCount: "{{count}} lahla", signInPrompt: "Ngena ukuze unikeze isinqumo sakho.", by: "ngu-{{name}}", deletePost: "Susa okuthunyelwe", deleted: "Kususiwe.", voteFailed: "Ukuvota kwehlulekile.", deleteFailed: "Ukususa kwehlulekile." },
@@ -241,7 +241,7 @@ export const translations: Record<string, PartialBundle> = {
     common: { cancel: "Khansela", save: "Londoloza", loading: "Iyalayisha…" },
   },
   xh: {
-    nav: { feed: "Ifidi", brands: "Iimpawu", messages: "Imiyalezo", admin: "Umlawuli", dashboard: "Ideshbhodi", awards: "Amabhaso", post: "Thumela", signIn: "Ngena", signOut: "Phuma", profile: "Iprofayile" },
+    nav: { home: "Ikhaya", feed: "Ifidi", scan: "Skena", brands: "Iimpawu", messages: "Imiyalezo", admin: "Umlawuli", dashboard: "Ideshbhodi", awards: "Amabhaso", post: "Thumela", signIn: "Ngena", signUp: "Bhalisa", signOut: "Phuma", profile: "Iprofayile" },
     home: { subtitle: "Isikali seempawu. Thumela nantoni na ngempawu uze uvumele uluntu lunike isigwebo salo ngoko nangoko.", hook: "Sonke isigwebo sisondeza iimpawu ebantwini. Nika esakho. 🔥", emptyTitle: "Akukho nto yokugweba okwangoku", emptyBodyUser: "Yiba ngowokuqala — cofa uThumela.", emptyBodyGuest: "Yiba ngowokuqala — ngena uze uthumele." },
     engagement: { streak: "Ulandelelwano lweentsuku ezingu-{{count}}", today: "{{count}} namhlanje", total: "{{count}} iyonke", next: "Ezinye izigwebo ezingu-{{count}} ukuya kwibheji elandelayo", topCritic: "Ungumhlalutyi ophezulu — iimpawu ziyaphulaphula. 👑" },
     vote: { stash: "Gcina", trash: "Lahla", noVotes: "Akukho zivoti", stashPct: "{{pct}}% gcina", stashCount: "{{count}} gcina", trashCount: "{{count}} lahla", signInPrompt: "Ngena ukuze unike isigwebo sakho.", by: "ngu-{{name}}", deletePost: "Cima iposti", deleted: "Kucinyiwe.", voteFailed: "Ukuvota kusilele.", deleteFailed: "Ukucima kusilele." },
@@ -255,7 +255,7 @@ export const translations: Record<string, PartialBundle> = {
     common: { cancel: "Rhoxisa", save: "Gcina", loading: "Iyalayisha…" },
   },
   st: {
-    nav: { feed: "Phepha", brands: "Diteko", messages: "Melaetsa", admin: "Molaodi", dashboard: "Laeboto", awards: "Dikgau", post: "Phatlalatsa", signIn: "Kena", signOut: "Tswa", profile: "Boemo" },
+    nav: { home: "Lapeng", feed: "Phepha", scan: "Skena", brands: "Diteko", messages: "Melaetsa", admin: "Molaodi", dashboard: "Laeboto", awards: "Dikgau", post: "Phatlalatsa", signIn: "Kena", signUp: "Ngodisa", signOut: "Tswa", profile: "Boemo" },
     home: { subtitle: "Sekgahla sa diteko. Phatlalatsa eng kapa eng ka teko mme o lumelle setjhaba se fane ka kahlolo hang-hang.", hook: "Kahlolo e nngwe le e nngwe e atametsa diteko ho batho. Fana ka ya hao. 🔥", emptyTitle: "Ha ho letho la ho ahlola hajwale", emptyBodyUser: "Eba wa pele — tobetsa Phatlalatsa.", emptyBodyGuest: "Eba wa pele — kena mme o phatlalatse." },
     engagement: { streak: "Letoto la matsatsi a {{count}}", today: "{{count}} kajeno", total: "{{count}} kakaretso", next: "Dikahlolo tse ding tse {{count}} ho fihlela betjhe e latelang", topCritic: "O mohlahlobi ya hodimo — diteko di a mamela. 👑" },
     vote: { stash: "Boloka", trash: "Lahla", noVotes: "Ha ho divoutu", stashPct: "{{pct}}% boloka", stashCount: "{{count}} boloka", trashCount: "{{count}} lahla", signInPrompt: "Kena ho fana ka kahlolo ya hao.", by: "ka {{name}}", deletePost: "Hlakola poso", deleted: "E hlakotswe.", voteFailed: "Ho vouta ho hlolehile.", deleteFailed: "Ho hlakola ho hlolehile." },

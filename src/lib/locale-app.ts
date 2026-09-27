@@ -1,3 +1,21 @@
+export interface AppLocaleDefinition {
+  code: "en" | "es" | "fr" | "zu" | "xh" | "st" | "de" | "pt";
+  label: string;
+  native: string;
+  short: string;
+}
+
+export const APP_SUPPORTED_LOCALES: AppLocaleDefinition[] = [
+  { code: "en", label: "English", native: "English", short: "EN" },
+  { code: "es", label: "Spanish", native: "Español", short: "ES" },
+  { code: "fr", label: "French", native: "Français", short: "FR" },
+  { code: "zu", label: "Zulu", native: "isiZulu", short: "ZU" },
+  { code: "xh", label: "Xhosa", native: "isiXhosa", short: "XH" },
+  { code: "st", label: "Sesotho", native: "Sesotho", short: "ST" },
+  { code: "de", label: "German", native: "Deutsch", short: "DE" },
+  { code: "pt", label: "Portuguese", native: "Português", short: "PT" },
+];
+
 export const appTranslations: Record<
   string,
   {
@@ -6,9 +24,50 @@ export const appTranslations: Record<
     scanner?: Record<string, string>;
   }
 > = {
+  en: {
+    hero: {
+      badge: "The Brand Barometer",
+      headlineBlack: "Keep what serves you.",
+      headlineGold: "Challenge what does not.",
+      subtitle: "Vote Stash or Trash on your real brand experiences — the CX & PR signal that matters.",
+      tagline: "Every verdict brings brands closer to the people they serve. Cast yours. 🔥",
+      spinningZwepe: "Spinning Zwepe... watching it lean, chatter and settle flat!",
+      droppingBin: "Dropping into the wheelie bin... clatter and bang!",
+      tapCoin: "Tap the Gold Coin to view Stashes",
+      tapBin: "Tap the Bin to view Trashes",
+      allTiers: "All tiers",
+      superBrands: "Super Brands",
+      nationalPowerhouses: "National Powerhouses",
+      emergingChallengers: "Emerging Challengers",
+      localHeroes: "Local Heroes",
+      sortBy: "Sort by",
+      trustScore: "Trust score",
+      brandTier: "Brand tier",
+      alphabetical: "Alphabetical",
+      liveSentiment: "Live Sentiment Across Brands",
+      liveSentimentDesc: "Real consumer verdicts shaping trust scores in real time.",
+      searchOrBrowse: "Search brands or browse below",
+      gettingStashed: "What's getting stashed",
+      gettingTrashed: "What's getting trashed",
+      sotAwards: "The SOT Awards",
+      crowningBrand: "Crowning the year's most trusted brand",
+      seeStandings: "See live standings",
+      prTeamClaim: "PR & Brand Teams: Claim your page",
+      prTeamDesc: "Monitor sentiment, respond to customer verdicts, and earn verified status.",
+      goToDashboard: "Go to Dashboard",
+      joinConversation: "Join the conversation",
+      realPeopleVerdicts: "Real people. Real verdicts. Zero paywalls.",
+      exploreFeed: "Explore Feed",
+      scanProduct: "Scan a Product",
+      stashes: "Stashes",
+      trashes: "Trashes",
+    },
+  },
   es: {
     hero: {
       badge: "El Barómetro de Marcas",
+      headlineBlack: "Conserva lo que te sirve.",
+      headlineGold: "Cuestiona lo que no.",
       subtitle: "Vota Guardar o Tirar según tus experiencias reales — la señal de CX y RP que importa.",
       tagline: "Cada veredicto acerca las marcas a las personas a las que sirven. Da el tuyo. 🔥",
       spinningZwepe: "¡Girando la moneda Zwepe... viendo cómo rueda y cae plana!",
@@ -116,6 +175,8 @@ export const appTranslations: Record<
   fr: {
     hero: {
       badge: "Le Baromètre des Marques",
+      headlineBlack: "Gardez ce qui vous sert.",
+      headlineGold: "Défiez ce qui ne vous sert pas.",
       subtitle: "Votez Garder ou Jeter selon vos expériences réelles — le signal CX & RP qui compte.",
       tagline: "Chaque verdict rapproche les marques des personnes qu'elles servent. Donnez le vôtre. 🔥",
       spinningZwepe: "La pièce Zwepe tourne... elle vacille et s'arrête à plat !",
@@ -223,6 +284,8 @@ export const appTranslations: Record<
   zu: { // isiZulu (South Africa)
     hero: {
       badge: "Isikali Semikhiqizo Namabhrendi",
+      headlineBlack: "Gcina okukusebenzelayo.",
+      headlineGold: "Phonsela inselelo okungakusebenzeli.",
       subtitle: "Vota uGcina noma uLahla kokuhlangenwe nakho kwakho kwamabhrendi — isignali ye-CX ne-PR ebalulekile.",
       tagline: "Sonke isinqumo siletha amabhrendi eduze nabantu abawasebenzelayo. Nikeza esakho. 🔥",
       spinningZwepe: "Iphenduka i-Zwepe... iyaphenduka ize ihlale phansi!",
@@ -330,6 +393,8 @@ export const appTranslations: Record<
   xh: { // isiXhosa (South Africa)
     hero: {
       badge: "Isikali Seempawu Zorhwebo",
+      headlineBlack: "Gcina okukusebenzelayo.",
+      headlineGold: "Cela umngeni kokungakusebenzeliyo.",
       subtitle: "Vota Gcina okanye Lahla ngokwamava akho neempawu — isiginali ebalulekileyo ye-CX ne-PR.",
       tagline: "Sonke isigwebo sisondeza iimpawu ebantwini ezibancedayo. Nika esakho. 🔥",
       spinningZwepe: "Iyajikeleza i-Zwepe... ijikeleza ide ime ngqo!",
@@ -437,6 +502,8 @@ export const appTranslations: Record<
   af: { // Afrikaans (South Africa)
     hero: {
       badge: "Die Handelsmerk-Barometer",
+      headlineBlack: "Hou wat jou dien.",
+      headlineGold: "Daag uit wat nie werk nie.",
       subtitle: "Stem Hou of Gooi weg op grond van jou ware ervarings — die kliëntediens- en PR-sein wat tel.",
       tagline: "Elke oordeel bring handelsmerke nader aan die mense wat hulle bedien. Lewer joune. 🔥",
       spinningZwepe: "Die Zwepe-munt draai... kyk hoe kantel en lê hy plat!",
@@ -544,6 +611,8 @@ export const appTranslations: Record<
   st: { // Sesotho (South Africa / Lesotho)
     hero: {
       badge: "Sekala sa Diteko tsa Mabrande",
+      headlineBlack: "Boloka se o sebeletsang.",
+      headlineGold: "Phepetsa se sa o sebeletseng.",
       subtitle: "Voutela Boloka kapa Lahla mabapi le boiphihlelo ba hao ba nnete — letshwao la CX le PR le bohlokwa.",
       tagline: "Kahlolo e nngwe le e nngwe e atametsa mabrande ho batho ba a sebeletsang. Fana ka ya hao. 🔥",
       spinningZwepe: "Tshelete ya Zwepe e a potoloha... e a sisinyeha e be e sekama!",
@@ -651,6 +720,8 @@ export const appTranslations: Record<
   de: { // Deutsch
     hero: {
       badge: "Das Marken-Barometer",
+      headlineBlack: "Behalte, was dir dient.",
+      headlineGold: "Hinterfrage, was es nicht tut.",
       subtitle: "Stimme Behalten oder Wegwerfen basierend auf deinen echten Erfahrungen ab — das entscheidende CX- & PR-Signal.",
       tagline: "Jedes Urteil bringt Marken näher an ihre Menschen. Gib deins ab. 🔥",
       spinningZwepe: "Die Zwepe-Münze dreht sich... sie taumelt und bleibt flach liegen!",
@@ -758,6 +829,8 @@ export const appTranslations: Record<
   pt: { // Português
     hero: {
       badge: "O Barómetro das Marcas",
+      headlineBlack: "Guarda o que te serve.",
+      headlineGold: "Desafia o que não serve.",
       subtitle: "Vota Guardar ou Deitar fora com base nas tuas experiências reais — o sinal de CX e RP que importa.",
       tagline: "Cada veredicto aproxima as marcas das pessoas. Dá o teu. 🔥",
       spinningZwepe: "A rodar a moeda Zwepe... a oscilar até ficar lisa!",

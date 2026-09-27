@@ -14,6 +14,7 @@ import {
   compareBrandTiers,
 } from "@/lib/brandTiers";
 import { BrandLogo } from "@/components/BrandLogo";
+import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
 import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import { cn } from "@/lib/utils";
 import coinIcon from "@/assets/icon-coin.png";
@@ -112,6 +113,11 @@ export function SotHomeHero() {
   const handleCoinClick = () => {
     playCoinSpinSound();
     setActiveObject("coin");
+    triggerVerdictSuccess({
+      label: "STASHED!",
+      sublabel: "Keep what serves you · Loading Stashes of the Day",
+      duration: 2600,
+    });
     setStatusMessage(t("hero.spinningZwepe", { defaultValue: "Spinning Zwepe... watching it lean, chatter and settle flat!" }));
     window.setTimeout(() => {
       navigate({ to: "/feed", search: { filter: "stash" } });
@@ -145,32 +151,48 @@ export function SotHomeHero() {
   };
 
   return (
-    <section className="relative isolate overflow-hidden border-b border-slate-200 bg-white text-slate-950">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.06]">
+    <section className="relative isolate overflow-hidden border-b-2 border-[#d6a928]/30 bg-white text-slate-950">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.08]">
         <div className="absolute left-[10%] top-8 h-72 w-72 rounded-full border-[20px] border-[#d6a928]" />
-        <div className="absolute right-[12%] top-16 h-60 w-48 rotate-6 rounded-[2.5rem] border-[14px] border-slate-500" />
+        <div className="absolute right-[12%] top-16 h-60 w-48 rotate-6 rounded-[2.5rem] border-[14px] border-slate-900" />
       </div>
 
       <div className="relative mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:py-16">
-        {/* Top Header Text */}
+        {/* Top Header Text: Signature Black & Gold Two-Tone Contrast */}
         <div className="mx-auto max-w-3xl text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3.5 py-1 text-xs font-extrabold uppercase tracking-[0.18em] text-slate-700">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#d6a928]/50 bg-slate-950 px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.18em] text-[#f5d061] shadow-sm">
             <Coins className="h-3.5 w-3.5 text-[#d6a928]" aria-hidden="true" />
             <span>{t("hero.badge", { defaultValue: "The Brand Barometer" })}</span>
           </div>
-          <h1 className="mt-5 font-display text-4xl font-black tracking-tight sm:text-6xl">
-            {t("hero.subtitle", { defaultValue: "Vote Stash or Trash on your real brand experiences" })}
+
+          <h1 className="mt-5 font-display text-4xl font-black tracking-tight sm:text-6xl leading-[1.08]">
+            <span className="block text-slate-950">
+              {t("hero.headlineBlack", { defaultValue: "Keep what serves you." })}
+            </span>
+            <span className="mt-1 block text-[#d6a928] drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]">
+              {t("hero.headlineGold", { defaultValue: "Challenge what does not." })}
+            </span>
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
+
+          <p className="mx-auto mt-4 max-w-2xl text-base font-bold leading-7 text-slate-900 sm:text-lg">
+            {t("hero.subtitle", { defaultValue: "Vote Stash or Trash on your real brand experiences — the CX & PR signal that matters." })}
+          </p>
+          <p className="mx-auto mt-1.5 max-w-xl text-sm font-medium leading-6 text-slate-600 sm:text-base">
             {t("hero.tagline", { defaultValue: "Every verdict brings brands closer to the people they serve. Cast yours. 🔥" })}
           </p>
         </div>
 
-        {/* Hero Interactive Objects: South African Spinning Coin & Solid Metallic Dustbin */}
+        {/* Hero Interactive Objects: South African Spinning Coin (Left) & Randy Hungry Trash Can (Right) */}
         <div className="flex min-h-[320px] items-center justify-center lg:min-h-[400px]">
           <div className="mx-auto grid w-full max-w-4xl gap-8 sm:grid-cols-2 lg:max-w-4xl">
-            {/* Left Object: Stash Coin */}
-            <div className="group relative flex flex-col items-center rounded-3xl border border-slate-200/80 bg-gradient-to-b from-amber-50/40 to-white p-6 shadow-sm transition hover:border-[#d6a928]/60 hover:shadow-md">
+            {/* Left Object: Stash Gold Coin */}
+            <div className="group relative flex flex-col items-center overflow-hidden rounded-3xl border-2 border-[#d6a928]/60 bg-gradient-to-b from-[#fffbeb] via-amber-50/40 to-white p-6 shadow-[0_12px_32px_-12px_rgba(214,169,40,0.35)] transition hover:border-[#d6a928] hover:shadow-[0_18px_40px_-10px_rgba(214,169,40,0.5)]">
+              <VerdictSuccess
+                active={activeObject === "coin"}
+                inline
+                label="STASHED!"
+                sublabel="Keep what serves you · Gold standard"
+              />
               <button
                 type="button"
                 aria-label={t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })}
@@ -181,18 +203,18 @@ export function SotHomeHero() {
                     window.setTimeout(() => setActiveObject(null), 2900);
                   }
                 }}
-                className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6a928]/60 rounded-2xl p-2 cursor-pointer"
+                className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6a928] rounded-2xl p-2 cursor-pointer"
               >
                 <div className="relative flex h-60 w-full items-center justify-center sm:h-72 [perspective:900px]">
                   {/* Tabletop contact surface shadow synchronized with Zwepe spin */}
                   <div
                     className={cn(
-                      "sot-coin-shadow absolute bottom-5 h-8 w-44 rounded-full bg-slate-950/25 blur-md pointer-events-none",
+                      "sot-coin-shadow absolute bottom-5 h-8 w-44 rounded-full bg-slate-950/30 blur-md pointer-events-none",
                       activeObject === "coin" && "sot-object-active",
                     )}
                   />
 
-                  {/* The very same original South African coin icon: spins upright on edge & precesses flat */}
+                  {/* Original South African coin icon: spins upright on edge & precesses flat */}
                   <img
                     src={coinIcon}
                     alt="$OrT South African spinning gold coin"
@@ -209,72 +231,26 @@ export function SotHomeHero() {
                 <Link
                   to="/feed"
                   search={{ filter: "stash" }}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#d6a928] px-5 py-2 text-xs font-black uppercase tracking-wider text-black shadow-sm transition hover:bg-[#c4981e] hover:shadow-md"
+                  onClick={() =>
+                    triggerVerdictSuccess({
+                      label: "STASHES OF THE DAY",
+                      sublabel: "Keep what serves you · Community Gold Standard",
+                    })
+                  }
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-slate-950 bg-[#d6a928] px-5 py-2 text-xs font-black uppercase tracking-wider text-slate-950 shadow-[0_4px_0_0_#0a0a0c] transition hover:bg-[#e3b634] active:translate-y-0.5"
                 >
                   <Coins className="h-4 w-4" />
                   {t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })} ({totalStashes})
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
-                <p className="text-xs font-medium text-slate-500">
-                  {t("hero.tapCoin", { defaultValue: "Tap the Gold Coin to view Stashes" })}
+                <p className="text-xs font-bold text-slate-700">
+                  {t("hero.tapCoin", { defaultValue: "Tap the Gold Coin to spin & view Stashes" })}
                 </p>
               </div>
             </div>
 
             {/* Right Object: Randy The Hungry Trash Can with eager chomping lid */}
-            <div className="group relative flex flex-col items-center rounded-3xl border border-slate-200/80 bg-gradient-to-b from-slate-50 to-white p-6 shadow-sm transition hover:border-slate-400 hover:shadow-md">
-              <button
-                type="button"
-                aria-label={t("feed.trashesOfDay", { defaultValue: "Trashes of the Day" })}
-                onClick={handleTrashClick}
-                onMouseEnter={() => {
-                  if (activeObject !== "bin") {
-                    setActiveObject("bin");
-                    window.setTimeout(() => setActiveObject(null), 1200);
-                  }
-                }}
-                className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 rounded-2xl p-2 cursor-pointer"
-              >
-                <div className="relative flex h-60 w-full items-center justify-center sm:h-72 [perspective:900px]">
-                  {/* Tabletop contact surface shadow synchronized with Zwepe spin */}
-                  <div
-                    className={cn(
-                      "sot-coin-shadow absolute bottom-5 h-8 w-44 rounded-full bg-slate-950/25 blur-md pointer-events-none",
-                      activeObject === "coin" && "sot-object-active",
-                    )}
-                  />
-
-                  {/* The very same original South African coin icon: spins upright on edge & precesses flat */}
-                  <img
-                    src={coinIcon}
-                    alt="$OrT South African spinning gold coin"
-                    className={cn(
-                      "sot-coin-art relative z-10 w-full max-w-[210px] sm:max-w-[250px] drop-shadow-md transition-transform group-hover:scale-105",
-                      activeObject === "coin" && "sot-object-active",
-                    )}
-                  />
-                </div>
-                <span className="sr-only">Spin coin for Stashes of the Day</span>
-              </button>
-
-              <div className="mt-3 flex flex-col items-center gap-1.5 text-center">
-                <Link
-                  to="/feed"
-                  search={{ filter: "stash" }}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#d6a928] px-5 py-2 text-xs font-black uppercase tracking-wider text-black shadow-sm transition hover:bg-[#c4981e] hover:shadow-md"
-                >
-                  <Coins className="h-4 w-4" />
-                  Stashes of the Day ({totalStashes})
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-                <p className="text-xs font-medium text-slate-500">
-                  Click the coin to spin on flat surface until flat
-                </p>
-              </div>
-            </div>
-
-            {/* Right Object: Randy The Hungry Trash Can with eager chomping lid */}
-            <div className="group relative flex flex-col items-center rounded-3xl border border-slate-200/80 bg-gradient-to-b from-slate-50 to-white p-6 shadow-sm transition hover:border-slate-400 hover:shadow-md">
+            <div className="group relative flex flex-col items-center rounded-3xl border-2 border-slate-900/25 bg-gradient-to-b from-slate-100/90 via-slate-50/50 to-white p-6 shadow-[0_12px_32px_-12px_rgba(15,23,42,0.22)] transition hover:border-slate-950 hover:shadow-[0_18px_40px_-10px_rgba(15,23,42,0.35)]">
               <button
                 type="button"
                 aria-label="Slam trash can for Trashes of the Day"
@@ -285,7 +261,7 @@ export function SotHomeHero() {
                     window.setTimeout(() => setActiveObject(null), 1200);
                   }
                 }}
-                className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 rounded-2xl p-2 cursor-pointer"
+                className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 rounded-2xl p-2 cursor-pointer"
               >
                 <div className="relative flex h-60 w-full items-center justify-center sm:h-72">
                   <div className="randy-can-stage relative flex items-center justify-center h-56 w-44 sm:h-64 sm:w-52">
@@ -410,11 +386,11 @@ export function SotHomeHero() {
                   className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-xs font-black uppercase tracking-wider text-white shadow-sm transition hover:bg-slate-800 hover:shadow-md"
                 >
                   <Recycle className="h-4 w-4" />
-                  Trashes of the Day ({totalTrashes})
+                  {t("feed.trashesOfDay", { defaultValue: "Trashes of the Day" })} ({totalTrashes})
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
                 <p className="text-xs font-medium text-slate-500">
-                  Click the trash can to slam &amp; review public callouts
+                  {t("hero.tapBin", { defaultValue: "Click the trash can to slam & review public callouts" })}
                 </p>
               </div>
             </div>
@@ -429,23 +405,7 @@ export function SotHomeHero() {
           </div>
         )}
 
-        {/* Bouncy SOrT text (KEPT EXACTLY AS REQUESTED) */}
-        <div
-          aria-hidden="true"
-          className="relative flex justify-center gap-4 overflow-hidden pt-4 pb-2 text-5xl font-black leading-none sm:gap-8 sm:text-7xl"
-        >
-          {cascade.map(({ letter, className }, index) => (
-            <span
-              key={`${letter}-${index}`}
-              className={`${className} sot-letter-cascade`}
-              style={{ animationDelay: `${index * 180}ms` }}
-            >
-              {letter}
-            </span>
-          ))}
-        </div>
-
-        {/* LIVE RESULTS & DATA BELOW THE BOUNCY SOrT */}
+        {/* LIVE RESULTS & DATA */}
         <div className="mx-auto w-full max-w-5xl rounded-3xl border border-slate-200 bg-slate-50/70 p-6 shadow-sm sm:p-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2.5">
@@ -721,6 +681,22 @@ export function SotHomeHero() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Cascading SOrT at the bottom of the home page */}
+        <div
+          aria-hidden="true"
+          className="relative flex justify-center gap-4 overflow-hidden pt-4 pb-2 text-5xl font-black leading-none sm:gap-8 sm:text-7xl"
+        >
+          {cascade.map(({ letter, className }, index) => (
+            <span
+              key={`${letter}-${index}`}
+              className={`${className} sot-letter-cascade`}
+              style={{ animationDelay: `${index * 180}ms` }}
+            >
+              {letter}
+            </span>
+          ))}
         </div>
       </div>
     </section>

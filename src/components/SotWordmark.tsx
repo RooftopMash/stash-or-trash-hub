@@ -18,15 +18,15 @@ export function SotWordmark({
     <span
       aria-label="Stash Or Trash"
       className={cn(
-        "font-display font-extrabold tracking-tight text-foreground",
+        "inline-flex items-baseline whitespace-nowrap font-display font-extrabold tracking-tight text-foreground",
         sizeClass,
         className,
       )}
     >
       <span className="text-stash">S</span>
-      <span>tash </span>
+      <span>tash&nbsp;</span>
       <span className="text-foreground">O</span>
-      <span>r </span>
+      <span>r&nbsp;</span>
       <span className="text-trash">T</span>
       <span>rash</span>
     </span>

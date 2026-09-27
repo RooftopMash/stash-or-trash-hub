@@ -8,8 +8,8 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { Button } from "@/components/ui/button";
 import { SubmitDialog } from "@/components/SubmitDialog";
 import { ProductScannerModal } from "@/components/ProductScannerModal";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Bell, MessageCircle, Shield, Scan } from "lucide-react";
+import { LanguageSwitcher, TopLanguageStrip } from "@/components/LanguageSwitcher";
+import { Bell, LayoutDashboard, MessageCircle, Shield, Scan } from "lucide-react";
 import { SotWordmark } from "@/components/SotWordmark";
 import type { AiScanResult } from "@/lib/ai-scanner";
 
@@ -49,89 +49,98 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
   return (
     <header
       suppressHydrationWarning
-      className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl"
+      className="sticky top-0 z-40 w-full border-b border-border/70 bg-background/95 backdrop-blur-xl"
     >
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-        <div className="flex items-center gap-6">
-          <Link to="/" className="group flex items-center gap-2">
+      {/* Top Language Switcher Strip for supported locales in src/lib/locale-app.ts */}
+      <TopLanguageStrip />
+
+      {/* Expanded Full-Width Main Navbar — single-line, zero wrapping on Stash Or Trash */}
+      <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 flex-1 items-center gap-4 lg:gap-8">
+          <Link to="/" className="group flex shrink-0 items-center gap-2.5 whitespace-nowrap">
             <span
               aria-label="SOrT — Stash Or Trash logo"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foreground text-sm font-extrabold tracking-[-0.12em] text-background shadow-sm transition-transform group-hover:scale-110 group-hover:rotate-3"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-extrabold tracking-[-0.12em] text-background shadow-sm transition-transform group-hover:scale-105"
             >
               <span className="text-stash">S</span>
               <span>O</span>
               <span className="text-trash">r</span>
               <span>T</span>
             </span>
-            <span className="hidden sm:inline">
-              <SotWordmark className="text-xl" />
-            </span>
+            <SotWordmark className="text-lg sm:text-xl whitespace-nowrap" />
           </Link>
-          <nav className="flex items-center gap-1 text-sm font-medium">
+
+          <nav className="flex items-center gap-1 overflow-x-auto text-sm font-semibold no-scrollbar sm:gap-1.5 lg:gap-2">
             <Link
               to="/"
-              className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
             >
               {t("nav.home", { defaultValue: "Home" })}
             </Link>
             <Link
               to="/feed"
-              className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
             >
               {t("nav.feed", { defaultValue: "Feed" })}
             </Link>
             <Link
               to="/scan"
-              className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground flex items-center gap-1"
+              className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
             >
-              <Scan className="h-3.5 w-3.5 text-primary" /> {t("nav.scan", { defaultValue: "Scan" })}
+              <Scan className="h-3.5 w-3.5 shrink-0 text-[#d6a928]" />
+              <span>{t("nav.scan", { defaultValue: "Scan" })}</span>
             </Link>
             <Link
               to="/brands"
-              className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
             >
               {t("nav.brands", { defaultValue: "Brands" })}
             </Link>
             <Link
               to="/awards"
-              className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
             >
               {t("nav.awards", { defaultValue: "Awards" })}
             </Link>
-            {user && (isBrand || isAdmin) && (
-              <Link
-                to="/dashboard"
-                className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
-              >
-                {t("nav.dashboard", { defaultValue: "Dashboard" })}
-              </Link>
-            )}
+            <Link
+              to="/dashboard"
+              className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+            >
+              <LayoutDashboard className="h-3.5 w-3.5 shrink-0 text-[#d6a928]" />
+              <span>{t("nav.dashboard", { defaultValue: "Dashboard" })}</span>
+            </Link>
             {user && (
               <Link
                 to="/profile"
-                className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground"
+                className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
               >
                 {t("nav.profile", { defaultValue: "Profile" })}
+              </Link>
+            )}
+            {user && isAdmin && (
+              <Link
+                to="/admin"
+                className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              >
+                {t("nav.admin", { defaultValue: "Admin" })}
               </Link>
             )}
           </nav>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <LanguageSwitcher />
-
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setScannerOpen(true)}
-            className="gap-1.5 text-xs font-semibold border-primary/30 text-primary hover:bg-primary/5 flex items-center px-2.5 sm:px-3"
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap border-[#d6a928]/50 px-2.5 text-xs font-bold text-foreground hover:bg-[#d6a928]/10 sm:px-3"
             title="Scan Product Barcodes or Logos for Authenticity"
           >
-            <Scan className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{t("nav.scan", { defaultValue: "Scan" })}</span>
+            <Scan className="h-3.5 w-3.5 text-[#d6a928]" />
+            <span className="hidden md:inline">{t("nav.scan", { defaultValue: "Scan" })}</span>
           </Button>
 
-          {/* Authenticity & Safety Shield Icon — permanently positioned next to Notification Bell */}
+          {/* Authenticity & Safety Shield Icon */}
           <Button
             variant="ghost"
             size="icon"
@@ -149,20 +158,20 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               isAdmin || user?.email?.toLowerCase() === "borulelo@gmail.com"
                 ? "Admin & Brand Verification Portal"
                 : isBrand
-                ? "Brand Dashboard & Safety Shield"
-                : "Brand Authenticity & Safety Shield"
+                  ? "Brand Dashboard & Safety Shield"
+                  : "Brand Authenticity & Safety Shield"
             }
-            className="relative text-foreground hover:text-primary transition-colors"
+            className="relative shrink-0 text-foreground transition-colors hover:text-primary"
           >
-            <Shield className="h-4 w-4 text-stash" />
+            <Shield className="h-4 w-4 text-[#d6a928]" />
           </Button>
 
           {loading ? null : user ? (
-            <>
+            <div className="flex shrink-0 items-center gap-1.5">
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative"
+                className="relative shrink-0"
                 onClick={() => navigate({ to: "/notifications" })}
                 aria-label={t("social.notifications", { defaultValue: "Notifications" })}
                 title={t("social.notifications", { defaultValue: "Notifications" })}
@@ -177,7 +186,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative"
+                className="relative shrink-0"
                 onClick={() => navigate({ to: "/messages" })}
                 aria-label={t("nav.messages", { defaultValue: "Messages" })}
                 title={t("nav.messages", { defaultValue: "Messages" })}
@@ -190,26 +199,40 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
                 )}
               </Button>
               <SubmitDialog onPosted={onPosted} />
-              <Button variant="ghost" size="sm" onClick={() => signOut()}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 whitespace-nowrap"
+                onClick={() => signOut()}
+              >
                 {t("nav.signOut", { defaultValue: "Sign out" })}
               </Button>
-            </>
+            </div>
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-1.5">
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative"
+                className="relative shrink-0"
                 onClick={() => navigate({ to: "/auth" })}
                 aria-label={t("social.notifications", { defaultValue: "Notifications" })}
                 title={t("social.notifications", { defaultValue: "Notifications" })}
               >
                 <Bell className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/auth" })}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 whitespace-nowrap"
+                onClick={() => navigate({ to: "/auth" })}
+              >
                 {t("nav.signIn", { defaultValue: "Sign in" })}
               </Button>
-              <Button size="sm" onClick={() => navigate({ to: "/auth", search: { tab: "signup" } })}>
+              <Button
+                size="sm"
+                className="shrink-0 whitespace-nowrap bg-slate-950 text-[#d6a928] hover:bg-slate-900 font-bold"
+                onClick={() => navigate({ to: "/auth", search: { tab: "signup" } })}
+              >
                 {t("nav.signUp", { defaultValue: "Sign up" })}
               </Button>
             </div>

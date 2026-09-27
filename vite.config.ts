@@ -30,6 +30,21 @@ export default defineConfig({
       host: "0.0.0.0",
       port: 3000,
     },
+    build: {
+      chunkSizeWarningLimit: 2500,
+      rollupOptions: {
+        onwarn(warning, warn) {
+          if (
+            warning.code === "MODULE_LEVEL_DIRECTIVE" ||
+            warning.message?.includes("MODULE_LEVEL_DIRECTIVE") ||
+            warning.message?.includes('"use client"')
+          ) {
+            return;
+          }
+          warn(warning);
+        },
+      },
+    },
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
         process.env.VITE_SUPABASE_URL ||

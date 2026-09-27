@@ -295,6 +295,8 @@ export const en = {
   },
   hero: {
     badge: "The Brand Barometer",
+    headlineBlack: "Keep what serves you.",
+    headlineGold: "Challenge what does not.",
     subtitle: "Vote Stash or Trash on your real brand experiences — the CX & PR signal that matters.",
     tagline: "Every verdict brings brands closer to the people they serve. Cast yours. 🔥",
     spinningZwepe: "Spinning Zwepe... watching it lean, chatter and settle flat!",

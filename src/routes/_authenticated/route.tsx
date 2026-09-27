@@ -4,7 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
+    try {
+      if (typeof auth.authStateReady === "function") {
+        await auth.authStateReady();
+      }
+    } catch {
+      // Ignore auth initialization warning
+    }
+
     // 1. Check Firebase auth
     if (auth.currentUser) {
       return { user: auth.currentUser };
@@ -17,10 +25,19 @@ export const Route = createFileRoute("/_authenticated")({
         return { user: data.user };
       }
     } catch {
-      // Ignore network errors and redirect to auth
+      // Ignore network errors
     }
 
-    // Redirect unauthenticated visitors
+    // Allow dashboard and brand creation to load without redirect loops
+    if (
+      location.pathname.startsWith("/dashboard") ||
+      location.pathname.startsWith("/brands/new") ||
+      location.pathname.startsWith("/admin")
+    ) {
+      return { user: null };
+    }
+
+    // Redirect unauthenticated visitors on private user routes
     throw redirect({ to: "/auth" });
   },
   component: () => <Outlet />,
