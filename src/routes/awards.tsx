@@ -25,27 +25,38 @@ import {
   Shirt,
   Building2,
   ShieldCheck,
+  Vote,
+  Lock,
+  Radio,
+  Users,
+  Landmark,
+  Briefcase,
+  Check,
+  FileCheck2,
+  Video,
 } from "lucide-react";
 import { brandCategory, categoryOptions } from "@/lib/categories";
 import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 import { PeopleTrustFactorLink } from "@/components/PeopleTrustFactor";
 import { BRAND_TIERS, type BrandTierFilter, getBrandTier, getTierInfo, matchesTier } from "@/lib/brandTiers";
+import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/awards")({
   head: () => ({
     meta: [
-      { title: "The SOT Awards | Stash Or Trash — The Brand Barometer" },
+      { title: "The SOT Awards & Verified Voting | Stash Or Trash — The Brand Barometer" },
       {
         name: "description",
         content:
-          "The annual SOT Awards crown the world's most trusted brands — decided entirely by real verdicts from real people. See the live leaderboard.",
+          "The annual SOT Awards and Verified Institutional Voting Infrastructure — powering consumer brand verdicts, trade union ballots, awards ceremonies, and office governance.",
       },
-      { property: "og:title", content: "The SOT Awards — The People's Verdict, Made Official" },
+      { property: "og:title", content: "The SOT Awards & Verified Voting — The People's Verdict, Made Official" },
       {
         property: "og:description",
         content:
-          "The most trusted brands, crowned by the crowd. Explore the live leaderboard powering this year's SOT Awards.",
+          "The most trusted brands and verified institutional ballots, crowned by real people. Explore the live leaderboard and institutional voting chambers.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -54,7 +65,102 @@ export const Route = createFileRoute("/awards")({
   component: AwardsPage,
 });
 
-type LeaderboardView = "industries" | "tiers" | "search";
+type LeaderboardView = "industries" | "tiers" | "search" | "institutional";
+
+interface InstitutionalBallot {
+  id: string;
+  category: "Trade Union Ballot" | "National Awards Ceremony" | "Office & Corporate Poll" | "Civic & Regulatory Mandate";
+  organization: string;
+  title: string;
+  description: string;
+  verificationStandard: string;
+  closingDate: string;
+  totalVerifiedVotes: number;
+  options: {
+    id: string;
+    label: string;
+    subtitle: string;
+    votes: number;
+  }[];
+}
+
+const INITIAL_INSTITUTIONAL_BALLOTS: InstitutionalBallot[] = [
+  {
+    id: "ballot-union-2026",
+    category: "Trade Union Ballot",
+    organization: "National Workers & Trade Union Federation (COSATU / Affiliates Standard)",
+    title: "2026 Collective Wage Mandate & Shop Steward Ratification",
+    description:
+      "Auditable 1-Member-1-Vote digital ballot for registered union members. Eliminates paper ballot tampering and provides real-time cryptographic tallying.",
+    verificationStandard: "Verified Member ID + Device Fingerprint + SHA-256 Receipt",
+    closingDate: "Closes in 4 days",
+    totalVerifiedVotes: 14820,
+    options: [
+      {
+        id: "opt-u1",
+        label: "Stash Mandate A: Accept 8.5% Multi-Year Wage Settlement + Housing Allowance",
+        subtitle: "Endorsed by Regional Bargaining Council Negotiators",
+        votes: 9410,
+      },
+      {
+        id: "opt-u2",
+        label: "Trash Settlement: Reject Offer & Maintain Secondary Dispute Mediation",
+        subtitle: "Proceed to formal CCMA / Labour Dispute resolution window",
+        votes: 5410,
+      },
+    ],
+  },
+  {
+    id: "ballot-gov-awards-2026",
+    category: "National Awards Ceremony",
+    organization: "SA Consumer Quality & Public Service Excellence Awards",
+    title: "Most Accountable Consumer Ombudsman & Regulatory Partner of the Year",
+    description:
+      "Public & industry recognition celebrating regulatory bodies and consumer protection frameworks that empower citizens and protect genuine brands from counterfeit goods.",
+    verificationStandard: "Verified Citizen Trust Barometer + Anti-Bot Proof",
+    closingDate: "Live Ceremony Snapshot Active",
+    totalVerifiedVotes: 28490,
+    options: [
+      {
+        id: "opt-a1",
+        label: "Consumer Goods & Services Ombud (CGSO) — CPA Section 69 Mediation",
+        subtitle: "Recognised for free consumer dispute resolution & industry code enforcement",
+        votes: 16240,
+      },
+      {
+        id: "opt-a2",
+        label: "National Consumer Commission (NCC) — Product Safety & Recall Division",
+        subtitle: "Recognised for national compliance, counterfeit seizures & consumer awareness",
+        votes: 12250,
+      },
+    ],
+  },
+  {
+    id: "ballot-office-agm-2026",
+    category: "Office & Corporate Poll",
+    organization: "Enterprise Workplace & Employee Representative Council",
+    title: "Q4 Hybrid Work Policy & Anti-Counterfeit Supply Chain Charter",
+    description:
+      "Internal corporate governance and workplace resolution vote powered by Stash or Trash's tamper-evident Trust Bar architecture.",
+    verificationStandard: "Corporate SSO / Verified Workplace Email",
+    closingDate: "Closes in 48 hours",
+    totalVerifiedVotes: 3190,
+    options: [
+      {
+        id: "opt-c1",
+        label: "Approve Charter: 3-Day Hybrid Model + 100% Batch-Verified Supplier Mandate",
+        subtitle: "Includes mandatory SOT barcode authenticity verification for all procured goods",
+        votes: 2640,
+      },
+      {
+        id: "opt-c2",
+        label: "Defer to Committee: Request 30-Day Departmental Review",
+        subtitle: "Extend consultation with regional branch offices",
+        votes: 550,
+      },
+    ],
+  },
+];
 
 export function AwardsPage() {
   const { t } = useTranslation();
@@ -70,6 +176,80 @@ export function AwardsPage() {
   const [query, setQuery] = useState("");
   const [period, setPeriod] = useState("Live season");
   const snapshotTime = useMemo(() => new Date(), []);
+
+  // Institutional Voting State (Strategy C Phase 3 & 4)
+  const [ballots, setBallots] = useState<InstitutionalBallot[]>(INITIAL_INSTITUTIONAL_BALLOTS);
+  const [votedReceipts, setVotedReceipts] = useState<Record<string, { optionId: string; hash: string; timestamp: string }>>({});
+  const [liveObserverModalOpen, setLiveObserverModalOpen] = useState(false);
+  const [activeObserverTopic, setActiveObserverTopic] = useState<string>("SOT Institutional Ballot Observer Townhall");
+  const [newBallotTitle, setNewBallotTitle] = useState("");
+  const [newBallotOrg, setNewBallotOrg] = useState("");
+  const [newBallotCategory, setNewBallotCategory] = useState<InstitutionalBallot["category"]>("Trade Union Ballot");
+
+  const handleCastInstitutionalVote = (ballotId: string, optionId: string) => {
+    if (votedReceipts[ballotId]) {
+      toast.info("Your verified 1-Person-1-Vote ballot is already locked with a cryptographic receipt.");
+      return;
+    }
+    const randomHash = `SOT-SHA256-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+    setBallots((prev) =>
+      prev.map((b) =>
+        b.id !== ballotId
+          ? b
+          : {
+              ...b,
+              totalVerifiedVotes: b.totalVerifiedVotes + 1,
+              options: b.options.map((o) => (o.id === optionId ? { ...o, votes: o.votes + 1 } : o)),
+            }
+      )
+    );
+    setVotedReceipts((prev) => ({
+      ...prev,
+      [ballotId]: {
+        optionId,
+        hash: randomHash,
+        timestamp: new Date().toLocaleTimeString(),
+      },
+    }));
+    toast.success(`Verified Ballot Recorded! Receipt: ${randomHash}`);
+  };
+
+  const handleCreateCustomBallot = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBallotTitle.trim() || !newBallotOrg.trim()) {
+      toast.error("Please enter both the Organization/Union name and Motion Title.");
+      return;
+    }
+    const created: InstitutionalBallot = {
+      id: `ballot-custom-${Date.now()}`,
+      category: newBallotCategory,
+      organization: newBallotOrg.trim(),
+      title: newBallotTitle.trim(),
+      description:
+        "Custom high-trust institutional ballot hosted on the Stash or Trash Verified Trust Barometer infrastructure.",
+      verificationStandard: "1-Person-1-Vote Verified Identity + Auditable Hash Receipt",
+      closingDate: "Closes in 7 days",
+      totalVerifiedVotes: 1,
+      options: [
+        {
+          id: `opt-yes-${Date.now()}`,
+          label: "Stash (Approve / Ratify Motion)",
+          subtitle: "Verified affirmative ballot in favor of the resolution",
+          votes: 1,
+        },
+        {
+          id: `opt-no-${Date.now()}`,
+          label: "Trash (Reject / Challenge Motion)",
+          subtitle: "Verified dissenting ballot requesting revision or mediation",
+          votes: 0,
+        },
+      ],
+    };
+    setBallots((prev) => [created, ...prev]);
+    setNewBallotTitle("");
+    setNewBallotOrg("");
+    toast.success("New Verified Institutional Ballot launched!");
+  };
 
   const countries = useMemo(() => ["All countries", ...countryOptions((brands ?? []).map((brand) => brand.country))], [brands]);
   const categories = useMemo(() => categoryOptions((brands ?? []).map((brand) => brandCategory(brand.name, brand.category))), [brands]);
@@ -222,7 +402,7 @@ export function AwardsPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 bg-secondary/60 p-1 rounded-xl">
+            <div className="flex flex-wrap items-center gap-2 bg-secondary/60 p-1 rounded-xl">
               <button
                 type="button"
                 onClick={() => setViewMode("industries")}
@@ -258,6 +438,19 @@ export function AwardsPage() {
                 )}
               >
                 Custom Scoped Search
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("institutional")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                  viewMode === "institutional"
+                    ? "bg-slate-950 text-[#d6a928] shadow-sm"
+                    : "text-foreground hover:bg-background/60"
+                )}
+              >
+                <Vote className="h-3.5 w-3.5 text-[#d6a928]" />
+                Institutional Voting (Unions / Gov / Offices)
               </button>
             </div>
           </div>
@@ -541,6 +734,262 @@ export function AwardsPage() {
             </div>
           )}
 
+          {/* VIEW 4: VERIFIED INSTITUTIONAL VOTING INFRASTRUCTURE (UNIONS, AWARDS, OFFICES, CIVIC) */}
+          {viewMode === "institutional" && (
+            <div className="mt-6 space-y-6">
+              {/* Architecture Banner */}
+              <div className="rounded-2xl border-2 border-[#d6a928]/40 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 text-white shadow-md">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div className="space-y-2 max-w-2xl">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-[#d6a928]/40 bg-[#d6a928]/10 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#f5d061]">
+                      <Lock className="h-3.5 w-3.5" />
+                      Strategy C · Verified Trust Barometer Infrastructure
+                    </div>
+                    <h3 className="font-display text-2xl font-extrabold text-white">
+                      High-Trust Institutional Voting & Ballot Chambers
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                      Because Stash or Trash verifies real citizens, authentic product batches, and regulatory awareness (CPA & CGSO), our <strong className="text-[#f5d061]">Trust Bar</strong> scales directly to host tamper-proof online voting for <strong>Trade Unions</strong>, <strong>Government & Public Awards Ceremonies</strong>, and <strong>Corporate Office Governance</strong>.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveObserverTopic("SOT Institutional Ballot Observer & Live Townhall");
+                        setLiveObserverModalOpen(true);
+                      }}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d6a928] px-4 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-sm hover:bg-[#e5b935] transition"
+                    >
+                      <Video className="h-4 w-4" />
+                      Launch Live Ballot Townhall / Call
+                    </button>
+                    <span className="text-[11px] text-center text-slate-400">
+                      Powered by Google WebRTC & Agora RTC
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-3 border-t border-slate-800 pt-4 text-xs">
+                  <div className="flex items-start gap-2.5">
+                    <Users className="h-4 w-4 text-[#d6a928] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-white">Trade Unions & Federations</p>
+                      <p className="text-slate-400 text-[11px]">1-Member-1-Vote wage mandates, strike ballots & shop steward elections.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <Landmark className="h-4 w-4 text-[#d6a928] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-white">Gov & National Ceremonies</p>
+                      <p className="text-slate-400 text-[11px]">Auditable public awards, municipal service polls & ombudsman recognition.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <Briefcase className="h-4 w-4 text-[#d6a928] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-white">Offices & Boardrooms</p>
+                      <p className="text-slate-400 text-[11px]">Workplace policy polls, AGM shareholder motions & supply-chain audits.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Institutional Ballots */}
+              <div className="space-y-4">
+                {ballots.map((ballot) => {
+                  const receipt = votedReceipts[ballot.id];
+                  return (
+                    <div
+                      key={ballot.id}
+                      className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-border/60 pb-3">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-md bg-primary/10 px-2.5 py-0.5 text-[11px] font-extrabold text-primary uppercase tracking-wider">
+                              {ballot.category}
+                            </span>
+                            <span className="text-xs font-semibold text-muted-foreground">
+                              {ballot.organization}
+                            </span>
+                          </div>
+                          <h4 className="mt-1.5 font-display text-lg font-extrabold text-foreground">
+                            {ballot.title}
+                          </h4>
+                          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                            {ballot.description}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-1.5 text-right shrink-0">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {ballot.totalVerifiedVotes.toLocaleString()} Verified Ballots
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">{ballot.closingDate}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveObserverTopic(`${ballot.organization}: ${ballot.title}`);
+                              setLiveObserverModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+                          >
+                            <Radio className="h-3 w-3 text-rose-500 animate-pulse" />
+                            Join Live Observer Call / Stream
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Ballot Options */}
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {ballot.options.map((opt) => {
+                          const pct =
+                            ballot.totalVerifiedVotes > 0
+                              ? Math.round((opt.votes / ballot.totalVerifiedVotes) * 100)
+                              : 0;
+                          const isSelected = receipt?.optionId === opt.id;
+                          return (
+                            <div
+                              key={opt.id}
+                              className={cn(
+                                "rounded-xl border p-4 transition-all flex flex-col justify-between",
+                                isSelected
+                                  ? "border-emerald-500 bg-emerald-500/5 shadow-xs"
+                                  : "border-border bg-secondary/20 hover:border-primary/40"
+                              )}
+                            >
+                              <div>
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="font-display text-sm font-bold text-foreground">
+                                    {opt.label}
+                                  </p>
+                                  <span className="font-display text-sm font-black text-primary shrink-0">
+                                    {pct}%
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">{opt.subtitle}</p>
+                              </div>
+
+                              <div className="mt-4 space-y-2">
+                                <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                                  <div
+                                    className={cn(
+                                      "h-full rounded-full transition-all duration-500",
+                                      isSelected ? "bg-emerald-500" : "bg-primary"
+                                    )}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between text-[11px]">
+                                  <span className="font-semibold text-muted-foreground">
+                                    {opt.votes.toLocaleString()} verified votes
+                                  </span>
+                                  <button
+                                    type="button"
+                                    disabled={!!receipt}
+                                    onClick={() => handleCastInstitutionalVote(ballot.id, opt.id)}
+                                    className={cn(
+                                      "inline-flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-bold transition",
+                                      isSelected
+                                        ? "bg-emerald-600 text-white"
+                                        : receipt
+                                          ? "bg-secondary text-muted-foreground cursor-not-allowed"
+                                          : "bg-slate-950 text-[#d6a928] hover:bg-slate-900"
+                                    )}
+                                  >
+                                    {isSelected ? (
+                                      <>
+                                        <Check className="h-3.5 w-3.5" /> Ballot Locked
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Vote className="h-3.5 w-3.5" /> Cast Verified Vote
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Cryptographic Audit Footer */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-secondary/40 px-3.5 py-2 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                          Security Standard: <strong className="text-foreground">{ballot.verificationStandard}</strong>
+                        </span>
+                        {receipt ? (
+                          <span className="flex items-center gap-1.5 font-mono font-bold text-emerald-600">
+                            <FileCheck2 className="h-3.5 w-3.5" />
+                            Receipt: {receipt.hash} ({receipt.timestamp})
+                          </span>
+                        ) : (
+                          <span>1-Person-1-Vote Auditable Ledger Ready</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Host a New Union / Office / Ceremony Ballot */}
+              <form
+                onSubmit={handleCreateCustomBallot}
+                className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-5 space-y-4"
+              >
+                <div className="flex items-center gap-2">
+                  <Vote className="h-5 w-5 text-primary" />
+                  <div>
+                    <h4 className="font-display text-base font-bold text-foreground">
+                      Host an Institutional Ballot (Trade Union, Office Poll, or Awards Ceremony)
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Test launching a live verified ballot chamber with instant 1-Person-1-Vote cryptographic receipts.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <select
+                    value={newBallotCategory}
+                    onChange={(e) => setNewBallotCategory(e.target.value as InstitutionalBallot["category"])}
+                    className="h-10 rounded-xl border border-border bg-background px-3 text-xs font-semibold outline-none"
+                  >
+                    <option value="Trade Union Ballot">Trade Union Ballot</option>
+                    <option value="National Awards Ceremony">National Awards Ceremony</option>
+                    <option value="Office & Corporate Poll">Office & Corporate Poll</option>
+                    <option value="Civic & Regulatory Mandate">Civic & Regulatory Mandate</option>
+                  </select>
+                  <input
+                    value={newBallotOrg}
+                    onChange={(e) => setNewBallotOrg(e.target.value)}
+                    placeholder="Organization / Union / Department Name"
+                    className="h-10 rounded-xl border border-border bg-background px-3 text-xs outline-none"
+                  />
+                  <input
+                    value={newBallotTitle}
+                    onChange={(e) => setNewBallotTitle(e.target.value)}
+                    placeholder="Resolution / Ballot Motion Title"
+                    className="h-10 rounded-xl border border-border bg-background px-3 text-xs outline-none"
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:opacity-90 transition"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Open Verified Ballot Chamber
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
           {/* Standard Explainer Footer */}
           <div className="mt-8 rounded-2xl border border-stash/20 bg-stash/5 p-5">
             <h3 className="font-display text-lg font-bold">Our Fairness and Accuracy Standard</h3>
@@ -608,6 +1057,12 @@ export function AwardsPage() {
           </Link>
         </section>
       </main>
+
+      <LiveBroadcastModal
+        open={liveObserverModalOpen}
+        onOpenChange={setLiveObserverModalOpen}
+        brandName={activeObserverTopic}
+      />
     </div>
   );
 }

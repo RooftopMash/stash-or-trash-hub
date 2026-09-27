@@ -9,6 +9,11 @@ import {
   ShieldAlert,
   Building2,
   FileWarning,
+  Download,
+  ShieldCheck,
+  BookOpen,
+  Gift,
+  ScanBarcode,
 } from "lucide-react";
 import {
   Dialog,
@@ -35,14 +40,20 @@ function generateSotReference(itemId: string, createdAt: string): string {
 
 export function FormalEscalationModal({ item }: FormalEscalationModalProps) {
   const [open, setOpen] = useState(false);
-  const [branchOrStore, setBranchOrStore] = useState("Pretoria / Head Office");
+  const [activeTab, setActiveTab] = useState<"counterfeit" | "education" | "dossier">("counterfeit");
+  const [issueClassification, setIssueClassification] = useState<"counterfeit" | "genuine_defect">(
+    "counterfeit",
+  );
+  const [batchOrBarcode, setBatchOrBarcode] = useState("BATCH-2026-ZA / EAN-6001087");
+  const [branchOrStore, setBranchOrStore] = useState("Pretoria / Retailer or Spaza Location");
   const [lossIncurred, setLossIncurred] = useState(
-    "Financial loss, defective product/service, and wasted time",
+    "Suspected counterfeit / substandard batch — requesting brand authenticity check & replacement",
   );
   const [desiredResolution, setDesiredResolution] = useState(
-    "Full refund, replacement, or written executive resolution within 7 business days",
+    "Batch verification by Brand Owner + genuine replacement voucher or refund within 15 CPA business days",
   );
   const [copied, setCopied] = useState(false);
+  const [voucherRequested, setVoucherRequested] = useState(false);
 
   const refNumber = useMemo(
     () => generateSotReference(item.id, item.created_at),
@@ -69,23 +80,29 @@ export function FormalEscalationModal({ item }: FormalEscalationModalProps) {
 
   const formalNoticeText = useMemo(() => {
     return [
-      `Subject: Formal Complaint Ref #${refNumber} — [${brandDisplay} / ${branchOrStore}] — Escalation to Management`,
+      `Subject: Verified Consumer & Counterfeit Evidence Pack Ref #${refNumber} — [${brandDisplay} / ${branchOrStore}]`,
       ``,
-      `To: ${brandDisplay} Head Office / Customer Care & Executive Escalations`,
+      `To: ${brandDisplay} Brand Protection, Quality Assurance & Customer Care`,
       `Public Verdict Record: ${postUrl}`,
       `Community Votes Recorded: ${item.trashCount} Trash vs ${item.stashCount} Stash`,
+      `Classification: ${
+        issueClassification === "counterfeit"
+          ? "SUSPECTED COUNTERFEIT / BOGUS / TAMPERED BATCH (Brand Revenue Recovery Alert)"
+          : "GENUINE PRODUCT / SERVICE QUALITY DISPUTE"
+      }`,
+      `Batch / Lot / Barcode: ${batchOrBarcode}`,
       ``,
-      `1. WHAT HAPPENED (${incidentDate} · Branch/Location: ${branchOrStore}):`,
+      `1. WHAT HAPPENED (${incidentDate} · Store/Location: ${branchOrStore}):`,
       `${item.title}${item.description ? ` — ${item.description}` : ""}`,
       ``,
-      `2. LOSS / IMPACT INCURRED:`,
+      `2. CONSUMER & BRAND IMPACT:`,
       `${lossIncurred}`,
       ``,
-      `3. REQUIRED RESOLUTION (WITHIN 7 BUSINESS DAYS):`,
+      `3. REQUESTED BRAND ENGAGEMENT (STEP 1 OF CPA SECTION 69 — 15 BUSINESS DAYS):`,
       `${desiredResolution}`,
       ``,
-      `4. REGULATORY ESCALATION NOTICE:`,
-      `Please acknowledge receipt of Formal Complaint Ref #${refNumber}. If this matter remains unresolved within 7 business days, I will formally escalate this dossier to the Consumer Goods and Services Ombud (CGSO - cgso.org.za) and the National Consumer Commission (NCC - thencc.gov.za) in terms of Section 69 of the Consumer Protection Act (CPA), where a formal response is legally mandated within 15 business days.`,
+      `4. CPA & CGSO CONSUMER AWARENESS NOTE:`,
+      `In accordance with the Consumer Protection Act (CPA Section 69), I am providing ${brandDisplay} the statutory 15-business-day window to verify Batch #${batchOrBarcode} and resolve this directly before I submit this Evidence Pack to the Consumer Goods and Services Ombud (CGSO - cgso.org.za) or the National Consumer Commission (NCC - thencc.gov.za).`,
     ].join("\n");
   }, [
     refNumber,
@@ -94,6 +111,8 @@ export function FormalEscalationModal({ item }: FormalEscalationModalProps) {
     postUrl,
     item.trashCount,
     item.stashCount,
+    issueClassification,
+    batchOrBarcode,
     incidentDate,
     item.title,
     item.description,
@@ -103,24 +122,41 @@ export function FormalEscalationModal({ item }: FormalEscalationModalProps) {
 
   const socialCalloutText = useMemo(() => {
     const handle = brandDisplay.replace(/[^a-zA-Z0-9]/g, "");
-    return `@${handle} Still awaiting executive resolution on Formal Complaint Ref #${refNumber} (${branchOrStore}). "${item.title}" — Public community verdict (${item.trashCount} Trashed): ${postUrl} #StashOrTrash #ConsumerRights #CGSO`;
-  }, [brandDisplay, refNumber, branchOrStore, item.title, item.trashCount, postUrl]);
+    return `@${handle} Sharing verified Evidence Pack Ref #${refNumber} (${branchOrStore} · Batch: ${batchOrBarcode}). "${item.title}" — Help us verify authenticity & protect consumers: ${postUrl} #StashOrTrash #CounterfeitCheck #ConsumerRights`;
+  }, [brandDisplay, refNumber, branchOrStore, batchOrBarcode, item.title, postUrl]);
 
   const handleCopyNotice = async () => {
     try {
       await navigator.clipboard.writeText(formalNoticeText);
       setCopied(true);
-      toast.success(`Formal Complaint Ref #${refNumber} copied to clipboard`);
+      toast.success(`Evidence Pack Ref #${refNumber} copied to clipboard`);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("Could not copy automatically — please select and copy the text.");
     }
   };
 
+  const handleDownloadEvidencePack = () => {
+    try {
+      const blob = new Blob([formalNoticeText], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${refNumber}-CPA-Counterfeit-Evidence-Pack.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(`Downloaded ${refNumber} CPA & Counterfeit Evidence Pack!`);
+    } catch {
+      toast.error("Could not download evidence pack.");
+    }
+  };
+
   const handleCopySocial = async () => {
     try {
       await navigator.clipboard.writeText(socialCalloutText);
-      toast.success("Public X / Social callout with Ref # copied!");
+      toast.success("Public Brand & Counterfeit Alert with Ref # copied!");
     } catch {
       toast.error("Could not copy social callout.");
     }
@@ -128,7 +164,7 @@ export function FormalEscalationModal({ item }: FormalEscalationModalProps) {
 
   const mailtoHref = useMemo(() => {
     const subject = encodeURIComponent(
-      `Formal Complaint Ref #${refNumber} - [${brandDisplay} / ${branchOrStore}] - Escalation to Management`,
+      `Evidence Pack Ref #${refNumber} - [${brandDisplay} / ${branchOrStore}] - Batch & CPA Resolution`,
     );
     const body = encodeURIComponent(formalNoticeText);
     return `mailto:?subject=${subject}&body=${body}`;
@@ -139,183 +175,380 @@ export function FormalEscalationModal({ item }: FormalEscalationModalProps) {
       <DialogTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary/70 px-2.5 py-0.5 text-[10px] font-bold text-foreground transition hover:border-foreground/40 hover:bg-secondary"
-          title="Generate Formal Complaint Ref # & CPA Section 69 / CGSO Escalation Notice"
+          className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary/70 px-2 py-0.5 text-[10px] font-bold text-foreground transition hover:border-foreground/40 hover:bg-secondary whitespace-nowrap"
+          title="Counterfeit Batch Verifier, Brand Recovery & CPA/CGSO Education Hub"
         >
           <Scale className="h-3 w-3 text-stash" />
-          <span>Escalate · Ref #{refNumber}</span>
+          <span>Verify &amp; CPA Guide · #{refNumber}</span>
         </button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1 text-xs font-extrabold text-amber-600 dark:text-amber-400">
-              <Scale className="h-3.5 w-3.5" />
-              CPA Section 69 & CGSO Escalation Engine
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-500/15 px-2.5 py-1 text-xs font-extrabold text-amber-600 dark:text-amber-400">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Tri-Win Consumer, Brand &amp; Regulator Hub
             </span>
-            <span className="rounded-md border border-border bg-secondary px-2 py-0.5 font-mono text-xs font-bold">
+            <span className="rounded-md border border-border bg-secondary px-2 py-0.5 font-mono text-xs font-bold tabular-nums">
               Ref #{refNumber}
             </span>
           </div>
           <DialogTitle className="mt-2 font-display text-xl font-extrabold">
-            Formal Brand Owner & Regulator Escalation Dossier
+            Counterfeit Batch Verifier &amp; CPA / CGSO Education Hub
           </DialogTitle>
           <DialogDescription className="text-xs leading-relaxed">
-            Brands ignore vague complaints, but act fast on structured reference numbers, branch
-            details, and formal notice of escalation to the{" "}
-            <strong className="text-foreground">
-              Consumer Goods & Services Ombud (CGSO)
-            </strong>{" "}
-            and <strong className="text-foreground">National Consumer Commission (NCC)</strong>.
+            Instead of filing premature complaints, Stash Or Trash helps{" "}
+            <strong className="text-foreground">Brands</strong> spot bogus/counterfeit products
+            stealing their revenue, and educates{" "}
+            <strong className="text-foreground">Consumers</strong> on the official{" "}
+            <strong className="text-foreground">CPA Section 69 &amp; CGSO</strong> 3-step dispute
+            process.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-3 space-y-4">
-          {/* Structured CPA inputs */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                Branch / Store / Order #
-              </label>
-              <input
-                type="text"
-                value={branchOrStore}
-                onChange={(e) => setBranchOrStore(e.target.value)}
-                placeholder="e.g. Pretoria Menlyn Branch / Order #4021"
-                className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-3 text-xs font-medium outline-none focus:border-foreground"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                What You Lost (Time, Money, Product)
-              </label>
-              <input
-                type="text"
-                value={lossIncurred}
-                onChange={(e) => setLossIncurred(e.target.value)}
-                placeholder="e.g. R1,450 paid for defective item + 2 weeks delay"
-                className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-3 text-xs font-medium outline-none focus:border-foreground"
-              />
-            </div>
-          </div>
+        {/* 3-Tab Switcher */}
+        <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-secondary/60 p-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab("counterfeit")}
+            className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition ${
+              activeTab === "counterfeit"
+                ? "bg-background text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ScanBarcode className="h-3.5 w-3.5 text-amber-500" />
+            <span>1. Counterfeit &amp; Brand Check</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("education")}
+            className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition ${
+              activeTab === "education"
+                ? "bg-background text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BookOpen className="h-3.5 w-3.5 text-emerald-500" />
+            <span>2. CPA &amp; CGSO Education</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("dossier")}
+            className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition ${
+              activeTab === "dossier"
+                ? "bg-background text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <FileWarning className="h-3.5 w-3.5 text-stash" />
+            <span>3. Evidence Pack (#{refNumber})</span>
+          </button>
+        </div>
 
-          <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Required Resolution (7-Day Deadline)
-            </label>
-            <input
-              type="text"
-              value={desiredResolution}
-              onChange={(e) => setDesiredResolution(e.target.value)}
-              placeholder="e.g. Full refund or replacement within 7 business days"
-              className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-3 text-xs font-medium outline-none focus:border-foreground"
-            />
-          </div>
-
-          {/* Generated Formal Notice Preview */}
-          <div className="rounded-xl border border-border bg-secondary/40 p-3.5">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground">
-                <FileWarning className="h-3.5 w-3.5 text-stash" />
-                Formal Head Office & Executive Notice
-              </span>
-              <span className="font-mono text-[11px] text-muted-foreground">
-                CPA Act Sec. 69 Compliant
-              </span>
+        {/* TAB 1: COUNTERFEIT VERIFIER & BRAND REVENUE RECOVERY */}
+        {activeTab === "counterfeit" && (
+          <div className="mt-3 space-y-4">
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3.5 text-xs">
+              <p className="font-bold text-foreground">
+                Did the genuine brand disappoint you — or did someone sell you a bogus/counterfeit item?
+              </p>
+              <p className="mt-1 text-muted-foreground leading-relaxed">
+                Counterfeits and expired grey-market batches cost legitimate brands billions and ruin
+                consumer trust. Flagging the batch number and store location lets{" "}
+                <strong>{brandDisplay}</strong> verify authenticity and issue a replacement voucher
+                to win you back.
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setIssueClassification("counterfeit")}
+                  className={`rounded-lg border p-2.5 text-left transition ${
+                    issueClassification === "counterfeit"
+                      ? "border-amber-500 bg-amber-500/15 font-bold text-foreground"
+                      : "border-border bg-background text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <div className="text-xs font-bold">Suspected Counterfeit / Bogus / Expired</div>
+                  <div className="mt-0.5 text-[11px] opacity-80">
+                    Alert {brandDisplay} Brand Protection to investigate the retailer &amp; batch
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIssueClassification("genuine_defect")}
+                  className={`rounded-lg border p-2.5 text-left transition ${
+                    issueClassification === "genuine_defect"
+                      ? "border-primary bg-primary/10 font-bold text-foreground"
+                      : "border-border bg-background text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <div className="text-xs font-bold">Genuine Product / Service Disappointment</div>
+                  <div className="mt-0.5 text-[11px] opacity-80">
+                    Engage {brandDisplay} Customer Care under the 15-day CPA resolution window
+                  </div>
+                </button>
+              </div>
             </div>
-            <pre className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border/70 bg-background p-3 font-mono text-[11px] leading-relaxed text-foreground">
-              {formalNoticeText}
-            </pre>
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button size="sm" onClick={handleCopyNotice} className="gap-1.5 text-xs font-bold">
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                {copied ? "Copied Formal Dossier" : "Copy Formal Notice"}
-              </Button>
-              <a
-                href={mailtoHref}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-bold text-foreground transition hover:bg-secondary"
-              >
-                <Mail className="h-3.5 w-3.5" />
-                Email Head Office
-              </a>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="block text-[11px] font-bold text-muted-foreground">
+                  Batch / Lot Number or Barcode
+                </label>
+                <input
+                  type="text"
+                  value={batchOrBarcode}
+                  onChange={(e) => setBatchOrBarcode(e.target.value)}
+                  placeholder="e.g. LOT-2026-09B / EAN 6001087000140"
+                  className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-3 font-mono text-xs font-medium outline-none focus:border-foreground"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-muted-foreground">
+                  Store / Spaza / Branch Where Purchased
+                </label>
+                <input
+                  type="text"
+                  value={branchOrStore}
+                  onChange={(e) => setBranchOrStore(e.target.value)}
+                  placeholder="e.g. Pretoria Menlyn / Local Retailer"
+                  className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-3 text-xs font-medium outline-none focus:border-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3.5 text-xs">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 font-bold text-foreground">
+                  <Gift className="h-4 w-4 text-emerald-600" />
+                  <span>Brand Client Recovery &amp; Authenticity Window</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Log your batch with {brandDisplay} so they can confirm if it is genuine and offer a
+                  replacement or loyalty recovery voucher.
+                </p>
+              </div>
               <Button
-                variant="outline"
                 size="sm"
-                onClick={handleCopySocial}
-                className="gap-1.5 text-xs font-bold"
+                onClick={() => {
+                  setVoucherRequested(true);
+                  toast.success(
+                    `Batch #${batchOrBarcode} logged for ${brandDisplay} Brand Protection & Client Recovery!`,
+                  );
+                }}
+                className="gap-1.5 font-bold"
               >
-                <Share2 className="h-3.5 w-3.5" />
-                Copy @Brand X / LinkedIn Tag
+                {voucherRequested ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" /> Batch Logged for Recovery
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="h-3.5 w-3.5" /> Request Brand Batch Check
+                  </>
+                )}
               </Button>
             </div>
           </div>
+        )}
 
-          {/* Official Regulators Who Force a Response */}
-          <div className="rounded-xl border border-border bg-card p-3.5">
-            <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-foreground">
-              <ShieldAlert className="h-4 w-4 text-trash" />
-              Official Regulators That Force Brands to Respond (15-Day Mandate)
+        {/* TAB 2: CPA SECTION 69 & CGSO EDUCATION HUB */}
+        {activeTab === "education" && (
+          <div className="mt-3 space-y-4">
+            <div className="rounded-xl border border-border bg-secondary/30 p-4 text-xs space-y-3">
+              <div className="flex items-center gap-2 font-bold text-sm text-foreground">
+                <BookOpen className="h-4 w-4 text-emerald-600" />
+                <span>How South Africa’s Official Consumer Protection Process Works</span>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                We do <strong>not</strong> spam regulators with automatic notifications. Instead, we
+                educate you on the mandatory legal sequence under{" "}
+                <strong className="text-foreground">Section 69 of the Consumer Protection Act (CPA)</strong>{" "}
+                so your case is 100% compliant and ready if you ever need the Ombud:
+              </p>
+
+              <div className="grid gap-2.5 sm:grid-cols-3">
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <div className="font-mono text-[11px] font-bold text-amber-600">
+                    01. Brand Window (15 Days)
+                  </div>
+                  <p className="mt-1 font-bold text-foreground">Contact Supplier First</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
+                    Law requires giving {brandDisplay} <strong>15 business days</strong> to investigate
+                    your batch and resolve the issue directly.
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <div className="font-mono text-[11px] font-bold text-emerald-600">
+                    02. Accredited Ombud (CGSO)
+                  </div>
+                  <p className="mt-1 font-bold text-foreground">Escalate to CGSO</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
+                    If unresolved after 15 business days, attach your SOrT Evidence Pack (#{refNumber})
+                    at <strong>cgso.org.za</strong> for free mediation.
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <div className="font-mono text-[11px] font-bold text-primary">
+                    03. National Commission (NCC)
+                  </div>
+                  <p className="mt-1 font-bold text-foreground">Systemic &amp; Fake Goods</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
+                    For widespread counterfeit rings or unresolved Ombud cases, submit your dossier to
+                    the <strong>NCC (thencc.gov.za)</strong>.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="mt-2.5 grid gap-2.5 sm:grid-cols-3">
-              <a
-                href="https://www.cgso.org.za/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex flex-col justify-between rounded-lg border border-border p-2.5 text-xs transition hover:border-foreground/40 hover:bg-secondary/40"
-              >
-                <div>
-                  <div className="flex items-center justify-between font-bold text-foreground">
-                    <span>CGSO Ombud</span>
-                    <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100" />
-                  </div>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    Retail, food & services. Free ombud — brands must respond within 15 days.
-                  </p>
-                </div>
-                <span className="mt-2 font-mono text-[10px] font-semibold text-primary">
-                  cgso.org.za →
-                </span>
-              </a>
 
-              <a
-                href="https://www.thencc.gov.za/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex flex-col justify-between rounded-lg border border-border p-2.5 text-xs transition hover:border-foreground/40 hover:bg-secondary/40"
-              >
-                <div>
-                  <div className="flex items-center justify-between font-bold text-foreground">
-                    <span>NCC (Pretoria)</span>
-                    <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100" />
+            {/* Official Regulator Educational Links */}
+            <div className="rounded-xl border border-border bg-card p-3.5">
+              <div className="flex items-center gap-1.5 text-xs font-extrabold text-foreground">
+                <ShieldAlert className="h-4 w-4 text-stash" />
+                Official Consumer Protection Portals (For Step 2 &amp; Step 3)
+              </div>
+              <div className="mt-2.5 grid gap-2.5 sm:grid-cols-3">
+                <a
+                  href="https://www.cgso.org.za/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex flex-col justify-between rounded-lg border border-border p-2.5 text-xs transition hover:border-foreground/40 hover:bg-secondary/40"
+                >
+                  <div>
+                    <div className="flex items-center justify-between font-bold text-foreground">
+                      <span>CGSO Ombud Guide</span>
+                      <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100" />
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Official Consumer Goods &amp; Services Ombud portal (use after 15 business days).
+                    </p>
                   </div>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    National Consumer Commission (Sunnyside, Pretoria · 012 428 7000) for CPA violations.
-                  </p>
-                </div>
-                <span className="mt-2 font-mono text-[10px] font-semibold text-primary">
-                  thencc.gov.za →
-                </span>
-              </a>
+                  <span className="mt-2 font-mono text-[10px] font-semibold text-primary">
+                    cgso.org.za →
+                  </span>
+                </a>
 
-              <div className="flex flex-col justify-between rounded-lg border border-border p-2.5 text-xs">
-                <div>
-                  <div className="flex items-center justify-between font-bold text-foreground">
-                    <span>Head Office & CEO</span>
-                    <Building2 className="h-3 w-3 text-muted-foreground" />
+                <a
+                  href="https://www.thencc.gov.za/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex flex-col justify-between rounded-lg border border-border p-2.5 text-xs transition hover:border-foreground/40 hover:bg-secondary/40"
+                >
+                  <div>
+                    <div className="flex items-center justify-between font-bold text-foreground">
+                      <span>NCC Consumer Rights</span>
+                      <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100" />
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      National Consumer Commission (CPA education &amp; illicit goods awareness).
+                    </p>
                   </div>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    Attach your SOrT Ref #{refNumber} when tagging executives on LinkedIn, X, or Google Reviews.
-                  </p>
+                  <span className="mt-2 font-mono text-[10px] font-semibold text-primary">
+                    thencc.gov.za →
+                  </span>
+                </a>
+
+                <div className="flex flex-col justify-between rounded-lg border border-border p-2.5 text-xs">
+                  <div>
+                    <div className="flex items-center justify-between font-bold text-foreground">
+                      <span>Brand Revenue Protection</span>
+                      <Building2 className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Brands work with SOrT to identify counterfeit hotspots and reward consumers who
+                      report fake batches.
+                    </p>
+                  </div>
+                  <span className="mt-2 font-mono text-[10px] font-semibold text-emerald-500">
+                    Tri-Win Ecosystem
+                  </span>
                 </div>
-                <span className="mt-2 font-mono text-[10px] font-semibold text-emerald-500">
-                  Verified Public Trail
-                </span>
               </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* TAB 3: DOWNLOADABLE CPA & COUNTERFEIT EVIDENCE PACK */}
+        {activeTab === "dossier" && (
+          <div className="mt-3 space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="block text-[11px] font-bold text-muted-foreground">
+                  Impact / Details
+                </label>
+                <input
+                  type="text"
+                  value={lossIncurred}
+                  onChange={(e) => setLossIncurred(e.target.value)}
+                  className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-3 text-xs font-medium outline-none focus:border-foreground"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-muted-foreground">
+                  Preferred Brand Resolution
+                </label>
+                <input
+                  type="text"
+                  value={desiredResolution}
+                  onChange={(e) => setDesiredResolution(e.target.value)}
+                  className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-3 text-xs font-medium outline-none focus:border-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-secondary/40 p-3.5">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground">
+                  <FileWarning className="h-3.5 w-3.5 text-stash" />
+                  Pre-Formatted CPA &amp; Counterfeit Evidence Pack
+                </span>
+                <span className="font-mono text-[11px] text-muted-foreground">
+                  CPA Sec. 69 Ready
+                </span>
+              </div>
+              <pre className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border/70 bg-background p-3 font-mono text-[11px] leading-relaxed text-foreground">
+                {formalNoticeText}
+              </pre>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" onClick={handleDownloadEvidencePack} className="gap-1.5 text-xs font-bold">
+                  <Download className="h-3.5 w-3.5" />
+                  Download Evidence Pack (.txt)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyNotice}
+                  className="gap-1.5 text-xs font-bold"
+                >
+                  {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied ? "Copied Dossier" : "Copy Dossier Text"}
+                </Button>
+                <a
+                  href={mailtoHref}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-bold text-foreground transition hover:bg-secondary"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  Email Brand First (Step 1)
+                </a>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopySocial}
+                  className="gap-1.5 text-xs font-bold"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  Copy @Brand Alert
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
 }
+

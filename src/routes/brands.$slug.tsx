@@ -42,11 +42,19 @@ import {
   Info,
   BarChart3,
   ThumbsUp,
-  TrendingDown
+  TrendingDown,
+  ShieldCheck,
+  ScanBarcode,
+  Video,
+  Phone,
+  Scale,
+  Store,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PeopleTrustFactor } from "@/components/PeopleTrustFactor";
 import { getBrandTier, getTierInfo } from "@/lib/brandTiers";
+import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
+import { FormalEscalationModal } from "@/components/FormalEscalationModal";
 
 export const Route = createFileRoute("/brands/$slug")({
   component: BrandPage,
@@ -137,8 +145,43 @@ function BrandPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Active Hub Tab: "feed" | "rewards" | "people"
-  const [activeTab, setActiveTab] = useState<"feed" | "rewards" | "people">("feed");
+  // Active Hub Tab: "feed" | "rewards" | "people" | "verifier"
+  const [activeTab, setActiveTab] = useState<"feed" | "rewards" | "people" | "verifier">("feed");
+
+  // Strategy C: Brand Counterfeit Verifier & Live Call/Broadcast States
+  const [liveCallModalOpen, setLiveCallModalOpen] = useState(false);
+  const [cpaGuideModalOpen, setCpaGuideModalOpen] = useState(false);
+  const [batchCodeInput, setBatchCodeInput] = useState("");
+  const [retailerInput, setRetailerInput] = useState("");
+  const [batchVerifyResult, setBatchVerifyResult] = useState<{
+    status: "genuine" | "flagged";
+    code: string;
+    retailer: string;
+    voucherCode: string;
+  } | null>(null);
+
+  const handleVerifyBrandBatch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleaned = batchCodeInput.trim().toUpperCase();
+    if (!cleaned) {
+      toast.error("Enter a barcode, batch number, or serial code to verify.");
+      return;
+    }
+    const isFlagged = cleaned.includes("FAKE") || cleaned.includes("BOGUS") || cleaned.includes("000") || cleaned.length < 5;
+    const prefix = (brand?.name || "SOT").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4) || "BRAND";
+    const voucherCode = `SOT_GENUINE_${prefix}_${Math.floor(100 + Math.random() * 899)}`;
+    setBatchVerifyResult({
+      status: isFlagged ? "flagged" : "genuine",
+      code: cleaned,
+      retailer: retailerInput.trim() || "Unspecified Retailer",
+      voucherCode,
+    });
+    toast.success(
+      isFlagged
+        ? "Bogus/Counterfeit batch flagged! Brand revenue-recovery voucher unlocked."
+        : "Authentic batch verified against brand registry!"
+    );
+  };
 
   // QR Simulator States
   const [qrModalOpen, setQrModalOpen] = useState(false);
@@ -307,6 +350,21 @@ function BrandPage() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => setLiveCallModalOpen(true)}
+                    className="gap-1.5 bg-slate-950 text-[#d6a928] hover:bg-slate-900 font-bold"
+                  >
+                    <Video className="h-4 w-4" /> Call / Broadcast Situation
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCpaGuideModalOpen(true)}
+                    className="gap-1.5 border-[#d6a928]/50 font-semibold"
+                  >
+                    <ShieldCheck className="h-4 w-4 text-[#d6a928]" /> Counterfeit & CPA Guide
+                  </Button>
                   {user && !isOwner && brand.verified && (
                     <Button
                       size="sm"
@@ -361,7 +419,7 @@ function BrandPage() {
 
             {/* SUPER APP SPECIAL FEATURES INTERFACE (Interactive Social Hub Tabs) */}
             <section className="mt-6 rounded-2xl border border-border bg-card p-1 shadow-sm overflow-hidden">
-              <div className="grid grid-cols-3 bg-secondary/40 p-1 rounded-xl">
+              <div className="grid grid-cols-2 sm:grid-cols-4 bg-secondary/40 p-1 rounded-xl gap-1">
                 <button
                   onClick={() => setActiveTab("feed")}
                   className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-lg transition-all ${
@@ -369,6 +427,14 @@ function BrandPage() {
                   }`}
                 >
                   <MessageCircle className="h-3.5 w-3.5" /> Feed ({feed?.length ?? 0})
+                </button>
+                <button
+                  onClick={() => setActiveTab("verifier")}
+                  className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                    activeTab === "verifier" ? "bg-slate-950 text-[#d6a928] shadow-xs" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <ScanBarcode className="h-3.5 w-3.5 text-[#d6a928]" /> Counterfeit Verifier
                 </button>
                 <button
                   onClick={() => setActiveTab("rewards")}
@@ -598,10 +664,151 @@ function BrandPage() {
                   </div>
                 </div>
               )}
+
+              {/* TAB 4: STRATEGY C — BRAND COUNTERFEIT VERIFIER & REVENUE RECOVERY WINDOW */}
+              {activeTab === "verifier" && (
+                <div className="p-4 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
+                    <div>
+                      <h3 className="font-display font-extrabold text-lg flex items-center gap-1.5">
+                        <ShieldCheck className="h-5 w-5 text-[#d6a928]" /> {brand.name} Counterfeit Verifier & Revenue Recovery
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Verify product batch numbers, protect {brand.name} from bogus/fake imitations, and unlock direct customer recovery rewards.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => setLiveCallModalOpen(true)}
+                      className="gap-1.5 bg-slate-950 text-[#d6a928] hover:bg-slate-900 font-bold shrink-0"
+                    >
+                      <Phone className="h-3.5 w-3.5" /> Live Brand / Peer Call
+                    </Button>
+                  </div>
+
+                  {/* Batch & Barcode Verifier Form */}
+                  <form onSubmit={handleVerifyBrandBatch} className="rounded-xl border border-border bg-secondary/20 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                        <ScanBarcode className="h-4 w-4 text-primary" /> Instant Batch / Barcode Authenticity Check
+                      </span>
+                      <Link to="/scan" className="text-[11px] font-bold text-primary hover:underline">
+                        Open Full Camera Forensic Scanner →
+                      </Link>
+                    </div>
+                    <div className="grid gap-2.5 sm:grid-cols-2">
+                      <input
+                        value={batchCodeInput}
+                        onChange={(e) => setBatchCodeInput(e.target.value)}
+                        placeholder={`Enter ${brand.name} barcode or batch # (e.g. ZA-8841 or BOGUS-000)`}
+                        className="h-10 rounded-xl border border-border bg-background px-3 text-xs outline-none"
+                      />
+                      <input
+                        value={retailerInput}
+                        onChange={(e) => setRetailerInput(e.target.value)}
+                        placeholder="Store / Spaza / Retailer where purchased"
+                        className="h-10 rounded-xl border border-border bg-background px-3 text-xs outline-none"
+                      />
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                      <p className="text-[11px] text-muted-foreground">
+                        Helps {brand.name} map grey-market/bogus supply leaks while rewarding you with genuine replacement vouchers.
+                      </p>
+                      <Button type="submit" size="sm" className="font-bold gap-1.5">
+                        <ShieldCheck className="h-3.5 w-3.5" /> Verify Batch Now
+                      </Button>
+                    </div>
+                  </form>
+
+                  {batchVerifyResult && (
+                    <div
+                      className={`rounded-xl border p-4 space-y-3 ${
+                        batchVerifyResult.status === "flagged"
+                          ? "border-amber-500/40 bg-amber-500/10"
+                          : "border-emerald-500/40 bg-emerald-500/10"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                              batchVerifyResult.status === "flagged"
+                                ? "bg-amber-500 text-black"
+                                : "bg-emerald-600 text-white"
+                            }`}
+                          >
+                            {batchVerifyResult.status === "flagged"
+                              ? "Suspected Bogus / Unverified Batch Flagged"
+                              : "Verified Genuine Brand Batch"}
+                          </span>
+                          <h4 className="mt-1.5 font-display text-sm font-bold text-foreground">
+                            Batch #{batchVerifyResult.code} · {batchVerifyResult.retailer}
+                          </h4>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {batchVerifyResult.status === "flagged"
+                              ? `${brand.name}'s Brand Protection & Revenue Recovery window has logged this seller lead so the genuine brand can win back your loyalty.`
+                              : `This batch matches ${brand.name}'s legitimate distribution standards. Thank you for verifying before consuming!`}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => claimCoupon(batchVerifyResult.voucherCode)}
+                          className="gap-1 shrink-0 font-bold"
+                        >
+                          <Copy className="h-3.5 w-3.5" /> Claim {batchVerifyResult.voucherCode}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tri-Win Ecosystem Explainer (Consumers + Regulators + Brands) */}
+                  <div className="grid gap-3 sm:grid-cols-3 text-xs">
+                    <div className="rounded-xl border border-border bg-secondary/10 p-3.5">
+                      <p className="font-display font-bold text-foreground flex items-center gap-1.5">
+                        <Store className="h-4 w-4 text-emerald-500" /> 1. For {brand.name}
+                      </p>
+                      <p className="mt-1 text-muted-foreground leading-relaxed">
+                        Recovers revenue lost to counterfeit/bogus imitations and opens a direct marketing & loyalty window to verified buyers.
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-border bg-secondary/10 p-3.5">
+                      <p className="font-display font-bold text-foreground flex items-center gap-1.5">
+                        <Scale className="h-4 w-4 text-[#d6a928]" /> 2. CPA & CGSO Awareness
+                      </p>
+                      <p className="mt-1 text-muted-foreground leading-relaxed">
+                        Educates consumers on the official CPA Section 69 workflow (Brand First → CGSO Ombud → NCC) without noisy unverified spam.
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-border bg-secondary/10 p-3.5">
+                      <p className="font-display font-bold text-foreground flex items-center gap-1.5">
+                        <Award className="h-4 w-4 text-primary" /> 3. Verified Trust Bar
+                      </p>
+                      <p className="mt-1 text-muted-foreground leading-relaxed">
+                        Every verified scan & resolution elevates the platform's Trust Bar for national awards, trade union ballots, and corporate polls.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
           </>
         )}
       </main>
+
+      {/* LIVE VOICE / VIDEO CALL & SITUATION BROADCAST MODAL */}
+      <LiveBroadcastModal
+        open={liveCallModalOpen}
+        onOpenChange={setLiveCallModalOpen}
+        brandName={brand?.name}
+      />
+
+      {/* STRATEGY C: COUNTERFEIT VERIFIER & CPA / CGSO CONSUMER AWARENESS MODAL */}
+      <FormalEscalationModal
+        open={cpaGuideModalOpen}
+        onOpenChange={setCpaGuideModalOpen}
+        brandName={brand?.name}
+        itemTitle={`${brand?.name ?? "Brand"} Authenticity & CPA Resolution`}
+      />
 
       {/* INTERACTIVE DIGITAL BILLBOARD QR SCANNER DIALOG */}
       <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>

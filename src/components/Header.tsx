@@ -8,8 +8,9 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { Button } from "@/components/ui/button";
 import { SubmitDialog } from "@/components/SubmitDialog";
 import { ProductScannerModal } from "@/components/ProductScannerModal";
+import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
 import { LanguageSwitcher, TopLanguageStrip } from "@/components/LanguageSwitcher";
-import { Bell, LayoutDashboard, MessageCircle, Shield, Scan } from "lucide-react";
+import { Bell, LayoutDashboard, MessageCircle, Shield, Scan, Video } from "lucide-react";
 import { SotWordmark } from "@/components/SotWordmark";
 import type { AiScanResult } from "@/lib/ai-scanner";
 
@@ -22,6 +23,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
   const unreadNotifs = useUnreadNotifications(user?.id);
 
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [liveStudioOpen, setLiveStudioOpen] = useState(false);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [prefilledPost, setPrefilledPost] = useState<{
     brandName: string;
@@ -129,6 +131,17 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLiveStudioOpen(true)}
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap border-rose-500/40 bg-rose-500/10 px-2.5 text-xs font-bold text-foreground hover:bg-rose-500/20 sm:px-3"
+            title="Start a Voice Call, Video Call, or Live Situation Broadcast"
+          >
+            <Video className="h-3.5 w-3.5 text-rose-500" />
+            <span className="hidden lg:inline">Call / Broadcast</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -245,6 +258,12 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
         open={scannerOpen}
         onOpenChange={setScannerOpen}
         onApplyToPost={handleApplyFromScanner}
+      />
+
+      {/* Global Voice / Video Call & Live Situation Broadcast Modal */}
+      <LiveBroadcastModal
+        open={liveStudioOpen}
+        onOpenChange={setLiveStudioOpen}
       />
 
       {/* Submit Dialog opened with prefilled scanner data */}
