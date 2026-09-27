@@ -249,131 +249,41 @@ export function SotHomeHero() {
               </div>
             </div>
 
-            {/* Right Object: Randy The Hungry Trash Can with eager chomping lid */}
+            {/* Right Object: Heavy-Duty Stainless Steel Trash Can with Slam & Rattle Physics */}
             <div className="group relative flex flex-col items-center rounded-3xl border-2 border-slate-900/25 bg-gradient-to-b from-slate-100/90 via-slate-50/50 to-white p-6 shadow-[0_12px_32px_-12px_rgba(15,23,42,0.22)] transition hover:border-slate-950 hover:shadow-[0_18px_40px_-10px_rgba(15,23,42,0.35)]">
               <button
                 type="button"
                 aria-label="Slam trash can for Trashes of the Day"
                 onClick={handleTrashClick}
-                onMouseEnter={() => {
-                  if (activeObject !== "bin") {
-                    setActiveObject("bin");
-                    window.setTimeout(() => setActiveObject(null), 1200);
-                  }
-                }}
                 className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 rounded-2xl p-2 cursor-pointer"
               >
                 <div className="relative flex h-60 w-full items-center justify-center sm:h-72">
-                  <div className="randy-can-stage relative flex items-center justify-center h-56 w-44 sm:h-64 sm:w-52">
-                    {/* Dark interior hungry mouth cavity */}
-                    <div className="absolute top-[17%] left-[8%] right-[8%] h-9 rounded-full bg-slate-950 shadow-[inset_0_4px_8px_rgba(0,0,0,0.95)] border border-slate-900 pointer-events-none" />
+                  {/* Grounded contact shadow & impact shockwave ring */}
+                  <div
+                    aria-hidden="true"
+                    className={cn(
+                      "sot-bin-shadow pointer-events-none absolute bottom-3 h-7 w-40 rounded-full bg-slate-950/30 blur-md sm:w-44",
+                      activeObject === "bin" && "sot-object-active",
+                    )}
+                  />
+                  <div
+                    aria-hidden="true"
+                    className={cn(
+                      "sot-bin-shockwave pointer-events-none absolute bottom-4 h-8 w-36 rounded-full border-2 border-slate-900/0 opacity-0 sm:w-44",
+                      activeObject === "bin" && "sot-object-active",
+                    )}
+                  />
 
-                    {/* Overflowing Junk inside Randy's mouth (Callout papers, crushed soda can, fish skeleton, apple core, banana peel) */}
-                    <div
+                  {/* Intact 3D Stainless Steel Trash Can with heavy slam & rim-rattle physics */}
+                  <div className="sot-bin-stage relative flex items-center justify-center">
+                    <img
+                      src={binIcon}
+                      alt="SOrT solid stainless steel metallic trash can"
                       className={cn(
-                        "randy-junk-contents absolute top-[11%] left-[10%] right-[10%] z-15 flex items-end justify-center pointer-events-none select-none",
-                        activeObject === "bin" && "randy-active",
+                        "sot-bin-art h-52 w-52 object-contain select-none sm:h-64 sm:w-64",
+                        activeObject === "bin" && "sot-object-active",
                       )}
-                    >
-                      {/* SVG Composite Junk Pile: fishbone, crumpled complaint bill, crushed tin can, banana peel, carton */}
-                      <svg
-                        viewBox="0 0 160 55"
-                        className="w-full h-11 drop-shadow-md overflow-visible"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        {/* Crumpled utility bill / public complaint note sticking out */}
-                        <g transform="translate(18, 4) rotate(-14)">
-                          <polygon
-                            points="0,0 26,-4 32,22 4,24"
-                            fill="#f8fafc"
-                            stroke="#cbd5e1"
-                            strokeWidth="1.5"
-                          />
-                          {/* Red stamp: "TRASHED" */}
-                          <line x1="4" y1="5" x2="22" y2="2" stroke="#94a3b8" strokeWidth="1" />
-                          <line x1="5" y1="9" x2="24" y2="7" stroke="#94a3b8" strokeWidth="1" />
-                          <line x1="5" y1="13" x2="18" y2="12" stroke="#ef4444" strokeWidth="1.8" />
-                          <rect x="4" y="16" width="16" height="5" rx="1" fill="#ef4444" fillOpacity="0.25" stroke="#ef4444" strokeWidth="0.8" />
-                        </g>
-
-                        {/* Crushed soda can (red/silver soda) */}
-                        <g transform="translate(54, 8) rotate(12)">
-                          <rect x="0" y="0" width="18" height="24" rx="3" fill="#dc2626" stroke="#991b1b" strokeWidth="1.2" />
-                          <path d="M0,8 Q9,14 18,8" stroke="#f87171" strokeWidth="1.5" fill="none" />
-                          <path d="M0,16 Q9,10 18,16" stroke="#ffffff" strokeWidth="1.2" fill="none" />
-                          <ellipse cx="9" cy="0" rx="7" ry="2" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.8" />
-                        </g>
-
-                        {/* Cartoon Fishbone poking out (classic cartoon garbage) */}
-                        <g transform="translate(86, 2) rotate(-22)">
-                          {/* Spine */}
-                          <line x1="0" y1="12" x2="34" y2="12" stroke="#f1f5f9" strokeWidth="2" strokeLinecap="round" />
-                          {/* Head */}
-                          <polygon points="34,12 44,7 44,17" fill="#f1f5f9" stroke="#94a3b8" strokeWidth="1" />
-                          <circle cx="41" cy="11" r="1.2" fill="#475569" />
-                          {/* Ribs */}
-                          <line x1="8" y1="6" x2="8" y2="18" stroke="#f1f5f9" strokeWidth="1.8" strokeLinecap="round" />
-                          <line x1="16" y1="4" x2="16" y2="20" stroke="#f1f5f9" strokeWidth="1.8" strokeLinecap="round" />
-                          <line x1="24" y1="6" x2="24" y2="18" stroke="#f1f5f9" strokeWidth="1.8" strokeLinecap="round" />
-                          {/* Tail fin */}
-                          <polygon points="0,12 -8,6 -8,18" fill="#f1f5f9" stroke="#94a3b8" strokeWidth="1" />
-                        </g>
-
-                        {/* Banana peel drooping over the can rim */}
-                        <g transform="translate(112, 16) rotate(18)">
-                          <path
-                            d="M6,0 C12,8 24,14 26,26 C20,24 16,16 10,12 C4,16 2,24 -2,22 C2,14 4,6 6,0 Z"
-                            fill="#facc15"
-                            stroke="#ca8a04"
-                            strokeWidth="1.2"
-                          />
-                          <circle cx="6" cy="1" r="1.5" fill="#713f12" />
-                          <path d="M26,26 C26,27 25,28 24,28" stroke="#713f12" strokeWidth="1.5" />
-                        </g>
-
-                        {/* Crinkled take-away coffee cup lid / crumpled paper */}
-                        <g transform="translate(38, 16) rotate(-8)">
-                          <ellipse cx="10" cy="8" rx="9" ry="5" fill="#38bdf8" fillOpacity="0.85" stroke="#0284c7" strokeWidth="1" />
-                          <polygon points="2,6 8,1 15,4 12,12 4,10" fill="#fed7aa" stroke="#fb923c" strokeWidth="0.8" />
-                        </g>
-                      </svg>
-                    </div>
-
-                    {/* Randy Trash Can Body (lower jaw & metallic barrel) using untouched original binIcon */}
-                    <div
-                      className={cn(
-                        "randy-body absolute inset-0 z-10 drop-shadow-md",
-                        activeObject === "bin" && "randy-active",
-                      )}
-                      style={{
-                        clipPath: "polygon(0% 19.5%, 100% 19.5%, 100% 100%, 0% 100%)",
-                      }}
-                    >
-                      <img
-                        src={binIcon}
-                        alt="SOrT solid stainless steel metallic trash can"
-                        className="h-full w-full object-contain"
-                      />
-                    </div>
-
-                    {/* Randy Hungry Lid (upper jaw / mouth) using untouched original binIcon */}
-                    <div
-                      className={cn(
-                        "randy-lid absolute inset-0 z-20 transition-transform",
-                        activeObject === "bin" && "randy-active",
-                      )}
-                      style={{
-                        clipPath: "polygon(0% 0%, 100% 0%, 100% 21%, 0% 21%)",
-                      }}
-                    >
-                      <img
-                        src={binIcon}
-                        alt=""
-                        aria-hidden="true"
-                        className="h-full w-full object-contain"
-                      />
-                    </div>
+                    />
                   </div>
                 </div>
                 <span className="sr-only">Slam trash can for Trashes of the Day</span>

@@ -1,0 +1,1 @@
+import{r as e}from"./useRouter-ByJ6_rwb.js";import{O as t}from"./index-B1zXlK82.js";var n=e(),r=()=>(0,n.jsx)(t,{});export{r as component};

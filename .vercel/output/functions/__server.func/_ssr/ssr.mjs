@@ -59,7 +59,7 @@ function renderErrorPage() {
 }
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./server-CoGISuNx.mjs").then((n) => n.t).then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./server-BjWyOJLA.mjs").then((n) => n.t).then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
 async function normalizeCatastrophicSsrResponse(response) {
@@ -101,16 +101,6 @@ function withSecurityHeaders(response) {
 }
 var server_default = { async fetch(request, env, ctx) {
 	try {
-		const url = new URL(request.url);
-		if (url.pathname.startsWith("/~oauth/")) {
-			const targetUrl = new URL(url.pathname + url.search, "https://stash-or-trash-hub.lovable.app");
-			return fetch(new Request(targetUrl, {
-				method: request.method,
-				headers: request.headers,
-				body: request.body,
-				redirect: "manual"
-			}));
-		}
 		return withSecurityHeaders(await normalizeCatastrophicSsrResponse(await (await getServerEntry()).fetch(request, env, ctx)));
 	} catch (error) {
 		console.error(error);

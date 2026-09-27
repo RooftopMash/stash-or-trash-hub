@@ -13,7 +13,7 @@ function getTraceContextExtractor() {
 }
 //#endregion
 //#region node_modules/@supabase/supabase-js/dist/index.mjs
-var version = "2.116.0";
+var version = "2.117.1";
 var JS_ENV = "";
 var JS_RUNTIME_VERSION;
 if (typeof Deno !== "undefined") {

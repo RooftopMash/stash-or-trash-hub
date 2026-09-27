@@ -316,29 +316,146 @@
   animation: randy-junk-gulp 1.15s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
 }
 
-/* Randy The Hungry Trash Can animation classes */
-.randy-can-stage {
-  perspective: 800px;
-}
-.randy-body {
-  transform-origin: 50% 90%;
-  transition: transform 0.2s ease;
-}
-.randy-body.randy-active {
-  animation: randy-body-swallow 1.15s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+/* Heavy-Duty Stainless Steel Trash Can Physics:
+   - Intact 3D metallic bin (no flat 2D guillotine slice)
+   - High-impulse lift, heavy downward concrete slam, and damped base-rim rattle */
+@keyframes sot-bin-slam-physics {
+  0% {
+    transform: perspective(900px) translate3d(0, 0, 0) rotateZ(0deg) rotateX(0deg) scale(1, 1);
+    filter: drop-shadow(0 12px 16px rgba(15, 23, 42, 0.24)) brightness(1);
+  }
+  12% {
+    /* High-torque upward hoist before the slam */
+    transform: perspective(900px) translate3d(0, -26px, 18px) rotateZ(-5deg) rotateX(8deg) scale(1.04, 1.04);
+    filter: drop-shadow(0 26px 24px rgba(15, 23, 42, 0.34)) brightness(1.08);
+  }
+  24% {
+    /* Peak apex poise */
+    transform: perspective(900px) translate3d(0, -30px, 22px) rotateZ(3deg) rotateX(10deg) scale(1.05, 1.05);
+    filter: drop-shadow(0 30px 28px rgba(15, 23, 42, 0.36)) brightness(1.12);
+  }
+  36% {
+    /* CRUSHING SLAM IMPACT ON THE FLOOR */
+    transform: perspective(900px) translate3d(0, 10px, 0) rotateZ(0deg) rotateX(-4deg) scale(1.1, 0.9);
+    filter: drop-shadow(0 4px 8px rgba(15, 23, 42, 0.55)) brightness(1.18) contrast(1.06);
+  }
+  46% {
+    /* Metallic rebound & right rim rock */
+    transform: perspective(900px) translate3d(4px, -10px, 6px) rotateZ(6.5deg) rotateX(3deg) scale(0.97, 1.04);
+    filter: drop-shadow(0 14px 16px rgba(15, 23, 42, 0.3)) brightness(1.04);
+  }
+  56% {
+    /* Left rim rock clatter */
+    transform: perspective(900px) translate3d(-4px, 2px, 0) rotateZ(-5.5deg) rotateX(-2deg) scale(1.03, 0.97);
+    filter: drop-shadow(0 8px 12px rgba(15, 23, 42, 0.36));
+  }
+  66% {
+    /* Secondary right rim rock */
+    transform: perspective(900px) translate3d(2.5px, -3px, 0) rotateZ(3.8deg) rotateX(1.5deg) scale(0.99, 1.02);
+  }
+  76% {
+    /* Secondary left rim rock */
+    transform: perspective(900px) translate3d(-2px, 1px, 0) rotateZ(-2.4deg) rotateX(-1deg) scale(1.01, 0.99);
+  }
+  85% {
+    /* High-frequency steel rim chatter */
+    transform: perspective(900px) translate3d(1px, 0, 0) rotateZ(1.2deg) scale(1, 1);
+  }
+  93% {
+    transform: perspective(900px) translate3d(-0.5px, 0, 0) rotateZ(-0.6deg) scale(1, 1);
+  }
+  100% {
+    transform: perspective(900px) translate3d(0, 0, 0) rotateZ(0deg) rotateX(0deg) scale(1, 1);
+    filter: drop-shadow(0 12px 16px rgba(15, 23, 42, 0.24)) brightness(1);
+  }
 }
 
-.randy-lid {
-  transform-origin: 86% 20.5%;
-  animation: randy-idle-lid 3.4s ease-in-out infinite;
-  transition: transform 0.25s ease;
+@keyframes sot-bin-shadow-physics {
+  0%, 100% {
+    transform: scale(1, 1);
+    opacity: 0.32;
+  }
+  12%, 24% {
+    transform: scale(0.68, 0.65);
+    opacity: 0.18;
+  }
+  36% {
+    transform: scale(1.28, 1.35);
+    opacity: 0.65;
+  }
+  46% {
+    transform: scale(0.92, 0.9);
+    opacity: 0.35;
+  }
+  56% {
+    transform: scale(1.08, 1.1);
+    opacity: 0.45;
+  }
 }
-.randy-lid.randy-active {
-  animation: randy-lid-chomp 1.15s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+
+@keyframes sot-bin-shockwave-ring {
+  0%, 32% {
+    transform: scale(0.5, 0.22);
+    opacity: 0;
+    border-color: rgba(15, 23, 42, 0);
+  }
+  36% {
+    transform: scale(0.85, 0.35);
+    opacity: 0.85;
+    border-color: rgba(15, 23, 42, 0.55);
+  }
+  75% {
+    transform: scale(1.65, 0.65);
+    opacity: 0;
+    border-color: rgba(15, 23, 42, 0);
+  }
+  100% {
+    transform: scale(1.75, 0.7);
+    opacity: 0;
+  }
 }
-.group:hover .randy-lid:not(.randy-active) {
-  /* Randy opens his mouth when hovered, eager to eat trash! */
-  transform: rotate(-32deg);
+
+@keyframes sot-bin-idle-poise {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotateZ(0deg);
+  }
+  50% {
+    transform: translate3d(0, -5px, 0) rotateZ(0.8deg);
+  }
+}
+
+.sot-bin-stage {
+  perspective: 900px;
+}
+
+.sot-bin-art {
+  transform-origin: 50% 88%;
+  animation: sot-bin-idle-poise 4.8s ease-in-out infinite;
+  filter: drop-shadow(0 12px 16px rgba(15, 23, 42, 0.24));
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), filter 0.25s ease;
+}
+
+.group:hover .sot-bin-art:not(.sot-object-active) {
+  animation: none;
+  transform: perspective(900px) translate3d(0, -6px, 8px) rotateZ(-2deg) scale(1.03);
+  filter: drop-shadow(0 18px 22px rgba(15, 23, 42, 0.32)) brightness(1.04);
+}
+
+.sot-bin-art.sot-object-active {
+  animation: sot-bin-slam-physics 1.15s cubic-bezier(0.22, 0.88, 0.28, 1) forwards;
+}
+
+.sot-bin-shadow {
+  transform-origin: 50% 50%;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.sot-bin-shadow.sot-object-active {
+  animation: sot-bin-shadow-physics 1.15s cubic-bezier(0.22, 0.88, 0.28, 1) forwards;
+}
+
+.sot-bin-shockwave.sot-object-active {
+  animation: sot-bin-shockwave-ring 1.15s cubic-bezier(0.16, 0.84, 0.44, 1) forwards;
 }
 
 @keyframes sot-letter-cascade {
