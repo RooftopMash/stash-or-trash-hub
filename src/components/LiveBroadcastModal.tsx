@@ -60,6 +60,10 @@ import {
   type BrandBroadcastCategory,
   type ConsumerBroadcastCategory,
 } from "@/lib/live-broadcasts";
+import {
+  getActiveDeskOperator,
+  recordOperatorResolutionMetric,
+} from "@/lib/brand-operators";
 import type { AiScanResult } from "@/lib/ai-scanner";
 
 export interface IncomingSotCallPayload {
@@ -154,6 +158,8 @@ export function LiveBroadcastModal({
   const [followersAlertedCount, setFollowersAlertedCount] = useState(0);
 
   const [isLive, setIsLive] = useState(false);
+  const [consumerSecondsLeft, setConsumerSecondsLeft] = useState(90);
+  const activeDeskOperator = getActiveDeskOperator();
   const [sessionMode, setSessionMode] = useState<"broadcast" | "video_call" | "voice_call">(defaultMode);
   const [callDirection, setCallDirection] = useState<"brand_to_user" | "user_to_user" | "user_to_brand">(
     initialCallDirection,
@@ -704,7 +710,15 @@ export function LiveBroadcastModal({
       });
 
       setCurrentBroadcastId(published.id);
+      setConsumerSecondsLeft(90);
       setIsLive(true);
+
+      if (studioPersona === "brand_owner") {
+        recordOperatorResolutionMetric(
+          "launch_broadcast",
+          `Hosted live Brand Broadcast "${broadcastHeadline.trim() || brandName}" (${notifiedFollowers.toLocaleString()} followers alerted).`,
+        );
+      }
 
       if (sessionMode !== "broadcast") {
         await ringRecipientOnPlatform(channel);
@@ -748,11 +762,33 @@ export function LiveBroadcastModal({
     }
   };
 
-  const endBroadcast = async () => {
+  const endBroadcast = useCallback(async () => {
     await cleanupSession();
     toast.info("Live session ended. Launch pulse metrics & audit log saved.");
     onOpenChange(false);
-  };
+  }, [cleanupSession, onOpenChange]);
+
+  // Enforce 90-second maximum duration on normal Consumer Situation Broadcasts
+  // so Brand Owners cannot use free personal profiles for extended commercial product launches.
+  useEffect(() => {
+    if (!isLive || studioPersona !== "consumer" || sessionMode !== "broadcast") {
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setConsumerSecondsLeft((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timer);
+          toast.info(
+            "⏱️ 90-Second Personal Member Situation Clip completed! Extended 60-min+ commercial launch broadcasts are exclusive to Official Brand Accounts.",
+          );
+          void endBroadcast();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [isLive, studioPersona, sessionMode, endBroadcast]);
 
   const shareRoomLink = async () => {
     const link =
@@ -925,6 +961,21 @@ export function LiveBroadcastModal({
                   <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                     <Building2 className="h-3 w-3" /> {brandOwner}
                   </span>
+                  {studioPersona === "brand_owner" ? (
+                    <>
+                      <span>·</span>
+                      <span className="text-emerald-600 font-bold">
+                        👤 Desk Operator: {activeDeskOperator.name} ({activeDeskOperator.roleTitle})
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span>·</span>
+                      <span className="text-rose-600 font-bold tabular-nums">
+                        ⏱️ Free Member Situation Clip Cap: {isLive ? `${consumerSecondsLeft}s left` : "90s Max"} (Extended Launches = Brand Plan)
+                      </span>
+                    </>
+                  )}
                   {followersAlertedCount > 0 && (
                     <>
                       <span>·</span>

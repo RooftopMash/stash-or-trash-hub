@@ -54,6 +54,11 @@ import { SocialConnectionsPanel } from "@/components/SocialConnectionsPanel";
 import { CommunicationFreedomCard } from "@/components/CommunicationFreedomCard";
 import { ProfileWall } from "@/components/ProfileWall";
 import { ReleaseSafetyControls } from "@/components/ReleaseSafetyControls";
+import {
+  BrandOperatorHandoverBar,
+  BrandCxDataAndAwardsMatrix,
+  BrandB2BPricingAndCheckoutPanel,
+} from "@/components/BrandExecutiveSuitePanels";
 import { useRoles } from "@/hooks/useRoles";
 import { playCoinSpinSound } from "@/lib/verdict-sounds";
 import { toast } from "sonner";
@@ -266,6 +271,11 @@ function ProfilePage() {
            ===================================================================== */}
         {persona === "brand_owner" ? (
           <div className="space-y-6">
+            {/* Switch Active Operator / Shift Handover Bar for Shared Brand Logins */}
+            <BrandOperatorHandoverBar
+              brandName={managedBrands[0]?.name || "Official Brand Account"}
+            />
+
             {/* Executive Corporate Identity Dossier Header */}
             <section className="rounded-3xl border-2 border-[#d6a928] bg-slate-950 p-6 text-white shadow-lg sm:p-8">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -514,6 +524,16 @@ function ProfilePage() {
               </div>
             </section>
 
+            {/* Full-Cycle CX Data Extraction Matrix + SOrT Employee Recognition Awards */}
+            <BrandCxDataAndAwardsMatrix
+              brandName={managedBrands[0]?.name || "Official Brand Account"}
+            />
+
+            {/* Brand-Only B2B Data & Broadcast Pricing + Multi-Gateway Checkout (Google Pay / Paystack / Stripe / Invoice) */}
+            <BrandB2BPricingAndCheckoutPanel
+              brandName={managedBrands[0]?.name || "Official Brand Account"}
+            />
+
             {/* Brand Owner Communication & Call Privacy Desk */}
             <CommunicationFreedomCard userId={user.id} isBrand />
           </div>
@@ -522,6 +542,18 @@ function ProfilePage() {
               WORLD 2: FUN CONSUMER MEMBER PROFILE (GAMIFIED, REWARDS & SOCIAL)
              ===================================================================== */
           <div className="space-y-6">
+            {/* Strict Account Separation & 100% Free Forever Consumer Guarantee Banner */}
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-500/40 bg-emerald-950/90 px-4 py-2.5 text-xs text-white">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span>
+                  <strong>Personal Consumer Profile (100% Free Forever):</strong> Your personal identity, mutual friends, and votes are strictly separated from any Corporate Brand Account.
+                </span>
+              </div>
+              <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-[11px] font-black text-emerald-300">
+                Zero Paywalls for Everyday Users
+              </span>
+            </div>
             {isLoading ? (
               <Skeleton className="h-48 w-full rounded-2xl" />
             ) : (

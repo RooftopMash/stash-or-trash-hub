@@ -15,18 +15,21 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
+import { setStoredAccountPersona, type SotAccountPersona } from "@/hooks/useRoles";
+import { addAndSwitchDeskOperator } from "@/lib/brand-operators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Recycle, Sparkles, Loader2 } from "lucide-react";
+import { Recycle, Sparkles, Loader2, Building2, Coins, ShieldCheck, UserCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — Stash or Trash" },
-      { name: "description", content: "Sign in to post and vote on the Stash or Trash feed." },
+      { name: "description", content: "Sign in to your Personal Member Profile or Official Brand Account on Stash or Trash." },
     ],
   }),
   component: AuthPage,
@@ -38,15 +41,33 @@ function AuthPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const [accountDoor, setAccountDoor] = useState<SotAccountPersona>("consumer");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [operatorName, setOperatorName] = useState("");
+  const [operatorRole, setOperatorRole] = useState("CX & Launch Desk Operator");
   const [busy, setBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
-    if (user) navigate({ to: "/" });
-  }, [user, navigate]);
+    if (user) {
+      navigate({ to: accountDoor === "brand_owner" ? "/dashboard" : "/" });
+    }
+  }, [user, navigate, accountDoor]);
+
+  const finalizePortalRouting = () => {
+    setStoredAccountPersona(accountDoor);
+    if (accountDoor === "brand_owner" && operatorName.trim()) {
+      addAndSwitchDeskOperator({
+        name: operatorName.trim(),
+        roleTitle: operatorRole.trim() || "Authorized Brand Desk Operator",
+        shiftLabel: "Active Shift Login",
+      });
+    }
+    navigate({ to: accountDoor === "brand_owner" ? "/dashboard" : "/" });
+  };
 
   const signIn = async () => {
     const cleanEmail = email.trim();
@@ -57,8 +78,12 @@ function AuthPage() {
     setBusy(true);
     try {
       await signInWithEmailAndPassword(auth, cleanEmail, password);
-      toast.success(t("auth.welcome") || "Welcome back!");
-      navigate({ to: "/" });
+      toast.success(
+        accountDoor === "brand_owner"
+          ? "Official Brand Account authenticated — opening Brand Command Suite."
+          : t("auth.welcome") || "Welcome back to your Personal Member Profile!",
+      );
+      finalizePortalRouting();
     } catch (err: unknown) {
       const fbErr = err as { code?: string; message?: string };
       let message = "We could not sign you in right now. Please try again.";
@@ -97,8 +122,12 @@ function AuthPage() {
       if (displayName.trim()) {
         await updateProfile(userCred.user, { displayName: displayName.trim() }).catch(() => {});
       }
-      toast.success(t("auth.created") || "Account created! You're in.");
-      navigate({ to: "/" });
+      toast.success(
+        accountDoor === "brand_owner"
+          ? "Official Brand Account registered! Entering Brand Executive Suite."
+          : t("auth.created") || "Personal Member Account created (100% Free Forever)!",
+      );
+      finalizePortalRouting();
     } catch (err: unknown) {
       const fbErr = err as { code?: string; message?: string };
       let message = "An unexpected error occurred during sign up.";
@@ -153,8 +182,12 @@ function AuthPage() {
       }
 
       await signInWithPopup(auth, provider);
-      toast.success(t("auth.welcome") || "Welcome back!");
-      navigate({ to: "/" });
+      toast.success(
+        accountDoor === "brand_owner"
+          ? "Official Brand Account authenticated — opening Brand Command Center."
+          : t("auth.welcome") || "Welcome back!",
+      );
+      finalizePortalRouting();
     } catch (e: unknown) {
       const fbErr = e as { code?: string; message?: string };
       if (fbErr.code === "auth/popup-closed-by-user" || fbErr.code === "auth/cancelled-popup-request") {
@@ -184,8 +217,8 @@ function AuthPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md">
-        <Link to="/" className="mb-6 flex items-center justify-center gap-2">
+      <div className="w-full max-w-lg">
+        <Link to="/" className="mb-5 flex items-center justify-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Recycle className="h-5 w-5" />
           </span>
@@ -195,14 +228,118 @@ function AuthPage() {
           </span>
         </Link>
 
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        {/* SEPARATE LOGIN DOORS: PERSONAL MEMBER vs OFFICIAL BRAND ACCOUNT */}
+        <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl border-2 border-[#d6a928]/60 bg-card p-1.5 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setAccountDoor("consumer")}
+            className={cn(
+              "flex flex-col items-start rounded-xl px-3.5 py-2.5 text-left transition cursor-pointer",
+              accountDoor === "consumer"
+                ? "bg-[#d6a928] text-slate-950 shadow-xs"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <span className="flex items-center gap-1.5 text-xs font-black">
+              <Coins className="h-3.5 w-3.5" />
+              👤 Personal Member Login
+            </span>
+            <span
+              className={cn(
+                "mt-0.5 text-[10px] font-semibold",
+                accountDoor === "consumer" ? "text-slate-900" : "text-muted-foreground",
+              )}
+            >
+              100% Free Forever · Personal Identity
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAccountDoor("brand_owner")}
+            className={cn(
+              "flex flex-col items-start rounded-xl px-3.5 py-2.5 text-left transition cursor-pointer",
+              accountDoor === "brand_owner"
+                ? "bg-slate-950 text-[#f5d061] shadow-xs"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <span className="flex items-center gap-1.5 text-xs font-black">
+              <Building2 className="h-3.5 w-3.5" />
+              🏛️ Official Brand Account
+            </span>
+            <span
+              className={cn(
+                "mt-0.5 text-[10px] font-semibold",
+                accountDoor === "brand_owner" ? "text-slate-300" : "text-muted-foreground",
+              )}
+            >
+              Corporate Asset · Shared Desk Login
+            </span>
+          </button>
+        </div>
+
+        <div
+          className={cn(
+            "rounded-2xl border p-6 shadow-sm",
+            accountDoor === "brand_owner"
+              ? "border-2 border-[#d6a928] bg-card"
+              : "border-border bg-card",
+          )}
+        >
           {/* Header */}
           <div className="mb-5 text-center">
-            <h1 className="font-display text-xl font-bold">Welcome to Stash or Trash</h1>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider",
+                accountDoor === "brand_owner"
+                  ? "bg-slate-950 text-[#f5d061]"
+                  : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+              )}
+            >
+              <ShieldCheck className="h-3 w-3" />
+              {accountDoor === "brand_owner"
+                ? "Corporate Brand Suite · Zero Personal Profile Merging"
+                : "100% Free Consumer Access · Zero Paywalls"}
+            </span>
+            <h1 className="mt-2 font-display text-xl font-bold">
+              {accountDoor === "brand_owner"
+                ? "Official Brand Account & Operator Login"
+                : "Personal Member Sign In"}
+            </h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              Sign in with your preferred social or corporate account, or use email.
+              {accountDoor === "brand_owner"
+                ? "Sign in with your corporate brand credentials. Employees using shared brand credentials never merge their personal profile with the brand."
+                : "Vote Stash or Trash, scan barcodes, connect with friends, and claim launch vouchers — always 100% free."}
             </p>
           </div>
+
+          {/* Optional Active Desk Operator Handover Box when signing into Brand Account */}
+          {accountDoor === "brand_owner" && (
+            <div className="mb-4 rounded-xl border border-[#d6a928]/50 bg-slate-950 p-3.5 text-white">
+              <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#f5d061]">
+                <UserCheck className="h-3.5 w-3.5 text-[#d6a928]" />
+                Switch Active Operator (Optional for Shared Brand Logins)
+              </div>
+              <p className="mt-0.5 text-[11px] text-slate-300">
+                If you are an employee handed the Brand login credentials, enter your name below so your replies &amp; SOrT awards are credited to you while keeping the Brand profile separate:
+              </p>
+              <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
+                <Input
+                  value={operatorName}
+                  onChange={(e) => setOperatorName(e.target.value)}
+                  placeholder="On-Duty Operator (e.g. Sipho D.)"
+                  className="h-8 border-slate-700 bg-slate-900 text-xs text-white"
+                />
+                <Input
+                  value={operatorRole}
+                  onChange={(e) => setOperatorRole(e.target.value)}
+                  placeholder="Desk Role (e.g. Night Shift CX)"
+                  className="h-8 border-slate-700 bg-slate-900 text-xs text-white"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Social Sign-in Grid: Google, Microsoft, Apple, Facebook, X, LinkedIn */}
           <div className="space-y-2.5">
@@ -323,11 +460,17 @@ function AuthPage() {
               <form onSubmit={handleSignInSubmit} className="space-y-3">
                 <Field
                   id="si-email"
-                  label={t("auth.email") || "Email"}
+                  label={
+                    accountDoor === "brand_owner"
+                      ? "Official Corporate / Brand Login Email"
+                      : t("auth.email") || "Email"
+                  }
                   type="email"
                   value={email}
                   onChange={setEmail}
-                  placeholder="name@example.com"
+                  placeholder={
+                    accountDoor === "brand_owner" ? "cx-desk@yourbrand.com" : "name@example.com"
+                  }
                   required
                 />
                 <Field
@@ -339,8 +482,22 @@ function AuthPage() {
                   placeholder="••••••••"
                   required
                 />
-                <Button type="submit" className="w-full" disabled={busy}>
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : t("auth.signIn") || "Sign in"}
+                <Button
+                  type="submit"
+                  className={cn(
+                    "w-full font-bold",
+                    accountDoor === "brand_owner" &&
+                      "bg-slate-950 text-[#f5d061] hover:bg-slate-900",
+                  )}
+                  disabled={busy}
+                >
+                  {busy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : accountDoor === "brand_owner" ? (
+                    "Sign in to Official Brand Account"
+                  ) : (
+                    t("auth.signIn") || "Sign in"
+                  )}
                 </Button>
               </form>
             </TabsContent>
@@ -348,15 +505,25 @@ function AuthPage() {
             <TabsContent value="signup" className="mt-4">
               <div className="mb-3 rounded-lg bg-primary/5 border border-primary/15 px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
                 <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span>Instant sign-up: email confirmation is enabled and automatic.</span>
+                <span>
+                  {accountDoor === "brand_owner"
+                    ? "Register an Official Brand Account — separate from personal member profiles."
+                    : "100% Free Personal Member Account — never paywalled."}
+                </span>
               </div>
               <form onSubmit={handleSignUpSubmit} className="space-y-3">
                 <Field
                   id="su-name"
-                  label={t("auth.displayName") || "Display name"}
+                  label={
+                    accountDoor === "brand_owner"
+                      ? "Official Brand / Corporate Entity Name"
+                      : t("auth.displayName") || "Display name"
+                  }
                   value={displayName}
                   onChange={setDisplayName}
-                  placeholder="Display Name"
+                  placeholder={
+                    accountDoor === "brand_owner" ? "e.g. Nando's South Africa" : "Display Name"
+                  }
                 />
                 <Field
                   id="su-email"
@@ -376,8 +543,22 @@ function AuthPage() {
                   placeholder="At least 6 characters"
                   required
                 />
-                <Button type="submit" className="w-full" disabled={busy}>
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : t("auth.createAccount") || "Create account"}
+                <Button
+                  type="submit"
+                  className={cn(
+                    "w-full font-bold",
+                    accountDoor === "brand_owner" &&
+                      "bg-slate-950 text-[#f5d061] hover:bg-slate-900",
+                  )}
+                  disabled={busy}
+                >
+                  {busy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : accountDoor === "brand_owner" ? (
+                    "Register Official Brand Account"
+                  ) : (
+                    t("auth.createAccount") || "Create Free Personal Account"
+                  )}
                 </Button>
               </form>
             </TabsContent>

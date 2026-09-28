@@ -76,6 +76,16 @@ import { BrandAICopilot } from "@/components/BrandAICopilot";
 import { ContentSafetyGate } from "@/components/ContentSafetyGate";
 import { BrandIntelligencePanel } from "@/components/BrandIntelligencePanel";
 import {
+  BrandOperatorHandoverBar,
+  BrandCxDataAndAwardsMatrix,
+  BrandB2BPricingAndCheckoutPanel,
+} from "@/components/BrandExecutiveSuitePanels";
+import {
+  addCxLifecycleResolution,
+  getActiveDeskOperator,
+  recordOperatorResolutionMetric,
+} from "@/lib/brand-operators";
+import {
   BRAND_BROADCAST_CATEGORIES,
   type BrandBroadcastCategory,
 } from "@/lib/live-broadcasts";
@@ -88,6 +98,8 @@ type DashboardTab =
   | "command"
   | "launch_studio"
   | "client_desk"
+  | "cx_awards"
+  | "b2b_pricing"
   | "dual_world"
   | "admin_sourcing";
 
@@ -284,37 +296,65 @@ function DashboardPage() {
   const handleIssueRecoveryVoucher = async (clientName: string, clientId: string, bName: string) => {
     const prefix = bName.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5) || "BRAND";
     const voucherCode = `SOT_RECOVER_${prefix}_${Math.floor(100 + Math.random() * 899)}`;
+    const activeOp = getActiveDeskOperator();
+    recordOperatorResolutionMetric(
+      "voucher_issued",
+      `Issued Recovery Voucher ${voucherCode} to ${clientName} for ${bName} — flipped Trash to Stash.`,
+    );
+    recordOperatorResolutionMetric(
+      "trash_to_stash",
+      `Flipped ${clientName}'s Trash callout into a Verified Stash for ${bName}.`,
+    );
+    addCxLifecycleResolution({
+      brandName: bName,
+      clientName,
+      stage1LaunchSource: `Engaged with ${bName} on SOT Feed / Launch Stage`,
+      stage2ScanOrPostSignal: `Customer feedback resolved within 14–20 day CPA window`,
+      initialVerdict: "trash",
+      operatorAssigned: `${activeOp.name} (${activeOp.roleTitle})`,
+      actionTaken: `Issued Recovery Voucher & Direct Outreach`,
+      voucherCode,
+      finalVerdict: "stash",
+      revenueRetainedZar: 1650,
+    });
     if (user?.id && clientId && clientId !== user.id) {
       try {
         await sendMessage({
           senderId: user.id,
           recipientId: clientId,
-          body: `🎁 OFFICIAL REVENUE RECOVERY VOUCHER from ${bName}: Thank you for your feedback on SOT. Please use code ${voucherCode} for a complimentary replacement / VIP recovery discount on your next order.`,
+          body: `🎁 OFFICIAL REVENUE RECOVERY VOUCHER from ${bName} (Desk Operator: ${activeOp.name}): Thank you for your feedback on SOT. Please use code ${voucherCode} for a complimentary replacement / VIP recovery discount on your next order.`,
         });
       } catch {
         // ignore
       }
     }
     toast.success(
-      `🎁 Issued Revenue Recovery Voucher (${voucherCode}) to ${clientName} via SOT Messaging!`,
+      `🎁 Issued Recovery Voucher (${voucherCode}) to ${clientName}! Credited to operator ${activeOp.name} on the CX Matrix.`,
     );
   };
 
   const handleRequestToCallClient = async (clientName: string, clientId: string, bName: string) => {
     const senderId = user?.id || "brand-executive";
+    const activeOp = getActiveDeskOperator();
     approveCallerForSession(clientId, senderId);
+    recordOperatorResolutionMetric(
+      "client_call",
+      `Initiated Zero-Phone-Number Request-to-Call with ${clientName} on behalf of ${bName}.`,
+    );
     if (user?.id && clientId && clientId !== user.id) {
       try {
         await sendMessage({
           senderId: user.id,
           recipientId: clientId,
-          body: `🤝 CALL PERMISSION REQUEST from ${bName} (Verified Brand Owner): "May we ring you directly on SOT Voice/Video (no phone number needed) to resolve your post and issue a recovery voucher?" Click Approve Call in this chat to connect.`,
+          body: `🤝 CALL PERMISSION REQUEST from ${bName} (On-Duty Operator: ${activeOp.name} · ${activeOp.roleTitle}): "May we ring you directly on SOT Voice/Video (no phone number needed) to resolve your post and issue a recovery voucher?" Click Approve Call in this chat to connect.`,
         });
       } catch {
         // ignore
       }
     }
-    toast.success(`🤝 Sent 1-click "Request-to-Call" handshake to ${clientName}!`);
+    toast.success(
+      `🤝 Sent 1-click "Request-to-Call" handshake to ${clientName} (Logged under operator ${activeOp.name})!`,
+    );
   };
 
   return (
@@ -365,14 +405,21 @@ function DashboardPage() {
           </div>
         </div>
 
-        {/* 5-PILLAR EXECUTIVE WORKSPACE NAVIGATION BAR */}
+        {/* Switch Active Operator / Shift Handover Bar for Shared Brand Logins */}
+        <div className="mt-4">
+          <BrandOperatorHandoverBar brandName={active?.name || "Official Brand Account"} />
+        </div>
+
+        {/* EXECUTIVE WORKSPACE NAVIGATION BAR */}
         <div className="mt-5 flex flex-wrap items-center gap-1.5 rounded-2xl border border-border bg-card p-1.5 shadow-xs">
           {(
             [
               ["command", "📊 Executive CX & Barometer"],
               ["launch_studio", "🚀 Brand Launch & Broadcast Studio"],
-              ["client_desk", "📞 Zero-Number Client Calling & Recovery Desk"],
-              ["dual_world", "🏛️ Brand Owner vs Consumer Profile Matrix"],
+              ["client_desk", "📞 Zero-Number Client Calling & Recovery"],
+              ["cx_awards", "🏆 Full-Cycle CX Matrix & SOrT Staff Awards"],
+              ["b2b_pricing", "💳 B2B Data Pricing & Checkout (Google Pay / EFT)"],
+              ["dual_world", "🏛️ Brand vs Consumer Separation"],
               ...(hasAdminView ? ([["admin_sourcing", "🌍 Global Brand Sourcing & Admin"]] as const) : []),
             ] as const
           ).map(([tabKey, tabLabel]) => (
@@ -653,6 +700,24 @@ function DashboardPage() {
                 })}
               </div>
             </section>
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: FULL-CYCLE CX DATA EXTRACTION MATRIX & SOrT EMPLOYEE AWARDS
+           ===================================================================== */}
+        {activeTab === "cx_awards" && (
+          <div className="mt-6">
+            <BrandCxDataAndAwardsMatrix brandName={active?.name || "Verified Brand"} />
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB: B2B DATA & BROADCAST PRICING + MULTI-GATEWAY CHECKOUT
+           ===================================================================== */}
+        {activeTab === "b2b_pricing" && (
+          <div className="mt-6">
+            <BrandB2BPricingAndCheckoutPanel brandName={active?.name || "Verified Brand"} />
           </div>
         )}
 
