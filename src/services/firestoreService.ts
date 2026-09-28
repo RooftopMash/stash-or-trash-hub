@@ -314,13 +314,41 @@ export async function updateFirestoreUserProfile(userId: string, data: Record<st
 // ----------------------------------------------------
 // FRIENDS (MUTUAL CONNECTION REQUESTS)
 // ----------------------------------------------------
+export function getCanonicalFriendId(userA: string, userB: string): string {
+  const [low, high] = [userA, userB].sort();
+  return `friend_${low}_${high}`;
+}
+
+export async function getFirestoreFriendshipBetween(
+  userA: string,
+  userB: string,
+): Promise<FirestoreFriend | null> {
+  if (!userA || !userB || userA === userB) return null;
+  const id = getCanonicalFriendId(userA, userB);
+  const docPath = `friends/${id}`;
+  try {
+    const snap = await getDoc(doc(db, "friends", id));
+    return snap.exists() ? ({ id: snap.id, ...snap.data() } as FirestoreFriend) : null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, docPath);
+  }
+}
+
 export async function getFirestoreFriends(userId: string): Promise<FirestoreFriend[]> {
   const collectionPath = "friends";
   try {
-    const snapshot = await getDocs(query(collection(db, collectionPath), limit(200)));
-    return snapshot.docs
-      .map((d) => ({ id: d.id, ...d.data() }) as FirestoreFriend)
-      .filter((f) => f.requesterId === userId || f.addresseeId === userId);
+    const [reqSnap, addSnap] = await Promise.all([
+      getDocs(query(collection(db, collectionPath), where("requesterId", "==", userId), limit(100))),
+      getDocs(query(collection(db, collectionPath), where("addresseeId", "==", userId), limit(100))),
+    ]);
+    const map = new Map<string, FirestoreFriend>();
+    for (const d of reqSnap.docs) {
+      map.set(d.id, { id: d.id, ...d.data() } as FirestoreFriend);
+    }
+    for (const d of addSnap.docs) {
+      map.set(d.id, { id: d.id, ...d.data() } as FirestoreFriend);
+    }
+    return Array.from(map.values());
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, collectionPath);
   }
@@ -330,9 +358,9 @@ export async function sendFirestoreFriendRequest(
   requesterId: string,
   addresseeId: string,
   bondTag = "stranger",
+  status: "pending" | "accepted" | "blocked" = "pending",
 ): Promise<FirestoreFriend> {
-  const [low, high] = [requesterId, addresseeId].sort();
-  const id = `friend_${low}_${high}`;
+  const id = getCanonicalFriendId(requesterId, addresseeId);
   const docPath = `friends/${id}`;
   try {
     const now = new Date().toISOString();
@@ -340,7 +368,7 @@ export async function sendFirestoreFriendRequest(
       id,
       requesterId,
       addresseeId,
-      status: "pending",
+      status,
       bondTag,
       createdAt: now,
       updatedAt: now,

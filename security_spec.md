@@ -8,6 +8,7 @@
 - **Crisis Alerts & Incidents**: Must have a valid `brandId`, `title`, and known `severity`.
 - **Chat Messages**: Senders can only write messages where `senderId == request.auth.uid`. Content must be non-empty and <= 3000 chars.
 - **Notifications**: Users can only read and update (`read: true`) their own notifications.
+- **Friends**: Users can only read, create (`requesterId == request.auth.uid`), update (`status` in `['pending', 'accepted', 'blocked']`), or delete friend documents where they are either `requesterId` or `addresseeId`, and `requesterId != addresseeId`.
 - **Default Deny**: All unmapped documents are locked (`allow read, write: if false;`).
 
 ---

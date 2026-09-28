@@ -192,11 +192,16 @@ service cloud.firestore {
     // Friends / Mutual Connections
     match /friends/{friendId} {
       allow get: if isSignedIn() && isValidId(friendId) && (
+        resource == null ||
         existing().requesterId == request.auth.uid ||
         existing().addresseeId == request.auth.uid ||
         isAdmin()
       );
-      allow list: if isSignedIn();
+      allow list: if isSignedIn() && (
+        existing().requesterId == request.auth.uid ||
+        existing().addresseeId == request.auth.uid ||
+        isAdmin()
+      );
       allow create: if isSignedIn() && isValidId(friendId) &&
         incoming().requesterId == request.auth.uid &&
         isValidFriend(incoming());

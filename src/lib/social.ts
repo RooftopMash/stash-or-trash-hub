@@ -1,4 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
+import { auth } from "@/lib/firebase";
+import {
+  getCanonicalFriendId,
+  getFirestoreFriendshipBetween,
+  getFirestoreFriends,
+  sendFirestoreFriendRequest,
+  updateFirestoreFriendStatus,
+  deleteFirestoreFriend,
+  type FirestoreFriend,
+} from "@/services/firestoreService";
 
 /* ---------------------------------- likes --------------------------------- */
 
@@ -255,6 +265,18 @@ export type FriendRecord = {
 
 const FRIENDS_STORAGE_KEY = "sot_friends_table_v1";
 
+function mapFirestoreToFriendRecord(f: FirestoreFriend): FriendRecord {
+  return {
+    id: f.id,
+    requester_id: f.requesterId,
+    addressee_id: f.addresseeId,
+    status: f.status,
+    bond_tag: f.bondTag ?? "stranger",
+    created_at: f.createdAt,
+    updated_at: f.updatedAt ?? f.createdAt,
+  };
+}
+
 function readLocalFriends(): FriendRecord[] {
   if (typeof window === "undefined") return [];
   try {
@@ -279,6 +301,14 @@ export async function getFriendshipBetween(
   userB: string,
 ): Promise<FriendRecord | null> {
   if (!userA || !userB || userA === userB) return null;
+  if (auth.currentUser) {
+    try {
+      const fsRecord = await getFirestoreFriendshipBetween(userA, userB);
+      if (fsRecord) return mapFirestoreToFriendRecord(fsRecord);
+    } catch {
+      // continue to fallback
+    }
+  }
   try {
     const { data, error } = await supabase
       .from("friends")
@@ -316,6 +346,18 @@ export async function sendFriendRequest(
     return existing;
   }
 
+  if (auth.currentUser?.uid === requesterId) {
+    try {
+      const fsCreated = await sendFirestoreFriendRequest(requesterId, addresseeId, bondTag, "pending");
+      const mapped = mapFirestoreToFriendRecord(fsCreated);
+      const local = readLocalFriends().filter((r) => r.id !== mapped.id);
+      writeLocalFriends([mapped, ...local]);
+      return mapped;
+    } catch {
+      // fallback
+    }
+  }
+
   try {
     const { data, error } = await supabase
       .from("friends")
@@ -337,7 +379,7 @@ export async function sendFriendRequest(
   }
 
   const record: FriendRecord = {
-    id: `friend-${Date.now()}`,
+    id: getCanonicalFriendId(requesterId, addresseeId),
     requester_id: requesterId,
     addressee_id: addresseeId,
     status: "pending",
@@ -345,7 +387,7 @@ export async function sendFriendRequest(
     created_at: now,
     updated_at: now,
   };
-  const local = readLocalFriends();
+  const local = readLocalFriends().filter((r) => r.id !== record.id);
   writeLocalFriends([record, ...local]);
   return record;
 }
@@ -355,6 +397,14 @@ export async function acceptFriendRequest(
   otherUserId: string,
 ): Promise<FriendRecord> {
   const now = new Date().toISOString();
+  const canonicalId = getCanonicalFriendId(currentUserId, otherUserId);
+  if (auth.currentUser) {
+    try {
+      await updateFirestoreFriendStatus(canonicalId, "accepted");
+    } catch {
+      // fallback
+    }
+  }
   try {
     const { data, error } = await supabase
       .from("friends")
@@ -385,7 +435,7 @@ export async function acceptFriendRequest(
     return local[idx];
   }
   const created: FriendRecord = {
-    id: `friend-${Date.now()}`,
+    id: canonicalId,
     requester_id: otherUserId,
     addressee_id: currentUserId,
     status: "accepted",
@@ -403,6 +453,18 @@ export async function blockFriendConnection(
 ): Promise<FriendRecord> {
   const now = new Date().toISOString();
   const existing = await getFriendshipBetween(currentUserId, otherUserId);
+  const canonicalId = getCanonicalFriendId(currentUserId, otherUserId);
+  if (auth.currentUser) {
+    try {
+      if (existing) {
+        await updateFirestoreFriendStatus(canonicalId, "blocked");
+      } else if (auth.currentUser.uid === currentUserId) {
+        await sendFirestoreFriendRequest(currentUserId, otherUserId, "stranger", "blocked");
+      }
+    } catch {
+      // fallback
+    }
+  }
   try {
     if (existing) {
       const { data, error } = await supabase
@@ -437,7 +499,7 @@ export async function blockFriendConnection(
       ),
   );
   const blocked: FriendRecord = {
-    id: existing?.id ?? `friend-${Date.now()}`,
+    id: existing?.id ?? canonicalId,
     requester_id: currentUserId,
     addressee_id: otherUserId,
     status: "blocked",
@@ -453,6 +515,14 @@ export async function removeFriendConnection(
   currentUserId: string,
   otherUserId: string,
 ): Promise<void> {
+  const canonicalId = getCanonicalFriendId(currentUserId, otherUserId);
+  if (auth.currentUser) {
+    try {
+      await deleteFirestoreFriend(canonicalId);
+    } catch {
+      // fallback
+    }
+  }
   try {
     await supabase
       .from("friends")
@@ -475,6 +545,16 @@ export async function removeFriendConnection(
 
 export async function getMyFriendsAndRequests(userId: string): Promise<FriendRecord[]> {
   if (!userId) return [];
+  if (auth.currentUser?.uid === userId) {
+    try {
+      const fsFriends = await getFirestoreFriends(userId);
+      if (fsFriends.length > 0) {
+        return fsFriends.map(mapFirestoreToFriendRecord);
+      }
+    } catch {
+      // fallback
+    }
+  }
   try {
     const { data, error } = await supabase
       .from("friends")
@@ -496,6 +576,17 @@ export async function updateFriendBondTag(
   bondTag: string,
 ): Promise<void> {
   const now = new Date().toISOString();
+  const canonicalId = getCanonicalFriendId(currentUserId, otherUserId);
+  if (auth.currentUser) {
+    try {
+      const existing = await getFirestoreFriendshipBetween(currentUserId, otherUserId);
+      if (existing) {
+        await updateFirestoreFriendStatus(canonicalId, existing.status, bondTag);
+      }
+    } catch {
+      // fallback
+    }
+  }
   try {
     await supabase
       .from("friends")
