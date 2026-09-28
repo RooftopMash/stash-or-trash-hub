@@ -7,6 +7,6 @@ test("homepage renders", async ({ page }) => {
 });
 
 test("protected routes redirect unauthenticated visitors", async ({ page }) => {
-  await page.goto("/dashboard");
+  await page.goto("/profile");
   await expect(page).toHaveURL(/\/auth(?:\?|$)/);
 });

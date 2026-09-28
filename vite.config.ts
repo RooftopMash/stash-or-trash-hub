@@ -103,9 +103,17 @@ export default defineConfig({
             },
           ],
         }
-      : process.env.NITRO_PRESET
-        ? { preset: process.env.NITRO_PRESET }
-        : undefined,
+      : {
+          preset: process.env.NITRO_PRESET || "cloudflare-module",
+          compatibilityDate: "2025-05-01",
+          cloudflare: {
+            deployConfig: true,
+            nodeCompat: true,
+            wrangler: {
+              name: "stash-or-trash-hub",
+            },
+          },
+        },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     server: { entry: "server" },

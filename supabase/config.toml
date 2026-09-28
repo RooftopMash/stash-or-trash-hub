@@ -1,1 +1,4 @@
 project_id = "ypbyouaddkdfuhfpnguu"
+
+[functions.review-before-publish]
+verify_jwt = false

@@ -54,4 +54,6 @@ CREATE TRIGGER notify_incident AFTER INSERT ON public.incidents
 FOR EACH ROW EXECUTE FUNCTION public.trg_notify_incident();
 
 ALTER TABLE public.incidents REPLICA IDENTITY FULL;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.incidents;
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.incidents;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
