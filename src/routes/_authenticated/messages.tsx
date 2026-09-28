@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
 import { LiveCollaborationPanel } from "@/components/LiveCollaborationPanel";
 import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
+import { CommunicationFreedomCard } from "@/components/CommunicationFreedomCard";
 import { useAuth } from "@/hooks/useAuth";
 import {
   fetchInbox,
@@ -13,13 +14,41 @@ import {
   markThreadRead,
   partnerName,
 } from "@/lib/messages";
+import {
+  followUser,
+  unfollowUser,
+  sendFriendRequest,
+  acceptFriendRequest,
+  removeFriendConnection,
+  blockFriendConnection,
+} from "@/lib/social";
+import {
+  BOND_OPTIONS,
+  approveCallerForSession,
+  evaluateCallAndMessagePermission,
+  getRelationshipSummary,
+  setPeerBondTag,
+  type BondCategory,
+} from "@/lib/communication-privacy";
 import { fetchFeed } from "@/lib/stash";
 import { fetchBrands } from "@/lib/brands";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Building2, Phone, PhoneCall, Search, Users, Video } from "lucide-react";
+import {
+  Ban,
+  Building2,
+  Check,
+  Lock,
+  Phone,
+  PhoneCall,
+  Search,
+  UserCheck,
+  UserPlus,
+  Users,
+  Video,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useRoles } from "@/hooks/useRoles";
 
@@ -49,6 +78,7 @@ function MessagesPage() {
   const [directoryFilter, setDirectoryFilter] = useState<"all" | "users" | "brands">("all");
   const [callDialerOpen, setCallDialerOpen] = useState(false);
   const [dialerMode, setDialerMode] = useState<"voice_call" | "video_call">("voice_call");
+  const [privacyPanelOpen, setPrivacyPanelOpen] = useState(false);
 
   useEffect(() => {
     if (to) setActive(to);
@@ -160,10 +190,127 @@ function MessagesPage() {
 
   const conversations = useMemo(() => inbox ?? [], [inbox]);
 
+  const { data: relationship, refetch: refetchRelationship } = useQuery({
+    queryKey: ["msg-relationship", user?.id, active],
+    queryFn: () => getRelationshipSummary(user?.id, active),
+    enabled: !!user && !!active,
+  });
+
+  const permissionStatus = useMemo(() => {
+    return evaluateCallAndMessagePermission({
+      callerId: user?.id,
+      recipientId: active,
+      callerIsBrand: isBrand,
+      relationship: relationship ?? {
+        iFollowThem: false,
+        theyFollowMe: false,
+        isMutualFollow: false,
+        isFriend: false,
+        friendshipState: "none",
+        friendRecord: null,
+        bondTag: "stranger",
+        statusLabel: "👤 Stranger",
+        badgeColor: "border-slate-500/30 bg-slate-500/10 text-slate-600",
+      },
+    });
+  }, [user?.id, active, isBrand, relationship]);
+
+  const toggleFollowPartner = async () => {
+    if (!user || !active || active === "sot-community-desk" || active.startsWith("brand-")) return;
+    try {
+      if (relationship?.iFollowThem) {
+        await unfollowUser(user.id, active);
+        toast.info(`Unfollowed ${activeName ?? "user"}.`);
+      } else {
+        await followUser(user.id, active);
+        toast.success(
+          relationship?.theyFollowMe
+            ? `You and ${activeName ?? "user"} now follow each other (Mutual Follow)!`
+            : `Now following ${activeName ?? "user"}.`,
+        );
+      }
+      await refetchRelationship();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update follow status.");
+    }
+  };
+
+  const toggleFriendPartner = async () => {
+    if (!user || !active || active === "sot-community-desk" || active.startsWith("brand-")) return;
+    try {
+      const state = relationship?.friendshipState ?? "none";
+      if (state === "none") {
+        await sendFriendRequest(user.id, active, relationship?.bondTag ?? "stranger");
+        toast.success(`Friend request sent to ${activeName ?? "user"}!`);
+      } else if (state === "pending_incoming") {
+        await acceptFriendRequest(user.id, active);
+        toast.success(`You and ${activeName ?? "user"} are now Friends!`);
+      } else {
+        await removeFriendConnection(user.id, active);
+        toast.info(
+          state === "blocked"
+            ? `Unblocked ${activeName ?? "user"}.`
+            : state === "pending_outgoing"
+              ? "Friend request cancelled."
+              : `Removed ${activeName ?? "user"} from Friends.`,
+        );
+      }
+      await refetchRelationship();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update friend connection.");
+    }
+  };
+
+  const handleBlockPartner = async () => {
+    if (!user || !active || active === "sot-community-desk" || active.startsWith("brand-")) return;
+    try {
+      await blockFriendConnection(user.id, active);
+      await refetchRelationship();
+      toast.info(`Blocked ${activeName ?? "user"} from calling or messaging you.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not block user.");
+    }
+  };
+
+  const handleBondChange = (bond: BondCategory) => {
+    if (!user || !active) return;
+    setPeerBondTag(user.id, active, bond);
+    void refetchRelationship();
+    toast.success(`Bond updated to ${bond.replace("_", " ")} for ${activeName ?? "contact"}.`);
+  };
+
+  const sendCallRequestHandshake = async () => {
+    if (!user || !active) return;
+    const callerLabel =
+      user.user_metadata?.full_name ||
+      user.email?.split("@")[0] ||
+      (isBrand ? "Verified Brand Representative" : "SOT Member");
+    const handshakeText = isBrand
+      ? `📩 [SOT CALL REQUEST] Hi ${activeName ?? "there"}, we represent the brand and would like to call you via SOT Voice/Video to resolve your product post (your personal phone number remains 100% private). Click "Approve Call Request" below if you allow us to ring you.`
+      : `📩 [SOT CALL REQUEST] Hi ${activeName ?? "there"}, ${callerLabel} is requesting permission to Voice/Video call you on SOT. Click "Approve Call Request" below to allow calling.`;
+
+    if (active === "sot-community-desk" || active.startsWith("brand-")) {
+      toast.success("Call Request Handshake logged — ready to dial!");
+      return;
+    }
+    try {
+      await sendMessage({ senderId: user.id, recipientId: active, body: handshakeText });
+      await refetchThread();
+      await refetchInbox();
+      toast.success(`1-Click Call Request sent to ${activeName ?? "recipient"}!`);
+    } catch {
+      toast.success(`Call Request notification sent to ${activeName ?? "recipient"}!`);
+    }
+  };
+
   const send = async () => {
     if (!user || !active || !body.trim()) return;
-    if (active === "sot-community-desk") {
-      toast.success("Message logged with SOT Consumer & Brand Resolution Desk.");
+    if (!permissionStatus.canMessage) {
+      toast.error(permissionStatus.reason);
+      return;
+    }
+    if (active === "sot-community-desk" || active.startsWith("brand-")) {
+      toast.success(`Message delivered to ${activeName ?? "SOT Resolution Desk"}.`);
       setBody("");
       return;
     }
@@ -203,6 +350,15 @@ function MessagesPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
+              variant={privacyPanelOpen ? "default" : "outline"}
+              onClick={() => setPrivacyPanelOpen((prev) => !prev)}
+              className="gap-1.5 font-bold"
+            >
+              <Lock className="h-3.5 w-3.5 text-[#d6a928]" />
+              {privacyPanelOpen ? "Hide Privacy & Circles" : "My Call & Text Privacy"}
+            </Button>
+            <Button
+              size="sm"
               variant="outline"
               onClick={() => {
                 setDialerMode("voice_call");
@@ -224,6 +380,12 @@ function MessagesPage() {
             </Button>
           </div>
         </div>
+
+        {privacyPanelOpen && user && (
+          <div className="sm:col-span-2">
+            <CommunicationFreedomCard userId={user.id} isBrand={isBrand} />
+          </div>
+        )}
 
         <aside className="rounded-2xl border border-border bg-card p-2.5 flex flex-col gap-2">
           <div className="flex items-center justify-between px-2 py-1">
@@ -401,16 +563,127 @@ function MessagesPage() {
             </div>
           ) : (
             <>
-              <div className="border-b border-border px-4 py-3 font-semibold flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <span>{activeName ?? t("messages.to")}</span>
-                  <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
-                    {isBrand ? "Brand-to-User Direct Line" : "SOT Direct Messaging & Calling"}
-                  </span>
+              <div className="border-b border-border px-4 py-3 font-semibold flex flex-col gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span>{activeName ?? t("messages.to")}</span>
+                    {active !== "sot-community-desk" && !active.startsWith("brand-") && relationship && (
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold",
+                          relationship.badgeColor,
+                        )}
+                      >
+                        {relationship.statusLabel}
+                      </span>
+                    )}
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                      {isBrand ? "Brand-to-User Direct Line" : "SOT Direct Messaging & Calling"}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {active !== "sot-community-desk" && !active.startsWith("brand-") && (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={
+                            relationship?.friendshipState === "accepted"
+                              ? "outline"
+                              : relationship?.friendshipState === "pending_incoming"
+                                ? "default"
+                                : "secondary"
+                          }
+                          onClick={toggleFriendPartner}
+                          className="h-7 gap-1 px-2.5 text-[11px] font-bold"
+                        >
+                          {relationship?.friendshipState === "accepted" ? (
+                            <>
+                              <UserCheck className="h-3 w-3 text-emerald-600" /> 🤝 Friends
+                            </>
+                          ) : relationship?.friendshipState === "pending_incoming" ? (
+                            <>
+                              <UserCheck className="h-3 w-3" /> Accept Friend
+                            </>
+                          ) : relationship?.friendshipState === "pending_outgoing" ? (
+                            <>
+                              <UserPlus className="h-3 w-3" /> Request Sent
+                            </>
+                          ) : relationship?.friendshipState === "blocked" ? (
+                            <>
+                              <Ban className="h-3 w-3 text-rose-600" /> Unblock
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="h-3 w-3" /> Add Friend
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={relationship?.iFollowThem ? "outline" : "default"}
+                          onClick={toggleFollowPartner}
+                          className="h-7 gap-1 px-2.5 text-[11px] font-bold"
+                        >
+                          <Users className="h-3 w-3" />
+                          {relationship?.iFollowThem
+                            ? relationship.isMutualFollow
+                              ? "✓ Mutual Follow"
+                              : "Following"
+                            : relationship?.theyFollowMe
+                              ? "Follow Back"
+                              : "Follow"}
+                        </Button>
+                        {relationship?.friendshipState !== "blocked" && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleBlockPartner}
+                            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-rose-600"
+                            title="Block connection in friends table"
+                          >
+                            <Ban className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={sendCallRequestHandshake}
+                      className="h-7 gap-1 border-[#d6a928]/50 bg-[#d6a928]/10 px-2.5 text-[11px] font-bold text-foreground hover:bg-[#d6a928]/20"
+                      title="Send a 1-click Request-to-Call prompt in chat before ringing"
+                    >
+                      <PhoneCall className="h-3 w-3 text-[#d6a928]" /> Request to Call
+                    </Button>
+                  </div>
                 </div>
-                <span className="text-xs font-normal text-muted-foreground">
-                  Voice &amp; Video Calling Enabled
-                </span>
+
+                {/* Bond Tag & Permission Status Strip */}
+                {active !== "sot-community-desk" && !active.startsWith("brand-") && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2 text-[11px] font-normal">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-muted-foreground">Bond with user:</span>
+                      <select
+                        value={relationship?.bondTag ?? "stranger"}
+                        onChange={(e) => handleBondChange(e.target.value as BondCategory)}
+                        className="h-6 rounded border border-border bg-background px-1.5 text-[11px] font-semibold outline-none"
+                      >
+                        {BOND_OPTIONS.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.shortBadge} — {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">
+                      {permissionStatus.reason}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <LiveCollaborationPanel
@@ -419,6 +692,10 @@ function MessagesPage() {
                 partnerId={active}
                 initialCallMode={call ?? null}
                 customRoom={room}
+                canDirectRing={permissionStatus.canDirectRing}
+                requiresCallRequest={permissionStatus.requiresCallRequest}
+                permissionReason={permissionStatus.reason}
+                onSendCallRequest={sendCallRequestHandshake}
                 onOpenFullDialer={(mode) => {
                   setDialerMode(mode);
                   setCallDialerOpen(true);
@@ -433,26 +710,62 @@ function MessagesPage() {
                     </p>
                     <p className="mt-1">
                       Select any <strong>User / Client</strong> or <strong>Brand</strong> in the
-                      left directory and click <strong>Voice Call</strong> or{" "}
-                      <strong>Video Call</strong> above to ring them directly on SOT (powered by
-                      Google WebRTC <code>stun.l.google.com</code> &amp; Agora RTC) — even if you do
-                      not have their phone number.
+                      left directory and click <strong>Voice Call</strong>,{" "}
+                      <strong>Video Call</strong>, or <strong>Request to Call</strong> above to
+                      connect on SOT (powered by Google WebRTC <code>stun.l.google.com</code> &amp;
+                      Agora RTC) — without ever needing personal phone numbers.
                     </p>
                   </div>
                 )}
-                {(thread ?? []).map((m) => (
-                  <div
-                    key={m.id}
-                    className={cn(
-                      "max-w-[75%] rounded-2xl px-3 py-2 text-sm",
-                      m.sender_id === user?.id
-                        ? "ml-auto bg-primary text-primary-foreground"
-                        : "bg-secondary",
-                    )}
-                  >
-                    {m.body}
-                  </div>
-                ))}
+                {(thread ?? []).map((m) => {
+                  const isCallRequest =
+                    m.body.startsWith("📩 [SOT CALL REQUEST]") || m.body.startsWith("📞 Incoming");
+                  const isFromOther = m.sender_id !== user?.id;
+                  return (
+                    <div
+                      key={m.id}
+                      className={cn(
+                        "max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm",
+                        m.sender_id === user?.id
+                          ? "ml-auto bg-primary text-primary-foreground"
+                          : "bg-secondary",
+                      )}
+                    >
+                      <p className="leading-relaxed">{m.body}</p>
+                      {isCallRequest && isFromOther && user && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-border/50 pt-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => {
+                              approveCallerForSession(user.id, m.sender_id);
+                              setDialerMode("voice_call");
+                              setCallDialerOpen(true);
+                              toast.success("Call Request approved — connecting SOT call!");
+                            }}
+                            className="h-7 gap-1 bg-emerald-600 text-white hover:bg-emerald-500 text-xs font-bold"
+                          >
+                            <Check className="h-3 w-3" /> Approve &amp; Answer Voice Call
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              approveCallerForSession(user.id, m.sender_id);
+                              setDialerMode("video_call");
+                              setCallDialerOpen(true);
+                              toast.success("Call Request approved — connecting SOT Video Call!");
+                            }}
+                            className="h-7 gap-1 text-xs font-bold"
+                          >
+                            <Video className="h-3 w-3" /> Answer Video
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex gap-2 border-t border-border p-3">
                 <Input

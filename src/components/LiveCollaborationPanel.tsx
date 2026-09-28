@@ -33,6 +33,10 @@ type LiveCollaborationPanelProps = {
   partnerId: string;
   initialCallMode?: "voice" | "video" | null;
   customRoom?: string;
+  canDirectRing?: boolean;
+  requiresCallRequest?: boolean;
+  permissionReason?: string;
+  onSendCallRequest?: () => void;
   onOpenFullDialer?: (mode: "voice_call" | "video_call") => void;
 };
 
@@ -48,6 +52,10 @@ export function LiveCollaborationPanel({
   partnerId,
   initialCallMode,
   customRoom,
+  canDirectRing = true,
+  requiresCallRequest = false,
+  permissionReason,
+  onSendCallRequest,
   onOpenFullDialer,
 }: LiveCollaborationPanelProps) {
   const { user, session } = useAuth();
@@ -276,6 +284,19 @@ export function LiveCollaborationPanel({
   );
 
   const requestCall = async (mode: "voice" | "video" | "broadcast") => {
+    if (!canDirectRing) {
+      if (requiresCallRequest && onSendCallRequest) {
+        onSendCallRequest();
+        toast.info(
+          permissionReason ||
+            "Sent a 1-click Call Request first based on this user's calling privacy settings.",
+        );
+      } else {
+        toast.error(permissionReason || "This user has disabled direct incoming calls.");
+      }
+      return;
+    }
+
     setRequestedMode(mode);
     setCameraOn(mode !== "voice");
     setMicrophoneOn(true);

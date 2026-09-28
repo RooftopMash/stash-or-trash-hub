@@ -92,6 +92,15 @@ service cloud.firestore {
         data.read is bool;
     }
 
+    function isValidFriend(data) {
+      return data.keys().hasAll(['id', 'requesterId', 'addresseeId', 'status']) &&
+        data.keys().hasOnly(['id', 'requesterId', 'addresseeId', 'status', 'bondTag', 'createdAt', 'updatedAt']) &&
+        data.requesterId is string && data.addresseeId is string &&
+        data.requesterId != data.addresseeId &&
+        (data.status in ['pending', 'accepted', 'blocked']) &&
+        (!('bondTag' in data) || (data.bondTag is string && data.bondTag.size() <= 50));
+    }
+
     // Health / connection test rule
     match /test/{docId} {
       allow get: if true;
@@ -178,6 +187,31 @@ service cloud.firestore {
         isAdmin()
       );
       allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // Friends / Mutual Connections
+    match /friends/{friendId} {
+      allow get: if isSignedIn() && isValidId(friendId) && (
+        existing().requesterId == request.auth.uid ||
+        existing().addresseeId == request.auth.uid ||
+        isAdmin()
+      );
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(friendId) &&
+        incoming().requesterId == request.auth.uid &&
+        isValidFriend(incoming());
+      allow update: if isSignedIn() && isValidId(friendId) && (
+        isAdmin() ||
+        ((existing().requesterId == request.auth.uid || existing().addresseeId == request.auth.uid) &&
+          isValidFriend(incoming()) &&
+          incoming().requesterId == existing().requesterId &&
+          incoming().addresseeId == existing().addresseeId)
+      );
+      allow delete: if isSignedIn() && (
+        existing().requesterId == request.auth.uid ||
+        existing().addresseeId == request.auth.uid ||
+        isAdmin()
+      );
     }
   }
 }

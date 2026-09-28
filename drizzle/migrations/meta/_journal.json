@@ -29,6 +29,13 @@
       "when": 1788518056027,
       "tag": "0003_brand_votes_and_cx_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790521200000,
+      "tag": "0004_friends_mutual_connections",
+      "breakpoints": true
     }
   ]
 }

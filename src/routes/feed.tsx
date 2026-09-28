@@ -19,6 +19,7 @@ import {
   Video,
   Radio,
   Phone,
+  Rocket,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { ItemCard } from "@/components/ItemCard";
@@ -26,6 +27,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { LocationAwareFeed } from "@/components/LocationAwareFeed";
 import { TrendingHashtags } from "@/components/TrendingHashtags";
 import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
+import { LiveStageSection } from "@/components/LiveStageSection";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
@@ -66,6 +68,7 @@ function Feed() {
   const [resultScope, setResultScope] = useState<"all" | "brands" | "posts">("all");
   const [showAllMatchingBrands, setShowAllMatchingBrands] = useState(false);
   const [feedBroadcastOpen, setFeedBroadcastOpen] = useState(false);
+  const [feedBroadcastPersona, setFeedBroadcastPersona] = useState<"brand_owner" | "consumer">("consumer");
 
   useEffect(() => {
     if (search.filter) {
@@ -344,12 +347,26 @@ function Feed() {
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             <Button
               size="sm"
-              onClick={() => setFeedBroadcastOpen(true)}
+              onClick={() => {
+                setFeedBroadcastPersona("brand_owner");
+                setFeedBroadcastOpen(true);
+              }}
+              className="gap-1.5 bg-slate-950 text-[#d6a928] border border-[#d6a928]/60 hover:bg-slate-900 font-black shadow-sm"
+            >
+              <Rocket className="h-4 w-4 text-[#d6a928]" />
+              Brand Launch / Relaunch Live
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                setFeedBroadcastPersona("consumer");
+                setFeedBroadcastOpen(true);
+              }}
               className="gap-1.5 bg-rose-600 text-white hover:bg-rose-700 font-bold shadow-sm"
             >
               <Video className="h-4 w-4" />
               <Radio className="h-3.5 w-3.5 animate-pulse" />
-              Video Cam / Broadcast Situation
+              Consumer Situation Cam
             </Button>
             <Button
               size="sm"
@@ -362,6 +379,11 @@ function Feed() {
               </Link>
             </Button>
           </div>
+        </div>
+
+        {/* LIVE BRAND LAUNCHES, RELAUNCHES & CONSUMER BROADCAST STAGE IN FEED */}
+        <div className="mb-6">
+          <LiveStageSection compact />
         </div>
 
         {/* PROMINENT REAL-TIME SEARCH BAR AT THE TOP OF THE FEED */}
@@ -906,10 +928,12 @@ function Feed() {
       <LiveBroadcastModal
         open={feedBroadcastOpen}
         onOpenChange={setFeedBroadcastOpen}
-        brandName={activeBrandObj?.name ?? "Community Feed Broadcast"}
-        brandOwner="Public Consumer & Brand Feed"
-        productName="Live Product / Service Situation Broadcast"
+        brandName={activeBrandObj?.name ?? (feedBroadcastPersona === "brand_owner" ? "Verified Brand Showcase" : "Community Feed Broadcast")}
+        brandSlug={activeBrandObj?.slug}
+        brandOwner={feedBroadcastPersona === "brand_owner" ? "Verified Brand Owner · Executive Studio" : "Public Consumer & Brand Feed"}
+        productName={feedBroadcastPersona === "brand_owner" ? "LIVE LAUNCH: New Product & Service Reveal" : "Live Product / Service Situation Broadcast"}
         defaultMode="broadcast"
+        initialPersona={feedBroadcastPersona}
       />
     </div>
   );

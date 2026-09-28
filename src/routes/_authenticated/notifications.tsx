@@ -52,7 +52,9 @@ function NotificationsPage() {
       case "likes":
         return n.type.includes("like");
       case "follows":
-        return n.type === "follow";
+        return (
+          n.type === "follow" || n.type === "friend_request" || n.type === "friend_accepted"
+        );
       case "comments":
         return n.type === "comment" || n.type === "mention";
       default:
@@ -63,6 +65,8 @@ function NotificationsPage() {
   const icon = (type: string) => {
     switch (type) {
       case "follow":
+      case "friend_request":
+      case "friend_accepted":
         return <UserPlus className="h-4 w-4 text-primary" />;
       case "like_post":
       case "like_comment":
@@ -83,6 +87,10 @@ function NotificationsPage() {
     switch (n.type) {
       case "follow":
         return t("social.notifFollow", { name });
+      case "friend_request":
+        return `${name} sent you a mutual Friend request`;
+      case "friend_accepted":
+        return `${name} accepted your Friend request — you are now Friends`;
       case "like_post":
         return t("social.notifLikePost", { name });
       case "like_comment":

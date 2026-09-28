@@ -113,6 +113,21 @@
       },
       "required": ["id", "userId", "title", "read", "createdAt"]
     },
+    "Friend": {
+      "title": "Friend",
+      "description": "Mutual connection request between users with pending, accepted, or blocked status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "requesterId": { "type": "string" },
+        "addresseeId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "blocked"] },
+        "bondTag": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "requesterId", "addresseeId", "status", "createdAt"]
+    },
     "AdminRecord": {
       "title": "AdminRecord",
       "description": "Admin authorization entry",
@@ -161,6 +176,10 @@
     "/notifications/{notificationId}": {
       "schema": "Notification",
       "description": "User notifications"
+    },
+    "/friends/{friendId}": {
+      "schema": "Friend",
+      "description": "Mutual connection requests and friendships between users"
     },
     "/admins/{adminId}": {
       "schema": "AdminRecord",

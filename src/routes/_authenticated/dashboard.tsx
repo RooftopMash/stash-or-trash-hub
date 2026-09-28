@@ -26,11 +26,15 @@ import {
   SUPPORTED_IMPORT_COUNTRIES,
 } from "@/lib/wikidata-import";
 import { WORLD_COUNTRY_CODES, countryLabel, countryName } from "@/lib/geo";
+import { fetchFeed } from "@/lib/stash";
+import { sendMessage } from "@/lib/messages";
+import { approveCallerForSession } from "@/lib/communication-privacy";
 import { BrandTeamDialog } from "@/components/BrandTeamDialog";
 import { BrandAnalytics } from "@/components/BrandAnalytics";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DirectBrandCommModal } from "@/components/DirectBrandCommModal";
 import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
+import { LiveStageSection } from "@/components/LiveStageSection";
 import { LiveIncidents } from "@/components/LiveIncidents";
 import { AdminAppealsQueue } from "@/components/AdminAppealsQueue";
 import { getFollowerCount } from "@/lib/social";
@@ -46,18 +50,23 @@ import {
   Copy,
   Download,
   ExternalLink,
+  Gift,
   Globe,
   LayoutDashboard,
   Loader2,
   MessageSquare,
+  Phone,
   Plus,
   Radio,
+  Rocket,
   Search,
   Send,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
   TrendingUp,
+  UserCheck,
+  Video,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -66,21 +75,44 @@ import { SecureConnectionsPanel } from "@/components/SecureConnectionsPanel";
 import { BrandAICopilot } from "@/components/BrandAICopilot";
 import { ContentSafetyGate } from "@/components/ContentSafetyGate";
 import { BrandIntelligencePanel } from "@/components/BrandIntelligencePanel";
+import {
+  BRAND_BROADCAST_CATEGORIES,
+  type BrandBroadcastCategory,
+} from "@/lib/live-broadcasts";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
 });
 
+type DashboardTab =
+  | "command"
+  | "launch_studio"
+  | "client_desk"
+  | "dual_world"
+  | "admin_sourcing";
+
 function DashboardPage() {
   const { user } = useAuth();
-  const { isAdmin } = useRoles();
+  const { isAdmin, setPersona } = useRoles();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [activeTab, setActiveTab] = useState<DashboardTab>("command");
   const [selected, setSelected] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All brands");
   const [countryFilter, setCountryFilter] = useState("ALL");
+
+  // Brand Launch Studio Quick-Launcher state
+  const [studioModalOpen, setStudioModalOpen] = useState(false);
+  const [studioCategory, setStudioCategory] = useState<BrandBroadcastCategory>("product_launch");
+  const [callClientTarget, setCallClientTarget] = useState<{
+    id: string;
+    name: string;
+    topic: string;
+    mode: "voice_call" | "video_call" | "broadcast";
+  } | null>(null);
 
   // Global Wikidata / Country Brand Sourcing states right inside the Dashboard
   const [importCountry, setImportCountry] = useState("ZA");
@@ -138,6 +170,11 @@ function DashboardPage() {
 
       return collected;
     },
+  });
+
+  const { data: recentFeed = [] } = useQuery({
+    queryKey: ["dashboard-client-feed"],
+    queryFn: () => fetchFeed(null),
   });
 
   const { data: candidates = [], refetch: refetchCandidates } = useQuery({
@@ -244,51 +281,125 @@ function DashboardPage() {
       : filteredBrands[0]?.id ?? null;
   const active = filteredBrands.find((b) => b.id === activeId) ?? null;
 
+  const handleIssueRecoveryVoucher = async (clientName: string, clientId: string, bName: string) => {
+    const prefix = bName.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5) || "BRAND";
+    const voucherCode = `SOT_RECOVER_${prefix}_${Math.floor(100 + Math.random() * 899)}`;
+    if (user?.id && clientId && clientId !== user.id) {
+      try {
+        await sendMessage({
+          senderId: user.id,
+          recipientId: clientId,
+          body: `🎁 OFFICIAL REVENUE RECOVERY VOUCHER from ${bName}: Thank you for your feedback on SOT. Please use code ${voucherCode} for a complimentary replacement / VIP recovery discount on your next order.`,
+        });
+      } catch {
+        // ignore
+      }
+    }
+    toast.success(
+      `🎁 Issued Revenue Recovery Voucher (${voucherCode}) to ${clientName} via SOT Messaging!`,
+    );
+  };
+
+  const handleRequestToCallClient = async (clientName: string, clientId: string, bName: string) => {
+    const senderId = user?.id || "brand-executive";
+    approveCallerForSession(clientId, senderId);
+    if (user?.id && clientId && clientId !== user.id) {
+      try {
+        await sendMessage({
+          senderId: user.id,
+          recipientId: clientId,
+          body: `🤝 CALL PERMISSION REQUEST from ${bName} (Verified Brand Owner): "May we ring you directly on SOT Voice/Video (no phone number needed) to resolve your post and issue a recovery voucher?" Click Approve Call in this chat to connect.`,
+        });
+      } catch {
+        // ignore
+      }
+    }
+    toast.success(`🤝 Sent 1-click "Request-to-Call" handshake to ${clientName}!`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         {/* Top Executive Header */}
-        <div className="flex flex-col gap-4 rounded-3xl border-2 border-[#d6a928]/40 bg-slate-950 p-6 text-white shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-8">
+        <div className="flex flex-col gap-4 rounded-3xl border-2 border-[#d6a928] bg-slate-950 p-6 text-white shadow-lg sm:flex-row sm:items-center sm:justify-between sm:p-8">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#d6a928]/50 bg-[#d6a928]/15 px-3.5 py-1 text-xs font-extrabold uppercase tracking-[0.16em] text-[#f5d061]">
+            <div className="inline-flex items-center gap-2 rounded-md border border-[#d6a928]/50 bg-[#d6a928]/15 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#f5d061]">
               <LayoutDashboard className="h-3.5 w-3.5 text-[#d6a928]" />
-              <span>Brand Command &amp; CX Barometer</span>
+              <span>B2B Brand Executive Command &amp; Launch Suite</span>
             </div>
             <h1 className="mt-3 font-display text-3xl font-black tracking-tight text-white sm:text-4xl">
-              {t("dashboard.title", { defaultValue: "Brand dashboard" })}
+              {active ? `${active.name} — Brand Command Center` : t("dashboard.title", { defaultValue: "Brand Command Center" })}
             </h1>
             <p className="mt-1 max-w-2xl text-sm text-slate-300 sm:text-base">
-              {t("dashboard.subtitle", {
-                defaultValue: "Manage the brands you represent and track their live sentiment.",
-              })}
+              Broadcast live product launches &amp; relaunches, call clients on SOT without needing phone numbers, intercept counterfeits, and track your People’s SOT Grade in real time.
             </p>
           </div>
-          <div className="flex shrink-0 flex-wrap items-center gap-2.5">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <Button
-              onClick={() => navigate({ to: "/brands/new" })}
-              className="gap-1.5 border-2 border-[#d6a928] bg-[#d6a928] font-extrabold text-slate-950 hover:bg-[#e3b634]"
+              onClick={() => {
+                setStudioCategory("product_launch");
+                setStudioModalOpen(true);
+              }}
+              className="gap-1.5 border-2 border-[#d6a928] bg-[#d6a928] font-black text-slate-950 hover:bg-[#e3b634]"
             >
-              <Plus className="h-4 w-4" /> {t("dashboard.newBrand", { defaultValue: "New brand" })}
+              <Rocket className="h-4 w-4" /> Launch / Relaunch Live
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate({ to: "/awards" })}
+              onClick={() => navigate({ to: "/brands/new" })}
               className="gap-1.5 border-slate-700 bg-slate-900 text-white hover:bg-slate-800"
             >
-              <Coins className="h-4 w-4 text-[#d6a928]" /> {t("nav.awards", { defaultValue: "Awards" })}
+              <Plus className="h-4 w-4 text-[#d6a928]" /> {t("dashboard.newBrand", { defaultValue: "New brand" })}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPersona("brand_owner");
+                navigate({ to: "/profile" });
+              }}
+              className="gap-1.5 border-slate-700 bg-slate-900 text-[#f5d061] hover:bg-slate-800"
+            >
+              <Building2 className="h-4 w-4" /> Brand Owner Profile
             </Button>
           </div>
         </div>
 
+        {/* 5-PILLAR EXECUTIVE WORKSPACE NAVIGATION BAR */}
+        <div className="mt-5 flex flex-wrap items-center gap-1.5 rounded-2xl border border-border bg-card p-1.5 shadow-xs">
+          {(
+            [
+              ["command", "📊 Executive CX & Barometer"],
+              ["launch_studio", "🚀 Brand Launch & Broadcast Studio"],
+              ["client_desk", "📞 Zero-Number Client Calling & Recovery Desk"],
+              ["dual_world", "🏛️ Brand Owner vs Consumer Profile Matrix"],
+              ...(hasAdminView ? ([["admin_sourcing", "🌍 Global Brand Sourcing & Admin"]] as const) : []),
+            ] as const
+          ).map(([tabKey, tabLabel]) => (
+            <button
+              key={tabKey}
+              type="button"
+              onClick={() => setActiveTab(tabKey as DashboardTab)}
+              className={cn(
+                "rounded-xl px-3.5 py-2 text-xs font-extrabold transition cursor-pointer whitespace-nowrap",
+                activeTab === tabKey
+                  ? "bg-slate-950 text-[#f5d061] shadow-xs"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+              )}
+            >
+              {tabLabel}
+            </button>
+          ))}
+        </div>
+
         {/* Executive Summary Strip */}
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-4">
           <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-xs">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Active Portfolio
               </p>
-              <p className="mt-1 font-display text-2xl font-black text-foreground">
+              <p className="mt-1 font-display text-2xl font-black text-foreground tabular-nums">
                 {portfolioStats.total} {t("nav.brands", { defaultValue: "Brands" })}
               </p>
             </div>
@@ -302,8 +413,8 @@ function DashboardPage() {
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 {t("dashboard.trustScore", { defaultValue: "Trust score" })} (Avg)
               </p>
-              <p className="mt-1 font-display text-2xl font-black text-[#d6a928]">
-                {portfolioStats.avgTrust}%
+              <p className="mt-1 font-display text-2xl font-black text-[#b88914] tabular-nums">
+                {portfolioStats.avgTrust}% (Grade AA+)
               </p>
             </div>
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#d6a928]/15 text-[#d6a928]">
@@ -314,154 +425,497 @@ function DashboardPage() {
           <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-xs">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {t("dashboard.verified", { defaultValue: "Verified" })} Status
+                CPA Resolution Window
               </p>
-              <p className="mt-1 font-display text-2xl font-black text-foreground">
-                {portfolioStats.verifiedCount} / {portfolioStats.total}
+              <p className="mt-1 font-display text-2xl font-black text-emerald-600 tabular-nums">
+                14–20 Days
               </p>
             </div>
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
               <ShieldCheck className="h-5 w-5" />
             </div>
           </div>
+
+          <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-xs">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Live Launch Studio
+              </p>
+              <p className="mt-1 font-display text-2xl font-black text-foreground tabular-nums">
+                Ready · On Air
+              </p>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600">
+              <Radio className="h-5 w-5 animate-pulse" />
+            </div>
+          </div>
         </div>
 
-        {isLoading ? (
-          <div className="mt-8 space-y-4">
-            {[0, 1].map((i) => (
-              <Skeleton key={i} className="h-40 w-full rounded-2xl" />
-            ))}
-          </div>
-        ) : list.length === 0 ? (
-          <div className="mt-8 rounded-2xl border border-dashed border-border py-16 text-center">
-            <p className="font-display text-lg font-semibold">{t("dashboard.noBrands")}</p>
-            <Button className="mt-4 gap-1.5" onClick={() => navigate({ to: "/brands/new" })}>
-              <Plus className="h-4 w-4" /> {t("dashboard.createFirst")}
-            </Button>
-          </div>
-        ) : (
-          <>
-            {/* Brand Portfolio Selector */}
-            <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        {/* =====================================================================
+            TAB 2: BRAND LAUNCH, RELAUNCH & ENGAGEMENT BROADCAST STUDIO
+           ===================================================================== */}
+        {activeTab === "launch_studio" && (
+          <div className="mt-6 space-y-6">
+            <section className="rounded-3xl border-2 border-[#d6a928] bg-card p-6 shadow-sm">
+              <div className="flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <SlidersHorizontal className="h-4 w-4 text-[#d6a928]" />
-                    <h2 className="font-display text-base font-extrabold">
-                      Brand Portfolio &amp; Live Selector
-                    </h2>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Select any brand below to inspect its 30-day CX intelligence, sentiment trends, and verification controls.
+                  <span className="text-xs font-black uppercase tracking-wider text-[#b88914]">
+                    B2B Commercial Broadcast Engine
+                  </span>
+                  <h2 className="mt-1 font-display text-2xl font-black">
+                    Launch or Relaunch Products Live to Clients &amp; Prospects
+                  </h2>
+                  <p className="mt-1 max-w-3xl text-xs text-muted-foreground sm:text-sm">
+                    Select any broadcast template below for <strong>{active?.name ?? "your brand"}</strong>. When you go live, SOT automatically alerts your followers, places your stream on the Home Feed, collects real-time Stash/Trash market research votes, and lets viewers claim your Launch Voucher in 1 click.
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    value={countryFilter}
-                    onChange={(e) => setCountryFilter(e.target.value)}
-                    aria-label="Filter portfolio by country"
-                    className="h-10 rounded-xl border border-border bg-background px-3 text-xs font-bold"
-                  >
-                    <option value="ALL">All Countries ({list.length})</option>
-                    {availableCountries
-                      .filter((c) => c !== "ALL")
-                      .map((c) => (
-                        <option key={c} value={c}>
-                          {countryLabel(c) || c} ({c})
-                        </option>
-                      ))}
-                  </select>
-                  <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-border bg-background px-3 sm:w-64">
-                    <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="sr-only">Search brands</span>
-                    <input
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder="Search brands, categories, countries..."
-                      className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                    />
-                  </label>
-                </div>
+                <Button
+                  onClick={() => {
+                    setStudioCategory("product_launch");
+                    setStudioModalOpen(true);
+                  }}
+                  className="gap-2 bg-slate-950 text-[#f5d061] font-black hover:bg-slate-900 shrink-0"
+                >
+                  <Rocket className="h-4 w-4 text-[#d6a928]" />
+                  Open Full Live Studio for {active?.name ?? "Brand"}
+                </Button>
               </div>
 
-              {/* Category Filter */}
-              <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1">
-                <span className="mr-1 flex shrink-0 items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Category <ChevronDown className="h-3 w-3" />
-                </span>
-                {categories.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setCategory(item)}
-                    className={cn(
-                      "shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
-                      category === item
-                        ? "border-slate-950 bg-slate-950 text-[#d6a928]"
-                        : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground",
-                    )}
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                {BRAND_BROADCAST_CATEGORIES.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="flex flex-col justify-between rounded-2xl border border-border bg-background p-4"
                   >
-                    {item}
-                  </button>
-                ))}
-              </div>
-
-              {/* Brand Pills */}
-              <div className="mt-4 flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">
-                {filteredBrands.map((b) => {
-                  const isSelected = b.id === activeId;
-                  return (
-                    <button
-                      key={b.id}
-                      type="button"
-                      onClick={() => setSelected(b.id)}
-                      className={cn(
-                        "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-all cursor-pointer",
-                        isSelected
-                          ? "border-2 border-[#d6a928] bg-slate-950 font-bold text-white shadow-xs"
-                          : "border-border bg-background hover:border-[#d6a928]/50 hover:bg-secondary/60",
-                      )}
-                    >
-                      <BrandLogo
-                        name={b.name}
-                        url={b.signedLogoUrl}
-                        className="h-6 w-6 rounded-md text-[10px]"
-                      />
-                      <span className="whitespace-nowrap">{b.name}</span>
-                      <span
-                        className={cn(
-                          "rounded-md px-1.5 py-0.5 text-[10px] font-extrabold",
-                          isSelected
-                            ? "bg-[#d6a928] text-slate-950"
-                            : "bg-secondary text-muted-foreground",
-                        )}
-                      >
-                        {Number(b.trust_score) || 76}%
+                    <div>
+                      <span className="inline-block rounded-md bg-slate-950 px-2.5 py-1 text-[11px] font-black text-[#f5d061]">
+                        {cat.shortBadge}
                       </span>
-                    </button>
-                  );
-                })}
-                {filteredBrands.length === 0 && (
-                  <p className="py-3 text-sm text-muted-foreground">
-                    No brands match those filters.
-                  </p>
-                )}
+                      <h3 className="mt-2.5 font-display text-sm font-black">{cat.label}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                        {cat.description}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setStudioCategory(cat.id);
+                        setStudioModalOpen(true);
+                      }}
+                      className="mt-4 w-full gap-1.5 bg-[#d6a928] text-xs font-black text-slate-950 hover:bg-[#e5b935]"
+                    >
+                      <Radio className="h-3.5 w-3.5" /> Start {cat.shortBadge.split(" ")[1]}
+                    </Button>
+                  </div>
+                ))}
               </div>
             </section>
 
-            {/* Active Brand Deep-Dive */}
-            <div className="mt-6">
-              {active && <BrandRow key={active.id} brand={active} onVerify={() => void refetch()} />}
-            </div>
+            {/* Live Stage Preview inside the Dashboard */}
+            <LiveStageSection defaultFilter="brand_owner" />
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB 3: ZERO-NUMBER CLIENT CALLING & REVENUE RECOVERY DESK
+           ===================================================================== */}
+        {activeTab === "client_desk" && (
+          <div className="mt-6 space-y-6">
+            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+              <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <span className="text-xs font-black uppercase tracking-wider text-emerald-600">
+                    Zero-Phone-Number Client Outreach &amp; CPA Resolution
+                  </span>
+                  <h2 className="mt-1 font-display text-2xl font-black">
+                    Direct Client Calling, Request-to-Call &amp; Revenue Recovery Desk
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                    Reach customers who posted about your brand without ever needing their personal cell number or WhatsApp. Respect their Communication Freedom settings with 1-click Request-to-Call handshakes or issue instant replacement vouchers.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                {(recentFeed.length > 0
+                  ? recentFeed.slice(0, 8)
+                  : [
+                      {
+                        id: "demo-1",
+                        user_id: "client-thabo",
+                        authorName: "Thabo M.",
+                        brandName: active?.name || "Nando's",
+                        title: "Drive-thru order missing peri-chips at Sandton branch",
+                        stashCount: 2,
+                        trashCount: 6,
+                      },
+                      {
+                        id: "demo-2",
+                        user_id: "client-lerato",
+                        authorName: "Lerato K.",
+                        brandName: active?.name || "Takealot",
+                        title: "Checked batch barcode #LOT-882 — packaging seal looked loose",
+                        stashCount: 4,
+                        trashCount: 3,
+                      },
+                    ]
+                ).map((item: any, idx: number) => {
+                  const clientName = item.authorName || `Verified Consumer #${idx + 1}`;
+                  const clientId = item.user_id || `client-${idx + 1}`;
+                  const targetBrandName = item.brandName || active?.name || "Verified Brand";
+                  const isTrashHeavy = (item.trashCount || 0) > (item.stashCount || 0);
+
+                  return (
+                    <div
+                      key={item.id || idx}
+                      className="flex flex-col justify-between gap-4 rounded-2xl border border-border bg-background p-4 lg:flex-row lg:items-center"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                          <span className="font-bold text-foreground">{clientName}</span>
+                          <span>·</span>
+                          <span className="font-semibold text-[#b88914]">{targetBrandName}</span>
+                          <span>·</span>
+                          <span
+                            className={cn(
+                              "font-bold",
+                              isTrashHeavy ? "text-rose-600" : "text-emerald-600",
+                            )}
+                          >
+                            {isTrashHeavy
+                              ? `🗑️ Trash Callout (${item.trashCount || 1} Trash)`
+                              : `🪙 Stash Verdict (${item.stashCount || 1} Stash)`}
+                          </span>
+                          <span>·</span>
+                          <span className="text-muted-foreground">
+                            Privacy: Verified Brand Outreach Allowed
+                          </span>
+                        </div>
+                        <p className="mt-1 font-display text-sm font-bold text-foreground">
+                          “{item.title}”
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setCallClientTarget({
+                              id: clientId,
+                              name: clientName,
+                              topic: item.title,
+                              mode: "voice_call",
+                            });
+                            setStudioModalOpen(true);
+                          }}
+                          className="h-8 gap-1.5 bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-500"
+                        >
+                          <Phone className="h-3.5 w-3.5" /> Ring on SOT (Voice)
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setCallClientTarget({
+                              id: clientId,
+                              name: clientName,
+                              topic: item.title,
+                              mode: "video_call",
+                            });
+                            setStudioModalOpen(true);
+                          }}
+                          className="h-8 gap-1.5 bg-slate-950 text-xs font-bold text-[#f5d061] hover:bg-slate-900"
+                        >
+                          <Video className="h-3.5 w-3.5" /> Video Inspect
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            void handleRequestToCallClient(clientName, clientId, targetBrandName)
+                          }
+                          className="h-8 gap-1.5 text-xs font-bold"
+                        >
+                          <UserCheck className="h-3.5 w-3.5 text-[#d6a928]" /> Request-to-Call
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            void handleIssueRecoveryVoucher(clientName, clientId, targetBrandName)
+                          }
+                          className="h-8 gap-1.5 border-[#d6a928]/60 text-xs font-bold text-[#b88914] hover:bg-[#d6a928]/10"
+                        >
+                          <Gift className="h-3.5 w-3.5" /> Issue Recovery Voucher
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB 4: BRAND OWNER vs CONSUMER EXPERIENCE MATRIX
+           ===================================================================== */}
+        {activeTab === "dual_world" && (
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <section className="rounded-3xl border-2 border-[#d6a928] bg-slate-950 p-6 text-white">
+              <span className="text-xs font-black uppercase tracking-wider text-[#f5d061]">
+                🏛️ For Brand Owners (B2B Revenue &amp; Reputation Engine)
+              </span>
+              <h2 className="mt-2 font-display text-2xl font-black">
+                Why Brand Owners Claim &amp; Subscribe on SOT
+              </h2>
+              <div className="mt-4 space-y-3 text-xs leading-relaxed text-slate-300">
+                <div className="rounded-xl border border-slate-800 bg-slate-900 p-3.5">
+                  <p className="font-bold text-white">
+                    1. 🚀 Live Product Launch, Relaunch &amp; Focus-Group Studio
+                  </p>
+                  <p className="mt-1">
+                    Broadcast product launches, relaunches, and factory quality tours live to followers and prospects. Collect real-time Stash vs Trash reception metrics and drop 1-click promo vouchers.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-slate-900 p-3.5">
+                  <p className="font-bold text-white">
+                    2. 🛡️ Counterfeit &amp; Grey-Market Intelligence (Revenue Recovery)
+                  </p>
+                  <p className="mt-1">
+                    When a consumer scans a bogus product on <code>/scan</code>, learn which store/spaza is leaking fake stock and issue an instant Revenue Recovery Voucher to win the buyer back.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-slate-900 p-3.5">
+                  <p className="font-bold text-white">
+                    3. 📞 Direct Client Calling Without Phone Numbers
+                  </p>
+                  <p className="mt-1">
+                    Call or video-inspect a product directly with the customer inside SOT Messaging (or send a 1-click Request-to-Call handshake) during the 14–20 business day CPA window before regulator escalation.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  setPersona("brand_owner");
+                  navigate({ to: "/profile" });
+                }}
+                className="mt-5 w-full bg-[#d6a928] font-black text-slate-950 hover:bg-[#e5b935]"
+              >
+                Open My Brand Owner Executive Profile →
+              </Button>
+            </section>
+
+            <section className="rounded-3xl border-2 border-[#d6a928]/60 bg-gradient-to-b from-[#fffbeb] to-white p-6 text-slate-950">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-800">
+                🎉 For Everyday Users (Fun, Gamified &amp; Empowering)
+              </span>
+              <h2 className="mt-2 font-display text-2xl font-black">
+                Why Consumers Love Engaging Daily on SOT
+              </h2>
+              <div className="mt-4 space-y-3 text-xs leading-relaxed text-slate-700">
+                <div className="rounded-xl border border-amber-200 bg-white p-3.5">
+                  <p className="font-bold text-slate-950">
+                    1. 🪙 Tactile Zwepe Gold Coin Spin &amp; Randy Hungry Trash Can
+                  </p>
+                  <p className="mt-1">
+                    Every vote moves a brand’s live Trust Score and People’s SOT Grade (AAA down to F), while earning consumer ranks and daily spin streaks.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-amber-200 bg-white p-3.5">
+                  <p className="font-bold text-slate-950">
+                    2. 🎁 Live Launch Perks &amp; Recovery Vouchers Wallet
+                  </p>
+                  <p className="mt-1">
+                    Watch brands unveil new products live, vote Stash or Trash on the reveal, and claim instant discount vouchers into your personal Profile Wallet.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-amber-200 bg-white p-3.5">
+                  <p className="font-bold text-slate-950">
+                    3. 🤝 Mutual Friends, Bond Circles &amp; Communication Freedom
+                  </p>
+                  <p className="mt-1">
+                    Connect with Mutual Friends (Colleagues, Same Faith, Neighbours, Gold Circle) and control exactly who can message or call you on SOT.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  setPersona("consumer");
+                  navigate({ to: "/profile" });
+                }}
+                className="mt-5 w-full bg-slate-950 font-black text-[#f5d061] hover:bg-slate-900"
+              >
+                Switch to Fun Consumer Member Profile →
+              </Button>
+            </section>
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB 1: EXECUTIVE CX & BAROMETER (DEFAULT MAIN WORKSPACE)
+           ===================================================================== */}
+        {activeTab === "command" && (
+          <>
+            {isLoading ? (
+              <div className="mt-8 space-y-4">
+                {[0, 1].map((i) => (
+                  <Skeleton key={i} className="h-40 w-full rounded-2xl" />
+                ))}
+              </div>
+            ) : list.length === 0 ? (
+              <div className="mt-8 rounded-2xl border border-dashed border-border py-16 text-center">
+                <p className="font-display text-lg font-semibold">{t("dashboard.noBrands")}</p>
+                <Button className="mt-4 gap-1.5" onClick={() => navigate({ to: "/brands/new" })}>
+                  <Plus className="h-4 w-4" /> {t("dashboard.createFirst")}
+                </Button>
+              </div>
+            ) : (
+              <>
+                {/* Brand Portfolio Selector */}
+                <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <SlidersHorizontal className="h-4 w-4 text-[#d6a928]" />
+                        <h2 className="font-display text-base font-extrabold">
+                          Brand Portfolio &amp; Live Selector
+                        </h2>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Select any brand below to inspect its 30-day CX intelligence, launch studio, sentiment trends, and verification controls.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={countryFilter}
+                        onChange={(e) => setCountryFilter(e.target.value)}
+                        aria-label="Filter portfolio by country"
+                        className="h-10 rounded-xl border border-border bg-background px-3 text-xs font-bold"
+                      >
+                        <option value="ALL">All Countries ({list.length})</option>
+                        {availableCountries
+                          .filter((c) => c !== "ALL")
+                          .map((c) => (
+                            <option key={c} value={c}>
+                              {countryLabel(c) || c} ({c})
+                            </option>
+                          ))}
+                      </select>
+                      <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-border bg-background px-3 sm:w-64">
+                        <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="sr-only">Search brands</span>
+                        <input
+                          value={search}
+                          onChange={(event) => setSearch(event.target.value)}
+                          placeholder="Search brands, categories, countries..."
+                          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Category Filter */}
+                  <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1">
+                    <span className="mr-1 flex shrink-0 items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Category <ChevronDown className="h-3 w-3" />
+                    </span>
+                    {categories.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => setCategory(item)}
+                        className={cn(
+                          "shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
+                          category === item
+                            ? "border-slate-950 bg-slate-950 text-[#d6a928]"
+                            : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground",
+                        )}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Brand Selector Buttons */}
+                  <div className="mt-4 flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">
+                    {filteredBrands.map((b) => {
+                      const isSelected = b.id === activeId;
+                      return (
+                        <button
+                          key={b.id}
+                          type="button"
+                          onClick={() => setSelected(b.id)}
+                          className={cn(
+                            "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-all cursor-pointer",
+                            isSelected
+                              ? "border-2 border-[#d6a928] bg-slate-950 font-bold text-white shadow-xs"
+                              : "border-border bg-background hover:border-[#d6a928]/50 hover:bg-secondary/60",
+                          )}
+                        >
+                          <BrandLogo
+                            name={b.name}
+                            url={b.signedLogoUrl}
+                            className="h-6 w-6 rounded-md text-[10px]"
+                          />
+                          <span className="whitespace-nowrap">{b.name}</span>
+                          <span
+                            className={cn(
+                              "rounded-md px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums",
+                              isSelected
+                                ? "bg-[#d6a928] text-slate-950"
+                                : "bg-secondary text-muted-foreground",
+                            )}
+                          >
+                            {Number(b.trust_score) || 76}%
+                          </span>
+                        </button>
+                      );
+                    })}
+                    {filteredBrands.length === 0 && (
+                      <p className="py-3 text-sm text-muted-foreground">
+                        No brands match those filters.
+                      </p>
+                    )}
+                  </div>
+                </section>
+
+                {/* Active Brand Deep-Dive */}
+                <div className="mt-6">
+                  {active && (
+                    <BrandRow
+                      key={active.id}
+                      brand={active}
+                      onVerify={() => void refetch()}
+                      onOpenLaunchStudio={(cat) => {
+                        setStudioCategory(cat);
+                        setStudioModalOpen(true);
+                      }}
+                    />
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Live Consumer Incidents & Crisis Feed */}
+            <section className="mt-8 rounded-3xl border border-border bg-card p-6 shadow-sm">
+              <LiveIncidents />
+            </section>
+
+            {/* Trust, AI Copilot & Pre-Publication Safety Modules */}
+            <SecureConnectionsPanel userId={user?.id ?? "preview-operator"} />
+            <BrandAICopilot />
+            <ContentSafetyGate />
           </>
         )}
 
-        {/* ADMIN & GLOBAL BRAND SOURCING MASTER SUITE (Visible to Admin so all platform features are accessible in one place) */}
-        {hasAdminView && (
-          <section className="mt-8 space-y-6 rounded-3xl border-2 border-[#d6a928]/50 bg-card p-6 shadow-md sm:p-8">
+        {/* =====================================================================
+            TAB 5: ADMIN & GLOBAL BRAND SOURCING MASTER SUITE
+           ===================================================================== */}
+        {activeTab === "admin_sourcing" && hasAdminView && (
+          <section className="mt-6 space-y-6 rounded-3xl border-2 border-[#d6a928]/50 bg-card p-6 shadow-md sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
               <div>
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#d6a928]">
+                <div className="inline-flex items-center gap-1.5 rounded-md bg-slate-950 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#d6a928]">
                   <Sparkles className="h-3.5 w-3.5" />
                   <span>Admin Master Control · Global Brand Sourcing &amp; Governance</span>
                 </div>
@@ -560,7 +1014,6 @@ function DashboardPage() {
 
             {/* Queued Candidates & Pending Verifications Grid */}
             <div className="grid gap-6 lg:grid-cols-2">
-              {/* Moderation Queue */}
               <div className="rounded-2xl border border-border bg-background/50 p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-display text-sm font-extrabold uppercase tracking-wider">
@@ -618,7 +1071,6 @@ function DashboardPage() {
                 </div>
               </div>
 
-              {/* Pending Brand Verifications */}
               <div className="rounded-2xl border border-border bg-background/50 p-4">
                 <h3 className="font-display text-sm font-extrabold uppercase tracking-wider">
                   Pending Brand Verifications ({pendingVerifications.length})
@@ -626,7 +1078,7 @@ function DashboardPage() {
                 <div className="mt-3 max-h-64 space-y-2 overflow-y-auto pr-1">
                   {pendingVerifications.length === 0 ? (
                     <p className="py-4 text-xs text-muted-foreground">
-                      No pending verification requests in queue. You can also verify any brand directly from its card above.
+                      No pending verification requests in queue.
                     </p>
                   ) : (
                     pendingVerifications.map((req) => (
@@ -679,7 +1131,6 @@ function DashboardPage() {
               </div>
             </div>
 
-            {/* Content Appeals Queue */}
             <div className="rounded-2xl border border-border bg-background/50 p-4">
               <h3 className="mb-3 font-display text-sm font-extrabold uppercase tracking-wider">
                 Human Content Appeals Queue
@@ -688,27 +1139,46 @@ function DashboardPage() {
             </div>
           </section>
         )}
-
-        {/* Live Consumer Incidents & Crisis Feed */}
-        <section className="mt-8 rounded-3xl border border-border bg-card p-6 shadow-sm">
-          <LiveIncidents />
-        </section>
-
-        {/* Trust, AI Copilot & Pre-Publication Safety Modules */}
-        <SecureConnectionsPanel userId={user?.id ?? "preview-operator"} />
-        <BrandAICopilot />
-        <ContentSafetyGate />
       </main>
+
+      <LiveBroadcastModal
+        open={studioModalOpen}
+        onOpenChange={(o) => {
+          setStudioModalOpen(o);
+          if (!o) setCallClientTarget(null);
+        }}
+        brandName={active?.name ?? "Verified Brand"}
+        brandSlug={active?.slug}
+        brandOwner={active?.ownerName || `${active?.name ?? "Brand"} Official Executive Desk`}
+        productName={
+          callClientTarget
+            ? `Resolution Call: ${callClientTarget.topic}`
+            : `LIVE LAUNCH: ${active?.name ?? "Brand"} Product & Innovation Reveal`
+        }
+        recipientId={callClientTarget?.id}
+        recipientName={callClientTarget?.name}
+        defaultMode={callClientTarget ? callClientTarget.mode : "broadcast"}
+        callDirection="brand_to_user"
+        initialPersona="brand_owner"
+        initialBrandCategory={studioCategory}
+      />
     </div>
   );
 }
 
-function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
+function BrandRow({
+  brand,
+  onVerify,
+  onOpenLaunchStudio,
+}: {
+  brand: Brand;
+  onVerify: () => void;
+  onOpenLaunchStudio: (cat: BrandBroadcastCategory) => void;
+}) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [localVerified, setLocalVerified] = useState(brand.verified);
   const [commOpen, setCommOpen] = useState(false);
-  const [broadcastOpen, setBroadcastOpen] = useState(false);
 
   const { data: stats } = useQuery({
     queryKey: ["brand-stats", brand.id],
@@ -762,11 +1232,11 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
               <div className="flex flex-wrap items-center gap-2.5">
                 <h2 className="font-display text-2xl font-black text-foreground">{brand.name}</h2>
                 {isVerified ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-[#d6a928]/50 bg-slate-950 px-3 py-0.5 text-xs font-bold text-[#d6a928]">
+                  <span className="inline-flex items-center gap-1 rounded-md border border-[#d6a928]/50 bg-slate-950 px-2.5 py-0.5 text-xs font-bold text-[#d6a928]">
                     <BadgeCheck className="h-3.5 w-3.5" /> {t("dashboard.verified")}
                   </span>
                 ) : (
-                  <span className="rounded-full bg-secondary px-3 py-0.5 text-xs font-semibold text-muted-foreground">
+                  <span className="rounded-md bg-secondary px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                     {t("dashboard.unverified")}
                   </span>
                 )}
@@ -797,6 +1267,21 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => onOpenLaunchStudio("product_launch")}
+              className="gap-1.5 bg-[#d6a928] font-black text-slate-950 hover:bg-[#e5b935]"
+            >
+              <Rocket className="h-3.5 w-3.5" /> Launch / Relaunch Live
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onOpenLaunchStudio("townhall_qa")}
+              className="gap-1.5 border-rose-500/40 font-bold text-rose-500 hover:bg-rose-500/10"
+            >
+              <Radio className="h-3.5 w-3.5" /> Live Townhall
+            </Button>
             <BrandTeamDialog brandId={brand.id} brandName={brand.name} />
             <Button
               size="sm"
@@ -805,14 +1290,6 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
               className="gap-1.5 border-[#d6a928]/50 font-bold"
             >
               <Send className="h-3.5 w-3.5 text-[#d6a928]" /> Direct Comm
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setBroadcastOpen(true)}
-              className="gap-1.5 border-rose-500/40 font-bold text-rose-500 hover:bg-rose-500/10"
-            >
-              <Radio className="h-3.5 w-3.5" /> Live Townhall
             </Button>
             <Button
               size="sm"
@@ -858,13 +1335,6 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
             brandOwner={brand.ownerName || `${brand.name} Executive Team`}
             matchedBrand={brand}
           />
-          <LiveBroadcastModal
-            open={broadcastOpen}
-            onOpenChange={setBroadcastOpen}
-            brandName={brand.name}
-            brandOwner={brand.ownerName || `${brand.name} Official`}
-            productName={`${brand.name} Live Consumer Townhall`}
-          />
         </div>
 
         {/* Core Brand Metrics */}
@@ -879,10 +1349,10 @@ function BrandRow({ brand, onVerify }: { brand: Brand; onVerify: () => void }) {
 
           <div className="mt-4">
             <div className="mb-1.5 flex items-center justify-between text-xs font-bold">
-              <span className="text-[#b88914]">
+              <span className="text-[#b88914] tabular-nums">
                 {stashPct}% {t("dashboard.stash", { defaultValue: "Stash" })}
               </span>
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground tabular-nums">
                 {100 - stashPct}% {t("dashboard.trash", { defaultValue: "Trash" })}
               </span>
             </div>
@@ -933,7 +1403,12 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
           : "border-border/60 bg-background",
       )}
     >
-      <div className={cn("font-display text-xl font-black", accent ? "text-[#b88914]" : "text-foreground")}>
+      <div
+        className={cn(
+          "font-display text-xl font-black tabular-nums",
+          accent ? "text-[#b88914]" : "text-foreground",
+        )}
+      >
         {accent && <TrendingUp className="mr-1 inline h-4 w-4 text-[#d6a928]" />}
         {value}
       </div>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -5,8 +6,31 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export type AppRole = "admin" | "brand" | "user";
+export type ActiveAccountPersona = "consumer" | "brand_owner";
 
 const KNOWN_ADMIN_EMAILS = ["borulelo@gmail.com"];
+const PERSONA_STORAGE_KEY = "sot_active_account_persona_v1";
+
+export function getStoredAccountPersona(defaultIsBrand = false): ActiveAccountPersona {
+  if (typeof window === "undefined") return defaultIsBrand ? "brand_owner" : "consumer";
+  try {
+    const saved = window.localStorage.getItem(PERSONA_STORAGE_KEY);
+    if (saved === "brand_owner" || saved === "consumer") return saved;
+  } catch {
+    // ignore
+  }
+  return defaultIsBrand ? "brand_owner" : "consumer";
+}
+
+export function setStoredAccountPersona(persona: ActiveAccountPersona) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PERSONA_STORAGE_KEY, persona);
+    window.dispatchEvent(new CustomEvent("sot-persona-changed", { detail: persona }));
+  } catch {
+    // ignore
+  }
+}
 
 export function useRoles() {
   const { user } = useAuth();
@@ -70,13 +94,36 @@ export function useRoles() {
   const roles = query.data ?? [];
   const isOwnerEmail = !!user?.email && KNOWN_ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
   const isAdmin = isOwnerEmail || roles.includes("admin");
-  const isBrand = roles.includes("brand");
+  const hasBrandRole = roles.includes("brand") || isAdmin;
+
+  const [persona, setPersonaState] = useState<ActiveAccountPersona>(() =>
+    getStoredAccountPersona(roles.includes("brand")),
+  );
+
+  useEffect(() => {
+    const syncPersona = () => {
+      setPersonaState(getStoredAccountPersona(roles.includes("brand")));
+    };
+    window.addEventListener("sot-persona-changed", syncPersona);
+    return () => window.removeEventListener("sot-persona-changed", syncPersona);
+  }, [roles]);
+
+  const setPersona = (next: ActiveAccountPersona) => {
+    setStoredAccountPersona(next);
+    setPersonaState(next);
+  };
+
+  const isBrand = persona === "brand_owner" || roles.includes("brand");
 
   return {
     roles,
     isAdmin,
     isBrand,
+    hasBrandRole,
+    persona,
+    setPersona,
     loading: query.isLoading,
   };
 }
+
 

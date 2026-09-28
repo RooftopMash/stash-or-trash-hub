@@ -239,6 +239,329 @@ export async function getFollowerCount(opts: {
   return 140 + (Math.abs(hash) % 860);
 }
 
+/* ------------------ friends (mutual connection requests) ------------------ */
+
+export type FriendshipStatus = "pending" | "accepted" | "blocked";
+
+export type FriendRecord = {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: FriendshipStatus;
+  bond_tag: string;
+  created_at: string;
+  updated_at: string;
+};
+
+const FRIENDS_STORAGE_KEY = "sot_friends_table_v1";
+
+function readLocalFriends(): FriendRecord[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(FRIENDS_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as FriendRecord[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalFriends(records: FriendRecord[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(FRIENDS_STORAGE_KEY, JSON.stringify(records));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export async function getFriendshipBetween(
+  userA: string,
+  userB: string,
+): Promise<FriendRecord | null> {
+  if (!userA || !userB || userA === userB) return null;
+  try {
+    const { data, error } = await supabase
+      .from("friends")
+      .select("id, requester_id, addressee_id, status, bond_tag, created_at, updated_at")
+      .or(
+        `and(requester_id.eq.${userA},addressee_id.eq.${userB}),and(requester_id.eq.${userB},addressee_id.eq.${userA})`,
+      )
+      .maybeSingle();
+    if (!error && data) return data as FriendRecord;
+  } catch {
+    // fallback to local store
+  }
+
+  const local = readLocalFriends();
+  return (
+    local.find(
+      (r) =>
+        (r.requester_id === userA && r.addressee_id === userB) ||
+        (r.requester_id === userB && r.addressee_id === userA),
+    ) ?? null
+  );
+}
+
+export async function sendFriendRequest(
+  requesterId: string,
+  addresseeId: string,
+  bondTag = "stranger",
+): Promise<FriendRecord> {
+  const now = new Date().toISOString();
+  const existing = await getFriendshipBetween(requesterId, addresseeId);
+  if (existing) {
+    if (existing.status === "pending" && existing.addressee_id === requesterId) {
+      return acceptFriendRequest(requesterId, addresseeId);
+    }
+    return existing;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("friends")
+      .insert({
+        requester_id: requesterId,
+        addressee_id: addresseeId,
+        status: "pending",
+        bond_tag: bondTag,
+      })
+      .select()
+      .maybeSingle();
+    if (!error && data) {
+      const local = readLocalFriends().filter((r) => r.id !== data.id);
+      writeLocalFriends([data as FriendRecord, ...local]);
+      return data as FriendRecord;
+    }
+  } catch {
+    // fallback to local store
+  }
+
+  const record: FriendRecord = {
+    id: `friend-${Date.now()}`,
+    requester_id: requesterId,
+    addressee_id: addresseeId,
+    status: "pending",
+    bond_tag: bondTag,
+    created_at: now,
+    updated_at: now,
+  };
+  const local = readLocalFriends();
+  writeLocalFriends([record, ...local]);
+  return record;
+}
+
+export async function acceptFriendRequest(
+  currentUserId: string,
+  otherUserId: string,
+): Promise<FriendRecord> {
+  const now = new Date().toISOString();
+  try {
+    const { data, error } = await supabase
+      .from("friends")
+      .update({ status: "accepted", updated_at: now })
+      .or(
+        `and(requester_id.eq.${otherUserId},addressee_id.eq.${currentUserId}),and(requester_id.eq.${currentUserId},addressee_id.eq.${otherUserId})`,
+      )
+      .select()
+      .maybeSingle();
+    if (!error && data) {
+      const local = readLocalFriends().filter((r) => r.id !== data.id);
+      writeLocalFriends([data as FriendRecord, ...local]);
+      return data as FriendRecord;
+    }
+  } catch {
+    // fallback
+  }
+
+  const local = readLocalFriends();
+  const idx = local.findIndex(
+    (r) =>
+      (r.requester_id === otherUserId && r.addressee_id === currentUserId) ||
+      (r.requester_id === currentUserId && r.addressee_id === otherUserId),
+  );
+  if (idx >= 0) {
+    local[idx] = { ...local[idx], status: "accepted", updated_at: now };
+    writeLocalFriends(local);
+    return local[idx];
+  }
+  const created: FriendRecord = {
+    id: `friend-${Date.now()}`,
+    requester_id: otherUserId,
+    addressee_id: currentUserId,
+    status: "accepted",
+    bond_tag: "stranger",
+    created_at: now,
+    updated_at: now,
+  };
+  writeLocalFriends([created, ...local]);
+  return created;
+}
+
+export async function blockFriendConnection(
+  currentUserId: string,
+  otherUserId: string,
+): Promise<FriendRecord> {
+  const now = new Date().toISOString();
+  const existing = await getFriendshipBetween(currentUserId, otherUserId);
+  try {
+    if (existing) {
+      const { data, error } = await supabase
+        .from("friends")
+        .update({ status: "blocked", updated_at: now })
+        .eq("id", existing.id)
+        .select()
+        .maybeSingle();
+      if (!error && data) return data as FriendRecord;
+    } else {
+      const { data, error } = await supabase
+        .from("friends")
+        .insert({
+          requester_id: currentUserId,
+          addressee_id: otherUserId,
+          status: "blocked",
+          bond_tag: "stranger",
+        })
+        .select()
+        .maybeSingle();
+      if (!error && data) return data as FriendRecord;
+    }
+  } catch {
+    // fallback
+  }
+
+  const local = readLocalFriends().filter(
+    (r) =>
+      !(
+        (r.requester_id === currentUserId && r.addressee_id === otherUserId) ||
+        (r.requester_id === otherUserId && r.addressee_id === currentUserId)
+      ),
+  );
+  const blocked: FriendRecord = {
+    id: existing?.id ?? `friend-${Date.now()}`,
+    requester_id: currentUserId,
+    addressee_id: otherUserId,
+    status: "blocked",
+    bond_tag: existing?.bond_tag ?? "stranger",
+    created_at: existing?.created_at ?? now,
+    updated_at: now,
+  };
+  writeLocalFriends([blocked, ...local]);
+  return blocked;
+}
+
+export async function removeFriendConnection(
+  currentUserId: string,
+  otherUserId: string,
+): Promise<void> {
+  try {
+    await supabase
+      .from("friends")
+      .delete()
+      .or(
+        `and(requester_id.eq.${currentUserId},addressee_id.eq.${otherUserId}),and(requester_id.eq.${otherUserId},addressee_id.eq.${currentUserId})`,
+      );
+  } catch {
+    // fallback
+  }
+  const local = readLocalFriends().filter(
+    (r) =>
+      !(
+        (r.requester_id === currentUserId && r.addressee_id === otherUserId) ||
+        (r.requester_id === otherUserId && r.addressee_id === currentUserId)
+      ),
+  );
+  writeLocalFriends(local);
+}
+
+export async function getMyFriendsAndRequests(userId: string): Promise<FriendRecord[]> {
+  if (!userId) return [];
+  try {
+    const { data, error } = await supabase
+      .from("friends")
+      .select("id, requester_id, addressee_id, status, bond_tag, created_at, updated_at")
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+      .order("updated_at", { ascending: false });
+    if (!error && data && data.length > 0) return data as FriendRecord[];
+  } catch {
+    // fallback
+  }
+  return readLocalFriends().filter(
+    (r) => r.requester_id === userId || r.addressee_id === userId,
+  );
+}
+
+export async function updateFriendBondTag(
+  currentUserId: string,
+  otherUserId: string,
+  bondTag: string,
+): Promise<void> {
+  const now = new Date().toISOString();
+  try {
+    await supabase
+      .from("friends")
+      .update({ bond_tag: bondTag, updated_at: now })
+      .or(
+        `and(requester_id.eq.${currentUserId},addressee_id.eq.${otherUserId}),and(requester_id.eq.${otherUserId},addressee_id.eq.${currentUserId})`,
+      );
+  } catch {
+    // fallback
+  }
+  const local = readLocalFriends();
+  const idx = local.findIndex(
+    (r) =>
+      (r.requester_id === currentUserId && r.addressee_id === otherUserId) ||
+      (r.requester_id === otherUserId && r.addressee_id === currentUserId),
+  );
+  if (idx >= 0) {
+    local[idx] = { ...local[idx], bond_tag: bondTag, updated_at: now };
+    writeLocalFriends(local);
+  }
+}
+
+export type FriendWithProfile = FriendRecord & {
+  peerId: string;
+  peerName: string;
+  peerAvatar: string | null;
+  direction: "incoming" | "outgoing";
+};
+
+export async function getMyFriendsWithProfiles(userId: string): Promise<FriendWithProfile[]> {
+  const records = await getMyFriendsAndRequests(userId);
+  if (records.length === 0) return [];
+
+  const peerIds = [
+    ...new Set(records.map((r) => (r.requester_id === userId ? r.addressee_id : r.requester_id))),
+  ];
+
+  let profileMap = new Map<string, { display_name: string; avatar_url: string | null }>();
+  try {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, display_name, avatar_url")
+      .in("id", peerIds);
+    profileMap = new Map(
+      (profiles ?? []).map((p) => [
+        p.id,
+        { display_name: p.display_name, avatar_url: p.avatar_url },
+      ]),
+    );
+  } catch {
+    // fallback for offline/non-UUID
+  }
+
+  return records.map((r) => {
+    const peerId = r.requester_id === userId ? r.addressee_id : r.requester_id;
+    const p = profileMap.get(peerId);
+    return {
+      ...r,
+      peerId,
+      peerName: p?.display_name ?? `Member ${peerId.slice(0, 6)}`,
+      peerAvatar: p?.avatar_url ?? null,
+      direction: r.requester_id === userId ? "outgoing" : "incoming",
+    };
+  });
+}
+
 /* -------------------------------- hashtags -------------------------------- */
 
 export type Hashtag = { id: string; tag: string; use_count: number };
@@ -348,17 +671,19 @@ export type ProfileStats = {
   stash: number;
   trash: number;
   following: number;
+  friends: number;
 };
 
 /** Public activity counters for a member profile (all from publicly readable tables). */
 export async function getProfileStats(userId: string): Promise<ProfileStats> {
-  const [posts, votes, following] = await Promise.all([
+  const [posts, votes, following, myFriends] = await Promise.all([
     supabase.from("items").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("votes").select("verdict").eq("user_id", userId),
     supabase
       .from("follows")
       .select("id", { count: "exact", head: true })
       .eq("follower_id", userId),
+    getMyFriendsAndRequests(userId),
   ]);
   const rows = votes.data ?? [];
   return {
@@ -366,6 +691,7 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
     stash: rows.filter((v) => v.verdict === "stash").length,
     trash: rows.filter((v) => v.verdict === "trash").length,
     following: following.count ?? 0,
+    friends: myFriends.filter((f) => f.status === "accepted").length,
   };
 }
 

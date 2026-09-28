@@ -82,6 +82,16 @@ export interface FirestoreNotification {
   createdAt: string;
 }
 
+export interface FirestoreFriend {
+  id: string;
+  requesterId: string;
+  addresseeId: string;
+  status: "pending" | "accepted" | "blocked";
+  bondTag?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 // ----------------------------------------------------
 // BRANDS
 // ----------------------------------------------------
@@ -300,3 +310,71 @@ export async function updateFirestoreUserProfile(userId: string, data: Record<st
     handleFirestoreError(error, OperationType.UPDATE, docPath);
   }
 }
+
+// ----------------------------------------------------
+// FRIENDS (MUTUAL CONNECTION REQUESTS)
+// ----------------------------------------------------
+export async function getFirestoreFriends(userId: string): Promise<FirestoreFriend[]> {
+  const collectionPath = "friends";
+  try {
+    const snapshot = await getDocs(query(collection(db, collectionPath), limit(200)));
+    return snapshot.docs
+      .map((d) => ({ id: d.id, ...d.data() }) as FirestoreFriend)
+      .filter((f) => f.requesterId === userId || f.addresseeId === userId);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, collectionPath);
+  }
+}
+
+export async function sendFirestoreFriendRequest(
+  requesterId: string,
+  addresseeId: string,
+  bondTag = "stranger",
+): Promise<FirestoreFriend> {
+  const [low, high] = [requesterId, addresseeId].sort();
+  const id = `friend_${low}_${high}`;
+  const docPath = `friends/${id}`;
+  try {
+    const now = new Date().toISOString();
+    const payload: FirestoreFriend = {
+      id,
+      requesterId,
+      addresseeId,
+      status: "pending",
+      bondTag,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await setDoc(doc(db, "friends", id), payload);
+    return payload;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, docPath);
+  }
+}
+
+export async function updateFirestoreFriendStatus(
+  friendId: string,
+  status: "pending" | "accepted" | "blocked",
+  bondTag?: string,
+): Promise<void> {
+  const docPath = `friends/${friendId}`;
+  try {
+    await updateDoc(doc(db, "friends", friendId), {
+      status,
+      ...(bondTag ? { bondTag } : {}),
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, docPath);
+  }
+}
+
+export async function deleteFirestoreFriend(friendId: string): Promise<void> {
+  const docPath = `friends/${friendId}`;
+  try {
+    await deleteDoc(doc(db, "friends", friendId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, docPath);
+  }
+}
+

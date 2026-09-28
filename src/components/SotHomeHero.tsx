@@ -14,7 +14,9 @@ import {
   compareBrandTiers,
 } from "@/lib/brandTiers";
 import { BrandLogo } from "@/components/BrandLogo";
+import { LiveStageSection } from "@/components/LiveStageSection";
 import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
+import { setStoredAccountPersona } from "@/hooks/useRoles";
 import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import { cn } from "@/lib/utils";
 import coinIcon from "@/assets/icon-coin.png";
@@ -430,6 +432,96 @@ export function SotHomeHero() {
             <span>{statusMessage}</span>
           </div>
         )}
+
+        {/* LIVE BRAND LAUNCHES, RELAUNCHES & CONSUMER BROADCAST STAGE */}
+        <div className="mx-auto w-full max-w-5xl">
+          <LiveStageSection />
+        </div>
+
+        {/* TWO DISTINCT WORLDS: MOST FUN FOR USERS vs MOST PROFESSIONAL FOR BRAND OWNERS */}
+        <div className="mx-auto grid w-full max-w-5xl gap-5 lg:grid-cols-2">
+          {/* Left Card: The Fun Consumer World */}
+          <div className="flex flex-col justify-between rounded-3xl border-2 border-[#d6a928]/60 bg-gradient-to-b from-[#fffbeb] to-white p-6 shadow-sm">
+            <div>
+              <span className="inline-block text-xs font-black uppercase tracking-[0.16em] text-amber-800">
+                🎉 For Everyday Consumers &amp; Voters
+              </span>
+              <h3 className="mt-2 font-display text-2xl font-black text-slate-950">
+                The Most Fun Platform to Engage, Vote &amp; Win Perks
+              </h3>
+              <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-700 sm:text-sm">
+                Spin the South African Zwepe Gold Coin, slam Randy the Hungry Trash Can, scan barcodes for fakes, and claim live launch vouchers — while protecting your privacy.
+              </p>
+              <ul className="mt-4 space-y-2 text-xs font-semibold text-slate-800">
+                <li>🪙 <strong>Gamified Voter Ranks:</strong> Level up from Rookie Voter to Gold Arbitrator &amp; Brand Watchdog.</li>
+                <li>🎁 <strong>Live Launch Perks Wallet:</strong> Claim instant promo codes &amp; genuine recovery vouchers during brand reveals.</li>
+                <li>🤝 <strong>Mutual Friends &amp; Bond Circles:</strong> Tag friends as Colleagues, Same Faith, Neighbours, or Gold Circle.</li>
+                <li>🔒 <strong>Zero-Phone-Number Calling Freedom:</strong> Talk to brands or friends on SOT without ever sharing your cell number.</li>
+              </ul>
+            </div>
+            <div className="mt-5 flex flex-wrap items-center gap-2.5 border-t border-amber-200/80 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setStoredAccountPersona("consumer");
+                  navigate({ to: "/profile" });
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-[#f5d061] transition hover:bg-slate-900 cursor-pointer"
+              >
+                Open Fun Consumer Profile <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+              <Link
+                to="/scan"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-900 hover:bg-slate-50"
+              >
+                Scan Product Barcode
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Card: The Professional Brand Owner Executive World */}
+          <div className="flex flex-col justify-between rounded-3xl border-2 border-[#d6a928] bg-slate-950 p-6 text-white shadow-md">
+            <div>
+              <span className="inline-block text-xs font-black uppercase tracking-[0.16em] text-[#f5d061]">
+                🏛️ For Verified Brand Owners &amp; Executives
+              </span>
+              <h3 className="mt-2 font-display text-2xl font-black text-white">
+                The Most Professional B2B Command &amp; Launch Suite
+              </h3>
+              <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-300 sm:text-sm">
+                Broadcast product launches &amp; relaunches live, measure real-time Stash/Trash focus-group pulse, intercept counterfeit stock, and resolve client issues before regulator escalation.
+              </p>
+              <ul className="mt-4 space-y-2 text-xs font-semibold text-slate-200">
+                <li>🚀 <strong>Live Product Launch &amp; Relaunch Studio:</strong> Stream reveals to followers &amp; prospects with 1-click voucher drops.</li>
+                <li>📊 <strong>Executive CX &amp; Tier Barometer:</strong> Track People’s SOT Grade (AAA to F) &amp; 30-day SLA response metrics.</li>
+                <li>📞 <strong>Direct Client Calling Desk:</strong> Ring or send Request-to-Call handshakes to customers on SOT without needing phone numbers.</li>
+                <li>🛡️ <strong>Counterfeit &amp; Revenue Recovery:</strong> Spot grey-market leaks and issue genuine replacement vouchers in 1 click.</li>
+              </ul>
+            </div>
+            <div className="mt-5 flex flex-wrap items-center gap-2.5 border-t border-slate-800 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setStoredAccountPersona("brand_owner");
+                  navigate({ to: "/dashboard" });
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#d6a928] px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-[#e5b935] cursor-pointer"
+              >
+                Open Executive Brand Dashboard <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStoredAccountPersona("brand_owner");
+                  navigate({ to: "/profile" });
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+              >
+                View Brand Owner Profile
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* LIVE RESULTS & DATA */}
         <div className="mx-auto w-full max-w-5xl rounded-3xl border border-slate-200 bg-slate-50/70 p-6 shadow-sm sm:p-8">
