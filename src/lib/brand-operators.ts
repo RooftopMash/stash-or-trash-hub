@@ -71,6 +71,226 @@ const ACTIVE_OPERATOR_ID_KEY = "sot_active_desk_operator_id_v1";
 const OPERATOR_LOG_KEY = "sot_brand_operator_logs_v1";
 const CX_LIFECYCLE_KEY = "sot_brand_cx_lifecycle_v1";
 const BRAND_SUBSCRIPTION_KEY = "sot_brand_subscription_state_v1";
+const REGISTERED_BRAND_KEY = "sot_registered_brand_identity_v1";
+
+export interface RegisteredBrandIdentity {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  country: string;
+  website: string;
+  trust_score: number;
+  verified: boolean;
+  ownerEmail?: string;
+}
+
+const DEFAULT_REGISTERED_BRAND: RegisteredBrandIdentity = {
+  id: "registered-brand-nandos-za",
+  name: "Nando's South Africa",
+  slug: "nandos",
+  category: "Food & Fast Food",
+  country: "ZA",
+  website: "https://www.nandos.co.za",
+  trust_score: 86,
+  verified: true,
+};
+
+export function getRegisteredBrandIdentity(): RegisteredBrandIdentity {
+  if (typeof window === "undefined") return DEFAULT_REGISTERED_BRAND;
+  try {
+    const raw = window.localStorage.getItem(REGISTERED_BRAND_KEY);
+    if (!raw) return DEFAULT_REGISTERED_BRAND;
+    const parsed = JSON.parse(raw) as Partial<RegisteredBrandIdentity>;
+    if (parsed && typeof parsed.name === "string" && parsed.name.trim()) {
+      return {
+        ...DEFAULT_REGISTERED_BRAND,
+        ...parsed,
+        name: parsed.name.trim(),
+        slug:
+          parsed.slug?.trim() ||
+          parsed.name
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "") ||
+          "official-brand",
+      };
+    }
+    return DEFAULT_REGISTERED_BRAND;
+  } catch {
+    return DEFAULT_REGISTERED_BRAND;
+  }
+}
+
+export function setRegisteredBrandIdentity(
+  partial: Partial<RegisteredBrandIdentity> & { name: string },
+): RegisteredBrandIdentity {
+  const current = getRegisteredBrandIdentity();
+  const cleanName = partial.name.trim() || current.name;
+  const cleanSlug =
+    partial.slug?.trim() ||
+    cleanName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") ||
+    "official-brand";
+  const updated: RegisteredBrandIdentity = {
+    ...current,
+    ...partial,
+    id: partial.id || `reg-brand-${cleanSlug}`,
+    name: cleanName,
+    slug: cleanSlug,
+    category: partial.category || current.category || "Consumer Brand",
+    country: partial.country || current.country || "ZA",
+    website: partial.website ?? current.website,
+    trust_score: Number(partial.trust_score) > 0 ? Number(partial.trust_score) : current.trust_score,
+    verified: partial.verified ?? true,
+  };
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(REGISTERED_BRAND_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent("sot-registered-brand-updated", { detail: updated }));
+    } catch {
+      // ignore
+    }
+  }
+  emitOperatorUpdate();
+  return updated;
+}
+
+export function getTierRank(planId: BrandPlanTierId): number {
+  if (planId === "enterprise_intelligence") return 3;
+  if (planId === "cx_launch_matrix") return 2;
+  return 1;
+}
+
+export function isTierEntitled(
+  activeTier: BrandPlanTierId,
+  requiredTier: BrandPlanTierId,
+): boolean {
+  return getTierRank(activeTier) >= getTierRank(requiredTier);
+}
+
+export function setActiveBrandPlanTier(planId: BrandPlanTierId, brandName?: string) {
+  const current = getActiveBrandSubscription();
+  const nextState = {
+    ...current,
+    activePlanId: planId,
+  };
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(BRAND_SUBSCRIPTION_KEY, JSON.stringify(nextState));
+    } catch {
+      // ignore
+    }
+  }
+  if (brandName) {
+    const plan = B2B_BRAND_PLANS.find((p) => p.id === planId);
+    const activeOp = getActiveDeskOperator();
+    logOperatorAction({
+      operatorId: activeOp.id,
+      operatorName: activeOp.name,
+      operatorRole: activeOp.roleTitle,
+      actionType: "shift_handover",
+      summary: `Updated ${brandName} B2B Subscription Tier to ${plan?.name ?? planId}.`,
+    });
+  }
+  emitOperatorUpdate();
+}
+
+export interface BrandBranchMetric {
+  branchName: string;
+  region: string;
+  stashCount: number;
+  trashCount: number;
+  trustPct: number;
+  openEscalations: number;
+  topSignal: string;
+}
+
+export interface BrandCounterfeitAlert {
+  id: string;
+  batchCode: string;
+  location: string;
+  scanStatus: "Suspected Grey-Market Leak" | "Verified Authentic Batch" | "Packaging Seal Flagged";
+  scansCount: number;
+  actionRecommended: string;
+}
+
+export function getBrandSpecificTelemetry(brandName: string): {
+  branches: BrandBranchMetric[];
+  counterfeitRadar: BrandCounterfeitAlert[];
+} {
+  const clean = brandName.trim() || "Registered Brand";
+  const prefix = clean.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5) || "BRAND";
+  return {
+    branches: [
+      {
+        branchName: `${clean} — Sandton Flagship & Digital Hub`,
+        region: "Gauteng · JHB North",
+        stashCount: 184,
+        trashCount: 14,
+        trustPct: 93,
+        openEscalations: 0,
+        topSignal: "Fast turnaround & high launch voucher redemption",
+      },
+      {
+        branchName: `${clean} — Rosebank & Mall of Africa`,
+        region: "Gauteng · Metro",
+        stashCount: 142,
+        trashCount: 19,
+        trustPct: 88,
+        openEscalations: 1,
+        topSignal: "2 packaging seal checks resolved within 15 mins",
+      },
+      {
+        branchName: `${clean} — V&A Waterfront & Canal Walk`,
+        region: "Western Cape · CPT",
+        stashCount: 168,
+        trashCount: 11,
+        trustPct: 94,
+        openEscalations: 0,
+        topSignal: "Top-rated customer service desk this week",
+      },
+      {
+        branchName: `${clean} — Umhlanga Arch & Gateway`,
+        region: "KwaZulu-Natal · DBN",
+        stashCount: 119,
+        trashCount: 21,
+        trustPct: 85,
+        openEscalations: 2,
+        topSignal: "Peak weekend queue feedback under active CX review",
+      },
+    ],
+    counterfeitRadar: [
+      {
+        id: "cf-1",
+        batchCode: `#${prefix}-LOT-884`,
+        location: "Johannesburg CBD Informal Trader Cluster",
+        scanStatus: "Suspected Grey-Market Leak",
+        scansCount: 14,
+        actionRecommended: "Issue Genuine Store Recovery Voucher & alert supply-chain auditor",
+      },
+      {
+        id: "cf-2",
+        batchCode: `#${prefix}-LOT-910`,
+        location: "Pretoria East Retail Partner",
+        scanStatus: "Packaging Seal Flagged",
+        scansCount: 6,
+        actionRecommended: "Video-inspect batch with customer via Zero-Phone-Number Call",
+      },
+      {
+        id: "cf-3",
+        batchCode: `#${prefix}-LOT-945`,
+        location: "National Authorised Distribution Channels",
+        scanStatus: "Verified Authentic Batch",
+        scansCount: 412,
+        actionRecommended: "100% authentic barcode scans — 94% Stash conversion",
+      },
+    ],
+  };
+}
 
 export const B2B_BRAND_PLANS: BrandSubscriptionPlan[] = [
   {
@@ -398,18 +618,72 @@ export function getOperatorShiftLogs(): OperatorShiftLogEntry[] {
   }
 }
 
-export function getCxLifecycleMatrix(): CxLifecycleRecord[] {
-  if (typeof window === "undefined") return DEFAULT_CX_LIFECYCLE;
+export function getCxLifecycleMatrix(brandName?: string): CxLifecycleRecord[] {
+  const targetBrand = brandName?.trim() || getRegisteredBrandIdentity().name;
+  const prefix = targetBrand.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "BRAND";
+
+  const scopedDefaults: CxLifecycleRecord[] = [
+    {
+      id: "cx-101",
+      brandName: targetBrand,
+      clientName: "Thabo M. (Verified Voter)",
+      stage1LaunchSource: `Watched '${targetBrand} Product Launch Broadcast' (Claimed 25% Code)`,
+      stage2ScanOrPostSignal: `Posted Trash Callout: Order fulfillment delay at ${targetBrand} Sandton branch`,
+      initialVerdict: "trash",
+      operatorAssigned: "Lerato Mokoena (Senior CX Desk)",
+      actionTaken: "Zero-Phone-Number SOT Video Call + Issued Recovery Voucher",
+      voucherCode: `SOT_RECOVER_${prefix}_412`,
+      finalVerdict: "stash",
+      revenueRetainedZar: 1850,
+      updatedAt: "14 mins ago",
+    },
+    {
+      id: "cx-102",
+      brandName: targetBrand,
+      clientName: "Zanele K. (Gold Arbitrator)",
+      stage1LaunchSource: `Watched '${targetBrand} 45-Min Relaunch Broadcast'`,
+      stage2ScanOrPostSignal: `Scanned ${targetBrand} Barcode #${prefix}-882 on /scan — Flagged outer seal`,
+      initialVerdict: "trash",
+      operatorAssigned: "Sipho Dlamini (Resolution Desk)",
+      actionTaken: "1-Click Request-to-Call Approved + Express Replacement Dispatched",
+      voucherCode: `SOT_RECOVER_${prefix}_809`,
+      finalVerdict: "stash",
+      revenueRetainedZar: 3400,
+      updatedAt: "42 mins ago",
+    },
+    {
+      id: "cx-103",
+      brandName: targetBrand,
+      clientName: "Kabelo S. (Level 4 Watchdog)",
+      stage1LaunchSource: `Watched '${targetBrand} Behind-the-Scenes Quality Tour'`,
+      stage2ScanOrPostSignal: `Reported suspected grey-market ${targetBrand} batch in CBD via /scan`,
+      initialVerdict: "trash",
+      operatorAssigned: "Thandi Ndlovu (Quality Auditor)",
+      actionTaken: "Logged Counterfeit Leak Location + Issued Genuine Store Voucher",
+      voucherCode: `${prefix}_REAL_250`,
+      finalVerdict: "stash",
+      revenueRetainedZar: 2200,
+      updatedAt: "2 hours ago",
+    },
+  ];
+
+  if (typeof window === "undefined") return scopedDefaults;
   try {
     const raw = window.localStorage.getItem(CX_LIFECYCLE_KEY);
     if (!raw) {
-      window.localStorage.setItem(CX_LIFECYCLE_KEY, JSON.stringify(DEFAULT_CX_LIFECYCLE));
-      return DEFAULT_CX_LIFECYCLE;
+      return scopedDefaults;
     }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_CX_LIFECYCLE;
+    const parsed = JSON.parse(raw) as CxLifecycleRecord[];
+    if (!Array.isArray(parsed) || parsed.length === 0) return scopedDefaults;
+    const customForBrand = parsed.filter(
+      (r) =>
+        r.id &&
+        !["cx-101", "cx-102", "cx-103"].includes(r.id) &&
+        (!brandName || r.brandName.toLowerCase() === targetBrand.toLowerCase()),
+    );
+    return [...customForBrand, ...scopedDefaults];
   } catch {
-    return DEFAULT_CX_LIFECYCLE;
+    return scopedDefaults;
   }
 }
 

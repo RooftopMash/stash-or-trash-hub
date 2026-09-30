@@ -10,18 +10,33 @@ import { SubmitDialog } from "@/components/SubmitDialog";
 import { ProductScannerModal } from "@/components/ProductScannerModal";
 import { LiveBroadcastModal, type IncomingSotCallPayload } from "@/components/LiveBroadcastModal";
 import { LanguageSwitcher, TopLanguageStrip } from "@/components/LanguageSwitcher";
-import { Bell, LayoutDashboard, MessageCircle, Shield, Scan, Video, PhoneIncoming, PhoneOff } from "lucide-react";
+import { Bell, Building2, Coins, LayoutDashboard, MessageCircle, Shield, Scan, Video, PhoneIncoming, PhoneOff } from "lucide-react";
 import { SotWordmark } from "@/components/SotWordmark";
+import { getRegisteredBrandIdentity } from "@/lib/brand-operators";
 import { supabase } from "@/integrations/supabase/client";
 import type { AiScanResult } from "@/lib/ai-scanner";
+import { cn } from "@/lib/utils";
 
 export function Header({ onPosted }: { onPosted?: () => void }) {
   const { user, loading, signOut } = useAuth();
-  const { isAdmin, isBrand } = useRoles();
+  const { isAdmin, isDeveloper, isBrand, persona, setPersona } = useRoles();
+  const [registeredBrandName, setRegisteredBrandName] = useState(
+    () => getRegisteredBrandIdentity().name,
+  );
   const { t } = useTranslation();
   const navigate = useNavigate();
   const unread = useUnreadCount(user?.id);
   const unreadNotifs = useUnreadNotifications(user?.id);
+
+  useEffect(() => {
+    const syncBrand = () => setRegisteredBrandName(getRegisteredBrandIdentity().name);
+    window.addEventListener("sot-registered-brand-updated", syncBrand);
+    window.addEventListener("sot-brand-operator-updated", syncBrand);
+    return () => {
+      window.removeEventListener("sot-registered-brand-updated", syncBrand);
+      window.removeEventListener("sot-brand-operator-updated", syncBrand);
+    };
+  }, []);
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const [liveStudioOpen, setLiveStudioOpen] = useState(false);
@@ -92,73 +107,83 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
       {/* Top Language Switcher Strip for supported locales in src/lib/locale-app.ts */}
       <TopLanguageStrip />
 
-      {/* Expanded Full-Width Main Navbar — single-line, zero wrapping on Stash Or Trash */}
-      <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 flex-1 items-center gap-4 lg:gap-8">
-          <Link to="/" className="group flex shrink-0 items-center gap-2.5 whitespace-nowrap">
+      {/* Compact Single-Line Navbar — everything fits cleanly on one line with zero wrapping */}
+      <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between gap-2 px-3 sm:px-5 lg:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 lg:gap-4">
+          <Link to="/" className="group flex shrink-0 items-center gap-2 whitespace-nowrap">
             <span
               aria-label="SOrT — Stash Or Trash logo"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-extrabold tracking-[-0.12em] text-background shadow-sm transition-transform group-hover:scale-105"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-extrabold tracking-[-0.12em] text-background shadow-sm transition-transform group-hover:scale-105"
             >
               <span className="text-stash">S</span>
               <span>O</span>
               <span className="text-trash">r</span>
               <span>T</span>
             </span>
-            <SotWordmark className="text-lg sm:text-xl whitespace-nowrap" />
+            <SotWordmark className="hidden xl:inline-flex text-base whitespace-nowrap" />
           </Link>
 
-          <nav className="flex items-center gap-1 overflow-x-auto text-sm font-semibold no-scrollbar sm:gap-1.5 lg:gap-2">
+          <nav className="flex min-w-0 items-center gap-0.5 overflow-x-auto text-xs font-semibold no-scrollbar sm:gap-1">
             <Link
               to="/"
-              className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
             >
               {t("nav.home", { defaultValue: "Home" })}
             </Link>
             <Link
               to="/feed"
-              className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
             >
               {t("nav.feed", { defaultValue: "Feed" })}
             </Link>
-            <Link
-              to="/scan"
-              className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
-            >
-              <Scan className="h-3.5 w-3.5 shrink-0 text-[#d6a928]" />
-              <span>{t("nav.scan", { defaultValue: "Scan" })}</span>
-            </Link>
+            {persona !== "brand_owner" && (
+              <Link
+                to="/scan"
+                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              >
+                <Scan className="h-3 w-3 shrink-0 text-[#d6a928]" />
+                <span>{t("nav.scan", { defaultValue: "Scan" })}</span>
+              </Link>
+            )}
             <Link
               to="/brands"
-              className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
             >
               {t("nav.brands", { defaultValue: "Brands" })}
             </Link>
             <Link
               to="/awards"
-              className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
             >
               {t("nav.awards", { defaultValue: "Awards" })}
             </Link>
-            <Link
-              to="/dashboard"
-              className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
-            >
-              <LayoutDashboard className="h-3.5 w-3.5 shrink-0 text-[#d6a928]" />
-              <span>{t("nav.dashboard", { defaultValue: "Dashboard" })}</span>
-            </Link>
+            {user && (
+              <Link
+                to="/dashboard"
+                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              >
+                <LayoutDashboard className="h-3 w-3 shrink-0 text-[#d6a928]" />
+                <span>
+                  {persona === "brand_owner"
+                    ? "Brand Suite"
+                    : t("nav.dashboard", { defaultValue: "My Hub" })}
+                </span>
+              </Link>
+            )}
             {user && (
               <Link
                 to="/profile"
-                className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+                className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
               >
-                {t("nav.profile", { defaultValue: "Profile" })}
+                {persona === "brand_owner"
+                  ? "Brand Desk"
+                  : t("nav.profile", { defaultValue: "Profile" })}
               </Link>
             )}
             {user && isAdmin && (
               <Link
                 to="/admin"
-                className="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+                className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
               >
                 {t("nav.admin", { defaultValue: "Admin" })}
               </Link>
@@ -166,24 +191,43 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
           </nav>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setScannerOpen(true)}
-            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap border-[#d6a928]/50 px-2.5 text-xs font-bold text-foreground hover:bg-[#d6a928]/10 sm:px-3"
-            title="Scan Product Barcodes or Logos for Authenticity"
-          >
-            <Scan className="h-3.5 w-3.5 text-[#d6a928]" />
-            <span className="hidden md:inline">{t("nav.scan", { defaultValue: "Scan" })}</span>
-          </Button>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+          {/* DEVELOPER-ONLY PREVIEW SWITCHER: Hidden from all Personal Users & Brand Owners */}
+          {isDeveloper && (
+            <button
+              type="button"
+              onClick={() => {
+                const next = persona === "brand_owner" ? "consumer" : "brand_owner";
+                setPersona(next);
+              }}
+              title="Developer-Only View Switcher (Hidden from regular Personal Users and Brand Owners)"
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-black transition cursor-pointer whitespace-nowrap",
+                persona === "brand_owner"
+                  ? "border-[#d6a928] bg-slate-950 text-[#f5d061]"
+                  : "border-emerald-600/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+              )}
+            >
+              {persona === "brand_owner" ? (
+                <>
+                  <Building2 className="h-3 w-3 text-[#d6a928]" />
+                  <span className="max-w-[110px] truncate">DEV: {registeredBrandName}</span>
+                </>
+              ) : (
+                <>
+                  <Coins className="h-3 w-3 text-[#d6a928]" />
+                  <span>DEV: Personal</span>
+                </>
+              )}
+            </button>
+          )}
 
           {/* Authenticity & Safety Shield Icon */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => {
-              if (isAdmin || user?.email?.toLowerCase() === "borulelo@gmail.com") {
+              if (isAdmin) {
                 navigate({ to: "/admin" });
               } else if (isBrand) {
                 navigate({ to: "/dashboard" });
@@ -193,23 +237,23 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
             }}
             aria-label={t("nav.shield", { defaultValue: "Authenticity & Safety Shield" })}
             title={
-              isAdmin || user?.email?.toLowerCase() === "borulelo@gmail.com"
+              isAdmin
                 ? "Admin & Brand Verification Portal"
                 : isBrand
                   ? "Brand Dashboard & Safety Shield"
                   : "Brand Authenticity & Safety Shield"
             }
-            className="relative shrink-0 text-foreground transition-colors hover:text-primary"
+            className="relative h-8 w-8 shrink-0 text-foreground transition-colors hover:text-primary"
           >
             <Shield className="h-4 w-4 text-[#d6a928]" />
           </Button>
 
           {loading ? null : user ? (
-            <div className="flex shrink-0 items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative shrink-0"
+                className="relative h-8 w-8 shrink-0"
                 onClick={() => navigate({ to: "/notifications" })}
                 aria-label={t("social.notifications", { defaultValue: "Notifications" })}
                 title={t("social.notifications", { defaultValue: "Notifications" })}
@@ -224,7 +268,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative shrink-0"
+                className="relative h-8 w-8 shrink-0"
                 onClick={() => navigate({ to: "/messages" })}
                 aria-label={t("nav.messages", { defaultValue: "Messages & Calling" })}
                 title={t("nav.messages", { defaultValue: "Messages & Voice/Video Calls" })}
@@ -236,39 +280,29 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
                   </span>
                 )}
               </Button>
-              <SubmitDialog onPosted={onPosted} />
+              {persona !== "brand_owner" && <SubmitDialog onPosted={onPosted} />}
               <Button
                 variant="ghost"
                 size="sm"
-                className="shrink-0 whitespace-nowrap"
+                className="h-8 shrink-0 whitespace-nowrap px-2 text-xs font-semibold"
                 onClick={() => signOut()}
               >
                 {t("nav.signOut", { defaultValue: "Sign out" })}
               </Button>
             </div>
           ) : (
-            <div className="flex shrink-0 items-center gap-1.5">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative shrink-0"
-                onClick={() => navigate({ to: "/auth" })}
-                aria-label={t("social.notifications", { defaultValue: "Notifications" })}
-                title={t("social.notifications", { defaultValue: "Notifications" })}
-              >
-                <Bell className="h-4 w-4" />
-              </Button>
+            <div className="flex shrink-0 items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                className="shrink-0 whitespace-nowrap"
+                className="h-8 shrink-0 whitespace-nowrap px-2.5 text-xs font-semibold"
                 onClick={() => navigate({ to: "/auth" })}
               >
                 {t("nav.signIn", { defaultValue: "Sign in" })}
               </Button>
               <Button
                 size="sm"
-                className="shrink-0 whitespace-nowrap bg-slate-950 text-[#d6a928] hover:bg-slate-900 font-bold"
+                className="h-8 shrink-0 whitespace-nowrap bg-slate-950 px-2.5 text-xs font-bold text-[#d6a928] hover:bg-slate-900"
                 onClick={() => navigate({ to: "/auth", search: { tab: "signup" } })}
               >
                 {t("nav.signUp", { defaultValue: "Sign up" })}

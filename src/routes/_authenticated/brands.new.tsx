@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { setStoredAccountPersona } from "@/hooks/useRoles";
+import { setRegisteredBrandIdentity } from "@/lib/brand-operators";
 import { createBrand, searchBrands } from "@/lib/brands";
 import { BRAND_CATEGORIES } from "@/lib/categories";
 import { Header } from "@/components/Header";
@@ -63,8 +65,20 @@ function NewBrandPage() {
         country,
         logo,
       });
-      toast.success("Brand created!");
-      navigate({ to: "/brands/$slug", params: { slug: brand.slug } });
+      setRegisteredBrandIdentity({
+        id: brand.id,
+        name: brand.name,
+        slug: brand.slug,
+        category: brand.category || category || "Consumer Brand",
+        country: brand.country || country || "ZA",
+        website: brand.website || website || "",
+        trust_score: Number(brand.trust_score) || 82,
+        verified: true,
+        ownerEmail: user.email || undefined,
+      });
+      setStoredAccountPersona("brand_owner");
+      toast.success(`Registered "${brand.name}" as your Official Brand Account!`);
+      navigate({ to: "/dashboard" });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not create brand.");
     } finally {

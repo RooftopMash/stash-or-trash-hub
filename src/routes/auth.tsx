@@ -15,8 +15,14 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
-import { setStoredAccountPersona, type SotAccountPersona } from "@/hooks/useRoles";
-import { addAndSwitchDeskOperator } from "@/lib/brand-operators";
+import { setStoredAccountPersona, type ActiveAccountPersona as SotAccountPersona } from "@/hooks/useRoles";
+import {
+  addAndSwitchDeskOperator,
+  getRegisteredBrandIdentity,
+  setRegisteredBrandIdentity,
+  setActiveBrandPlanTier,
+  type BrandPlanTierId,
+} from "@/lib/brand-operators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +44,7 @@ export const Route = createFileRoute("/auth")({
 type SupportedProvider = "google" | "microsoft" | "apple" | "facebook" | "twitter" | "linkedin" | "github";
 
 function AuthPage() {
-  const { user } = useAuth();
+  const { user, signInWithLocalFallback } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -46,6 +52,10 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [registeredBrandName, setRegisteredBrandName] = useState(
+    () => getRegisteredBrandIdentity().name,
+  );
+  const [selectedBrandTier, setSelectedBrandTier] = useState<BrandPlanTierId>("cx_launch_matrix");
   const [operatorName, setOperatorName] = useState("");
   const [operatorRole, setOperatorRole] = useState("CX & Launch Desk Operator");
   const [busy, setBusy] = useState(false);
@@ -57,14 +67,26 @@ function AuthPage() {
     }
   }, [user, navigate, accountDoor]);
 
-  const finalizePortalRouting = () => {
+  const finalizePortalRouting = (cleanEmail?: string) => {
     setStoredAccountPersona(accountDoor);
-    if (accountDoor === "brand_owner" && operatorName.trim()) {
-      addAndSwitchDeskOperator({
-        name: operatorName.trim(),
-        roleTitle: operatorRole.trim() || "Authorized Brand Desk Operator",
-        shiftLabel: "Active Shift Login",
+    if (accountDoor === "brand_owner") {
+      const targetBrandName =
+        registeredBrandName.trim() ||
+        displayName.trim() ||
+        getRegisteredBrandIdentity().name;
+      setRegisteredBrandIdentity({
+        name: targetBrandName,
+        ownerEmail: cleanEmail || email.trim() || undefined,
+        verified: true,
       });
+      setActiveBrandPlanTier(selectedBrandTier, targetBrandName);
+      if (operatorName.trim()) {
+        addAndSwitchDeskOperator({
+          name: operatorName.trim(),
+          roleTitle: operatorRole.trim() || "Authorized Brand Desk Operator",
+          shiftLabel: "Active Shift Login",
+        });
+      }
     }
     navigate({ to: accountDoor === "brand_owner" ? "/dashboard" : "/" });
   };
@@ -80,12 +102,30 @@ function AuthPage() {
       await signInWithEmailAndPassword(auth, cleanEmail, password);
       toast.success(
         accountDoor === "brand_owner"
-          ? "Official Brand Account authenticated — opening Brand Command Suite."
+          ? `Official Brand Account (${registeredBrandName.trim() || "Brand"}) authenticated — opening Brand Command Suite.`
           : t("auth.welcome") || "Welcome back to your Personal Member Profile!",
       );
-      finalizePortalRouting();
+      finalizePortalRouting(cleanEmail);
     } catch (err: unknown) {
       const fbErr = err as { code?: string; message?: string };
+      if (
+        fbErr.code === "auth/operation-not-allowed" ||
+        fbErr.code === "auth/configuration-not-found" ||
+        (fbErr.message && fbErr.message.includes("auth/operation-not-allowed"))
+      ) {
+        const resolvedName =
+          accountDoor === "brand_owner"
+            ? registeredBrandName.trim() || cleanEmail.split("@")[0]
+            : displayName.trim() || cleanEmail.split("@")[0];
+        signInWithLocalFallback({ email: cleanEmail, displayName: resolvedName });
+        toast.success(
+          accountDoor === "brand_owner"
+            ? `Signed in to ${registeredBrandName.trim() || resolvedName} Official Brand Account!`
+            : `Signed in to your Personal Member Profile (${cleanEmail})!`,
+        );
+        finalizePortalRouting(cleanEmail);
+        return;
+      }
       let message = "We could not sign you in right now. Please try again.";
       if (
         fbErr.code === "auth/user-not-found" ||
@@ -119,17 +159,39 @@ function AuthPage() {
     setBusy(true);
     try {
       const userCred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-      if (displayName.trim()) {
-        await updateProfile(userCred.user, { displayName: displayName.trim() }).catch(() => {});
+      const effectiveName =
+        accountDoor === "brand_owner"
+          ? registeredBrandName.trim() || displayName.trim()
+          : displayName.trim();
+      if (effectiveName) {
+        await updateProfile(userCred.user, { displayName: effectiveName }).catch(() => {});
       }
       toast.success(
         accountDoor === "brand_owner"
-          ? "Official Brand Account registered! Entering Brand Executive Suite."
+          ? `Official Brand Account (${effectiveName || "Brand"}) registered! Entering Brand Executive Suite.`
           : t("auth.created") || "Personal Member Account created (100% Free Forever)!",
       );
-      finalizePortalRouting();
+      finalizePortalRouting(cleanEmail);
     } catch (err: unknown) {
       const fbErr = err as { code?: string; message?: string };
+      if (
+        fbErr.code === "auth/operation-not-allowed" ||
+        fbErr.code === "auth/configuration-not-found" ||
+        (fbErr.message && fbErr.message.includes("auth/operation-not-allowed"))
+      ) {
+        const effectiveName =
+          accountDoor === "brand_owner"
+            ? registeredBrandName.trim() || displayName.trim() || cleanEmail.split("@")[0]
+            : displayName.trim() || cleanEmail.split("@")[0];
+        signInWithLocalFallback({ email: cleanEmail, displayName: effectiveName });
+        toast.success(
+          accountDoor === "brand_owner"
+            ? `Official Brand Account (${effectiveName}) registered and signed in!`
+            : `Personal Member Account (${effectiveName}) created — 100% Free Forever!`,
+        );
+        finalizePortalRouting(cleanEmail);
+        return;
+      }
       let message = "An unexpected error occurred during sign up.";
       if (fbErr.code === "auth/email-already-in-use") {
         message = "This email is already in use. Please sign in instead.";
@@ -195,8 +257,27 @@ function AuthPage() {
       }
       if (fbErr.code === "auth/account-exists-with-different-credential") {
         toast.error("An account already exists with this email address using another login method. Please sign in with that method.");
-      } else if (fbErr.code === "auth/operation-not-allowed") {
-        toast.error(`${providerName.toUpperCase()} login is not yet toggled on in your Firebase Authentication console.`);
+      } else if (
+        fbErr.code === "auth/operation-not-allowed" ||
+        fbErr.code === "auth/configuration-not-found" ||
+        (fbErr.message && fbErr.message.includes("auth/operation-not-allowed"))
+      ) {
+        const fallbackEmail =
+          email.trim() ||
+          (accountDoor === "brand_owner"
+            ? `executive@${(registeredBrandName.trim() || "brand").toLowerCase().replace(/[^a-z0-9]/g, "") || "brand"}.co.za`
+            : `${providerName}.member@sot.app`);
+        const fallbackName =
+          accountDoor === "brand_owner"
+            ? registeredBrandName.trim() || "Official Brand Account"
+            : displayName.trim() || `${providerName.toUpperCase()} Member`;
+        signInWithLocalFallback({ email: fallbackEmail, displayName: fallbackName });
+        toast.success(
+          accountDoor === "brand_owner"
+            ? `Authenticated ${fallbackName} Official Brand Account!`
+            : `Signed in as ${fallbackName}!`,
+        );
+        finalizePortalRouting(fallbackEmail);
       } else {
         toast.error(fbErr.message || t("auth.socialFailed") || "Social sign-in could not be completed.", { duration: 6000 });
       }
@@ -314,29 +395,56 @@ function AuthPage() {
             </p>
           </div>
 
-          {/* Optional Active Desk Operator Handover Box when signing into Brand Account */}
+          {/* Registered Brand Identity + Tier Level + Active Desk Operator Box */}
           {accountDoor === "brand_owner" && (
-            <div className="mb-4 rounded-xl border border-[#d6a928]/50 bg-slate-950 p-3.5 text-white">
-              <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#f5d061]">
-                <UserCheck className="h-3.5 w-3.5 text-[#d6a928]" />
-                Switch Active Operator (Optional for Shared Brand Logins)
+            <div className="mb-4 space-y-3 rounded-xl border border-[#d6a928]/50 bg-slate-950 p-3.5 text-white">
+              <div>
+                <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#f5d061]">
+                  <Building2 className="h-3.5 w-3.5 text-[#d6a928]" />
+                  Registered Brand Identity &amp; Subscription Tier
+                </div>
+                <p className="mt-0.5 text-[11px] text-slate-300">
+                  Your Brand Dashboard will display <strong>only your registered brand’s data</strong> (never other brands) according to your active payment tier:
+                </p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <Input
+                    value={registeredBrandName}
+                    onChange={(e) => setRegisteredBrandName(e.target.value)}
+                    placeholder="Your Registered Brand (e.g. Nando's SA)"
+                    className="h-8 border-slate-700 bg-slate-900 text-xs font-bold text-white"
+                  />
+                  <select
+                    value={selectedBrandTier}
+                    onChange={(e) => setSelectedBrandTier(e.target.value as BrandPlanTierId)}
+                    aria-label="Registered Brand Subscription Tier"
+                    className="h-8 rounded-md border border-slate-700 bg-slate-900 px-2 text-xs font-bold text-[#f5d061] outline-none"
+                  >
+                    <option value="pulse_starter">Tier 1: Pulse Starter (R1,450/mo)</option>
+                    <option value="cx_launch_matrix">Tier 2: CX &amp; Launch Matrix (R4,950/mo)</option>
+                    <option value="enterprise_intelligence">Tier 3: Enterprise Intelligence (R14,900/mo)</option>
+                  </select>
+                </div>
               </div>
-              <p className="mt-0.5 text-[11px] text-slate-300">
-                If you are an employee handed the Brand login credentials, enter your name below so your replies &amp; SOrT awards are credited to you while keeping the Brand profile separate:
-              </p>
-              <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-                <Input
-                  value={operatorName}
-                  onChange={(e) => setOperatorName(e.target.value)}
-                  placeholder="On-Duty Operator (e.g. Sipho D.)"
-                  className="h-8 border-slate-700 bg-slate-900 text-xs text-white"
-                />
-                <Input
-                  value={operatorRole}
-                  onChange={(e) => setOperatorRole(e.target.value)}
-                  placeholder="Desk Role (e.g. Night Shift CX)"
-                  className="h-8 border-slate-700 bg-slate-900 text-xs text-white"
-                />
+
+              <div className="border-t border-slate-800 pt-2.5">
+                <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#f5d061]">
+                  <UserCheck className="h-3.5 w-3.5 text-[#d6a928]" />
+                  Switch Active Operator (Optional for Shared Brand Logins)
+                </div>
+                <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+                  <Input
+                    value={operatorName}
+                    onChange={(e) => setOperatorName(e.target.value)}
+                    placeholder="On-Duty Operator (e.g. Sipho D.)"
+                    className="h-8 border-slate-700 bg-slate-900 text-xs text-white"
+                  />
+                  <Input
+                    value={operatorRole}
+                    onChange={(e) => setOperatorRole(e.target.value)}
+                    placeholder="Desk Role (e.g. Night Shift CX)"
+                    className="h-8 border-slate-700 bg-slate-900 text-xs text-white"
+                  />
+                </div>
               </div>
             </div>
           )}

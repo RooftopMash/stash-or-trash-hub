@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
+import { useRoles } from "@/hooks/useRoles";
 import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import {
   BRAND_BROADCAST_CATEGORIES,
@@ -43,6 +44,7 @@ export function LiveStageSection({
   defaultFilter = "all",
   brandNameFilter,
 }: LiveStageSectionProps) {
+  const { isDeveloper, persona } = useRoles();
   const [sessions, setSessions] = useState<LiveBroadcastSession[]>(() => getLiveBroadcastSessions());
   const [filter, setFilter] = useState<"all" | "brand_owner" | "consumer">(defaultFilter);
   const [claimedIds, setClaimedIds] = useState<Record<string, boolean>>({});
@@ -171,23 +173,27 @@ export function LiveStageSection({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <Button
-            size="sm"
-            onClick={() => openHostStudio("brand_owner", "product_launch")}
-            className="gap-1.5 bg-[#d6a928] font-black text-slate-950 hover:bg-[#e5b935]"
-          >
-            <Rocket className="h-4 w-4" />
-            Host Brand Launch / Relaunch
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => openHostStudio("consumer")}
-            className="gap-1.5 border-rose-500/60 bg-rose-600/15 font-bold text-rose-300 hover:bg-rose-600/25 hover:text-white"
-          >
-            <Video className="h-4 w-4" />
-            Consumer Situation Cam
-          </Button>
+          {(persona === "brand_owner" || isDeveloper) && (
+            <Button
+              size="sm"
+              onClick={() => openHostStudio("brand_owner", "product_launch")}
+              className="gap-1.5 bg-[#d6a928] font-black text-slate-950 hover:bg-[#e5b935]"
+            >
+              <Rocket className="h-4 w-4" />
+              Host Brand Launch / Relaunch
+            </Button>
+          )}
+          {(persona === "consumer" || isDeveloper) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openHostStudio("consumer")}
+              className="gap-1.5 border-rose-500/60 bg-rose-600/15 font-bold text-rose-300 hover:bg-rose-600/25 hover:text-white"
+            >
+              <Video className="h-4 w-4" />
+              Consumer Situation Cam
+            </Button>
+          )}
         </div>
       </div>
 

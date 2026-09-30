@@ -122,7 +122,7 @@ export function LiveBroadcastModal({
   activeBroadcastId,
 }: LiveBroadcastModalProps) {
   const { user } = useAuth();
-  const { isBrand } = useRoles();
+  const { isBrand, isDeveloper } = useRoles();
 
   const [studioPersona, setStudioPersona] = useState<BroadcastPersona>(
     initialPersona ?? (isBrand ? "brand_owner" : "consumer"),
@@ -887,42 +887,44 @@ export function LiveBroadcastModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[94vh] overflow-y-auto p-0 gap-0 border-border/80">
         <DialogHeader className="p-4 border-b border-border/60 bg-muted/20">
-          {/* Top Persona Switcher: Brand Owner Launch Studio vs Consumer Situation Studio */}
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-background p-1.5">
-            <div className="flex items-center gap-1.5 text-xs font-bold px-2">
-              <Sparkles className="h-3.5 w-3.5 text-[#d6a928]" />
-              <span>Select Broadcast Studio Mode:</span>
+          {/* Developer-Only Studio Mode Switcher: Hidden from regular Personal Users & Brand Owners */}
+          {isDeveloper && (
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-dashed border-[#d6a928]/60 bg-background p-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold px-2">
+                <Sparkles className="h-3.5 w-3.5 text-[#d6a928]" />
+                <span>🛠️ DEV Studio Mode Switcher:</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStudioPersona("brand_owner");
+                    setSessionMode("broadcast");
+                  }}
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-extrabold transition cursor-pointer ${
+                    studioPersona === "brand_owner"
+                      ? "bg-slate-950 text-[#d6a928] shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Rocket className="h-3.5 w-3.5" />
+                  DEV: Brand Launch Studio (B2B)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStudioPersona("consumer")}
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-extrabold transition cursor-pointer ${
+                    studioPersona === "consumer"
+                      ? "bg-rose-600 text-white shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Video className="h-3.5 w-3.5" />
+                  DEV: Consumer Situation Cam (User)
+                </button>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setStudioPersona("brand_owner");
-                  setSessionMode("broadcast");
-                }}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-extrabold transition cursor-pointer ${
-                  studioPersona === "brand_owner"
-                    ? "bg-slate-950 text-[#d6a928] shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Rocket className="h-3.5 w-3.5" />
-                🏛️ Brand Launch, Relaunch &amp; Engagement Studio (B2B)
-              </button>
-              <button
-                type="button"
-                onClick={() => setStudioPersona("consumer")}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-extrabold transition cursor-pointer ${
-                  studioPersona === "consumer"
-                    ? "bg-rose-600 text-white shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Video className="h-3.5 w-3.5" />
-                📹 Consumer Situation &amp; Batch Cam (User)
-              </button>
-            </div>
-          </div>
+          )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">

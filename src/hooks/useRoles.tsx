@@ -94,6 +94,8 @@ export function useRoles() {
   const roles = query.data ?? [];
   const isOwnerEmail = !!user?.email && KNOWN_ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
   const isAdmin = isOwnerEmail || roles.includes("admin");
+  // Developer mode is strictly reserved for the platform creator/developer
+  const isDeveloper = isOwnerEmail || isAdmin;
   const hasBrandRole = roles.includes("brand") || isAdmin;
 
   const [persona, setPersonaState] = useState<ActiveAccountPersona>(() =>
@@ -113,11 +115,12 @@ export function useRoles() {
     setPersonaState(next);
   };
 
-  const isBrand = persona === "brand_owner" || roles.includes("brand");
+  const isBrand = persona === "brand_owner";
 
   return {
     roles,
     isAdmin,
+    isDeveloper,
     isBrand,
     hasBrandRole,
     persona,

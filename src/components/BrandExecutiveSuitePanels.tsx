@@ -82,12 +82,18 @@ export function BrandOperatorHandoverBar({ brandName = "Official Brand Account" 
   const handleAddOperator = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) {
-      toast.error("Enter the employee or operator's full name.");
+      toast.error("Enter the corporate desk operator's name or seat ID.");
+      return;
+    }
+    if (newName.includes("@") || newRole.includes("@")) {
+      toast.error(
+        "Security Policy: Employees cannot attach personal SOrT handles or personal email profiles to a Brand Account. Enter a corporate desk name/seat only.",
+      );
       return;
     }
     const created = addAndSwitchDeskOperator({
       name: newName,
-      roleTitle: newRole || "Authorized CX & Launch Operator",
+      roleTitle: newRole || "Authorized Corporate CX Desk Seat",
       shiftLabel: newShift,
     });
     setNewName("");
@@ -95,7 +101,7 @@ export function BrandOperatorHandoverBar({ brandName = "Official Brand Account" 
     setShowAddForm(false);
     syncState();
     toast.success(
-      `Added & switched to ${created.name} (${created.roleTitle}). Personal profile remains 100% isolated from ${brandName}.`,
+      `Activated corporate desk seat: ${created.name} (${created.roleTitle}). Zero personal profile attachment enforced for ${brandName}.`,
     );
   };
 
@@ -106,22 +112,22 @@ export function BrandOperatorHandoverBar({ brandName = "Official Brand Account" 
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-md bg-[#d6a928] px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider text-slate-950">
               <UserCheck className="h-3.5 w-3.5" />
-              Switch Active Operator · Shared Credential Protection
+              Corporate Desk Operator Roster · Shared Brand Login
             </span>
             <span className="text-xs text-emerald-400 font-bold">
-              🔒 Zero Personal Profile Merging
+              🔒 Strict Non-Attachment: Employees Cannot Link Personal SOrT Profiles
             </span>
           </div>
 
           <h3 className="mt-2 font-display text-lg font-black text-white">
-            {brandName} — Currently Operated By:{" "}
+            {brandName} — Active Corporate Desk Seat:{" "}
             <span className="text-[#f5d061]">{activeOp.name}</span>{" "}
             <span className="text-sm font-semibold text-slate-300">
               ({activeOp.roleTitle} · {activeOp.shiftLabel})
             </span>
           </h3>
           <p className="mt-1 text-xs text-slate-300">
-            Handing over brand login credentials to an employee? Switch the active operator below. Customers &amp; management see who is running the desk, while the employee’s personal life and personal SOT profile never mix with the Brand.
+            Employees operating SOrT for <strong>{brandName}</strong> work exclusively under the Brand’s corporate login via isolated desk seats. Personal user profiles can never be attached, linked, or used on the Brand’s profile.
           </p>
         </div>
 
@@ -210,23 +216,48 @@ export function BrandOperatorHandoverBar({ brandName = "Official Brand Account" 
  * Shows the exact data Brands pay for: from Launch Broadcast -> Barcode Scan/Complaint ->
  * Operator Call/Voucher -> Verdict Flipped from Trash to Stash + Employee Recognition Awards.
  */
-export function BrandCxDataAndAwardsMatrix({ brandName = "Verified Brand" }: { brandName?: string }) {
-  const [records, setRecords] = useState<CxLifecycleRecord[]>(() => getCxLifecycleMatrix());
+export function BrandCxDataAndAwardsMatrix({
+  brandName = "Verified Brand",
+  onUpgradeRequest,
+}: {
+  brandName?: string;
+  onUpgradeRequest?: () => void;
+}) {
+  const [records, setRecords] = useState<CxLifecycleRecord[]>(() =>
+    getCxLifecycleMatrix(brandName),
+  );
   const [operators, setOperators] = useState<BrandDeskOperator[]>(() => getBrandDeskOperators());
+  const [subState, setSubState] = useState(() => getActiveBrandSubscription());
+
+  useEffect(() => {
+    setRecords(getCxLifecycleMatrix(brandName));
+  }, [brandName]);
 
   useEffect(() => {
     const sync = () => {
-      setRecords(getCxLifecycleMatrix());
+      setRecords(getCxLifecycleMatrix(brandName));
       setOperators(getBrandDeskOperators());
+      setSubState(getActiveBrandSubscription());
     };
     window.addEventListener("sot-brand-operator-updated", sync);
     return () => window.removeEventListener("sot-brand-operator-updated", sync);
-  }, []);
+  }, [brandName]);
+
+  const activeTier = subState.activePlanId;
+  const hasTier2Matrix = activeTier === "cx_launch_matrix" || activeTier === "enterprise_intelligence";
+  const hasTier3Awards = activeTier === "enterprise_intelligence";
 
   const totalRetainedZar = records.reduce((s, r) => s + r.revenueRetainedZar, 0);
   const totalFlips = operators.reduce((s, o) => s + o.trashesTurnedToStash, 0);
 
   const handleExportCsv = () => {
+    if (!hasTier2Matrix) {
+      toast.info(
+        `CSV Data Extraction requires Plan 02 (Full-Cycle CX & Launch Matrix) or Plan 03 (Enterprise Intelligence) for ${brandName}.`,
+      );
+      onUpgradeRequest?.();
+      return;
+    }
     const headers = [
       "Record ID",
       "Brand",
@@ -265,6 +296,13 @@ export function BrandCxDataAndAwardsMatrix({ brandName = "Verified Brand" }: { b
   };
 
   const handleDownloadEmployeeAward = (op: BrandDeskOperator) => {
+    if (!hasTier3Awards) {
+      toast.info(
+        `Official SOrT Employee Recognition Award downloads are unlocked on Plan 03 (Enterprise Intelligence & Awards Suite) for ${brandName}.`,
+      );
+      onUpgradeRequest?.();
+      return;
+    }
     const certText = [
       "====================================================================",
       "           OFFICIAL SOrT · STASH OR TRASH EXCELLENCE AWARD          ",
@@ -303,24 +341,45 @@ export function BrandCxDataAndAwardsMatrix({ brandName = "Verified Brand" }: { b
       <section className="rounded-3xl border-2 border-[#d6a928]/50 bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-4 border-b border-border pb-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <span className="text-xs font-black uppercase tracking-wider text-[#b88914]">
-              Proprietary B2B Commercial Data Extraction Engine
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-[#b88914]">
+                {brandName} · Proprietary B2B Commercial Data Extraction Engine
+              </span>
+              <span
+                className={cn(
+                  "rounded-md px-2 py-0.5 text-[10px] font-black uppercase",
+                  hasTier2Matrix
+                    ? "bg-emerald-500/15 text-emerald-600"
+                    : "bg-amber-500/15 text-amber-600",
+                )}
+              >
+                {hasTier2Matrix ? "✓ Unlocked on Active Tier" : "🔒 Requires Tier 2 (CX & Launch Matrix)"}
+              </span>
+            </div>
             <h2 className="mt-1 font-display text-2xl font-black">
-              Full-Cycle CX Matrix: From Launch Broadcast ➔ Last Complaint ➔ Voucher ➔ Stash Flip
+              {brandName} Full-Cycle CX Matrix: Launch Broadcast ➔ Scan/Complaint ➔ Voucher ➔ Stash Flip
             </h2>
             <p className="mt-1 max-w-3xl text-xs text-muted-foreground sm:text-sm">
-              This is the intelligence Brand Owners pay for: tracking every client engagement from the moment they watch your Launch or Ad Broadcast, to a barcode scan or complaint, to the Desk Operator who issued a voucher and flipped their verdict from Trash back to Stash.
+              100% dedicated to <strong>{brandName}</strong>: tracking every client engagement from the moment they watch your Launch or Ad Broadcast, to a barcode scan or complaint, to the Desk Operator who issued a voucher and flipped their verdict from Trash back to Stash.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {!hasTier2Matrix && onUpgradeRequest && (
+              <Button
+                variant="outline"
+                onClick={onUpgradeRequest}
+                className="gap-1.5 border-[#d6a928] font-black text-[#b88914]"
+              >
+                <Lock className="h-3.5 w-3.5" /> Upgrade Tier to Unlock Full Export
+              </Button>
+            )}
             <Button
               onClick={handleExportCsv}
               className="gap-1.5 bg-slate-950 font-black text-[#f5d061] hover:bg-slate-900"
             >
               <FileSpreadsheet className="h-4 w-4 text-[#d6a928]" />
-              Export Full CX Data Matrix (CSV)
+              {hasTier2Matrix ? `Export ${brandName} CX Data (CSV)` : "Unlock CSV Data Export (Tier 2+)"}
             </Button>
           </div>
         </div>

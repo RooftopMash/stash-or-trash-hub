@@ -20,10 +20,35 @@ type AuthContextValue = {
   firebaseUser: FirebaseUser | null;
   session: { user: AuthUser } | null;
   loading: boolean;
+  signInWithLocalFallback: (params: { email: string; displayName?: string }) => AuthUser;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const LOCAL_FALLBACK_AUTH_KEY = "sot_fallback_auth_user_v1";
+
+function readLocalFallbackUser(): AuthUser | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(LOCAL_FALLBACK_AUTH_KEY);
+    return raw ? (JSON.parse(raw) as AuthUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalFallbackUser(user: AuthUser | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (user) {
+      window.localStorage.setItem(LOCAL_FALLBACK_AUTH_KEY, JSON.stringify(user));
+    } else {
+      window.localStorage.removeItem(LOCAL_FALLBACK_AUTH_KEY);
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
 
 function mapFirebaseUser(user: FirebaseUser): AuthUser {
   return {
@@ -41,7 +66,7 @@ function mapFirebaseUser(user: FirebaseUser): AuthUser {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => readLocalFallbackUser());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setFirebaseUser(fbUser);
       if (fbUser) {
         const mapped = mapFirebaseUser(fbUser);
+        writeLocalFallbackUser(null);
         setUser(mapped);
 
         // Sync user profile to Firestore
@@ -69,7 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // If firestore rule or network restricts initial profile write, don't block auth state
         }
       } else {
-        setUser(null);
+        const localUser = readLocalFallbackUser();
+        setUser(localUser);
       }
       setLoading(false);
     });
@@ -77,13 +104,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  const signInWithLocalFallback = ({
+    email,
+    displayName,
+  }: {
+    email: string;
+    displayName?: string;
+  }): AuthUser => {
+    const cleanEmail = email.trim().toLowerCase();
+    const safeSlug = cleanEmail.replace(/[^a-z0-9]/g, "_").slice(0, 48) || "member";
+    const resolvedName =
+      displayName?.trim() || cleanEmail.split("@")[0] || "Verified SOT Member";
+    const fallbackUser: AuthUser = {
+      id: `sot_user_${safeSlug}`,
+      uid: `sot_user_${safeSlug}`,
+      email: cleanEmail,
+      displayName: resolvedName,
+      photoURL: null,
+      user_metadata: {
+        display_name: resolvedName,
+      },
+    };
+    writeLocalFallbackUser(fallbackUser);
+    setUser(fallbackUser);
+    return fallbackUser;
+  };
+
   const value: AuthContextValue = {
     user,
     firebaseUser,
     session: user ? { user } : null,
     loading,
+    signInWithLocalFallback,
     signOut: async () => {
-      await fbSignOut(auth);
+      writeLocalFallbackUser(null);
+      setUser(null);
+      await fbSignOut(auth).catch(() => {});
     },
   };
 

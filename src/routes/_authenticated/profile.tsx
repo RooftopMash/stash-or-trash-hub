@@ -59,6 +59,7 @@ import {
   BrandCxDataAndAwardsMatrix,
   BrandB2BPricingAndCheckoutPanel,
 } from "@/components/BrandExecutiveSuitePanels";
+import { getRegisteredBrandIdentity } from "@/lib/brand-operators";
 import { useRoles } from "@/hooks/useRoles";
 import { playCoinSpinSound } from "@/lib/verdict-sounds";
 import { toast } from "sonner";
@@ -70,7 +71,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
 
 function ProfilePage() {
   const { user } = useAuth();
-  const { persona, setPersona } = useRoles();
+  const { isDeveloper, persona, setPersona } = useRoles();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -112,43 +113,44 @@ function ProfilePage() {
     enabled: !!user,
   });
 
-  // Load managed brands for the Brand Owner Executive Profile view
+  // Load ONLY the Brand Owner's registered brand (and explicitly owned brands) — never other brands
   const { data: managedBrands = [] } = useQuery({
     queryKey: ["profile-managed-brands", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const collected: Brand[] = [];
-      const seen = new Set<string>();
+      const reg = getRegisteredBrandIdentity();
+      const primaryBrand: Brand = {
+        id: reg.id,
+        name: reg.name,
+        slug: reg.slug,
+        category: reg.category,
+        country: reg.country,
+        website: reg.website,
+        description: `${reg.name} Official Verified Brand Account on Stash Or Trash.`,
+        logo_url: null,
+        signedLogoUrl: null,
+        verified: reg.verified,
+        trust_score: reg.trust_score,
+        owner_id: user?.id ?? null,
+        ownerName: `${reg.name} Official Executive Desk`,
+      };
+      const collected: Brand[] = [primaryBrand];
+      const seen = new Set<string>([primaryBrand.slug.toLowerCase(), primaryBrand.name.toLowerCase()]);
       const pushUnique = (items: Brand[]) => {
         for (const item of items) {
-          const key = item.slug || item.id;
-          if (!seen.has(key)) {
-            seen.add(key);
+          const slugKey = (item.slug || item.id).toLowerCase();
+          const nameKey = item.name.toLowerCase();
+          if (!seen.has(slugKey) && !seen.has(nameKey)) {
+            seen.add(slugKey);
+            seen.add(nameKey);
             collected.push(item);
           }
         }
       };
       if (user?.id) {
         try {
-          const ids = await fetchActiveManagedBrandIds(user.id);
-          if (ids.length > 0) {
-            const list = await fetchBrandsByIds(ids.slice(0, 12));
-            pushUnique(list);
-          }
-        } catch {
-          // ignore
-        }
-        try {
           const owned = await fetchMyBrands(user.id);
           pushUnique(owned);
-        } catch {
-          // ignore
-        }
-      }
-      if (collected.length === 0) {
-        try {
-          const catalog = await fetchBrands();
-          pushUnique(catalog.slice(0, 6));
         } catch {
           // ignore
         }
@@ -222,49 +224,50 @@ function ProfilePage() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        {/* TOP PERSONA SWITCHER: CONSUMER MEMBER PROFILE vs BRAND OWNER EXECUTIVE PROFILE */}
-        <div className="mb-6 rounded-2xl border-2 border-[#d6a928]/60 bg-card p-3 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                 Dual-World Profile Experience Switcher
-              </p>
-              <p className="text-xs text-foreground font-semibold">
-                Switch between your <strong>Fun Consumer Member Profile</strong> and your{" "}
-                <strong>Professional Brand Owner Executive Profile</strong>:
-              </p>
-            </div>
+        {/* DEVELOPER-ONLY INSPECTION TOGGLE (HIDDEN FROM ALL REGULAR PERSONAL USERS & BRAND OWNERS) */}
+        {isDeveloper && (
+          <div className="mb-6 rounded-2xl border border-dashed border-[#d6a928]/60 bg-card p-3 shadow-xs">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-xs">
+                <span className="font-black uppercase tracking-wider text-[#b88914]">
+                  🛠️ Developer-Only Inspection Toggle (Hidden from Users &amp; Brands):
+                </span>{" "}
+                <span className="text-muted-foreground">
+                  Personal Users only see their Consumer Profile; Brand Accounts only see their Corporate Brand Desk.
+                </span>
+              </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-secondary p-1">
-              <button
-                type="button"
-                onClick={() => setPersona("consumer")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-black transition cursor-pointer",
-                  persona === "consumer"
-                    ? "bg-[#d6a928] text-slate-950 shadow-xs"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Coins className="h-3.5 w-3.5" />
-                🎉 Consumer Member Profile (Fun &amp; Social)
-              </button>
-              <button
-                type="button"
-                onClick={() => setPersona("brand_owner")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-black transition cursor-pointer",
-                  persona === "brand_owner"
-                    ? "bg-slate-950 text-[#f5d061] shadow-xs"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Building2 className="h-3.5 w-3.5" />
-                🏛️ Brand Owner Profile (B2B Executive)
-              </button>
+              <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-secondary p-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setPersona("consumer")}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition cursor-pointer",
+                    persona === "consumer"
+                      ? "bg-[#d6a928] text-slate-950 shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Coins className="h-3.5 w-3.5" />
+                  DEV Preview: Personal User
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPersona("brand_owner")}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition cursor-pointer",
+                    persona === "brand_owner"
+                      ? "bg-slate-950 text-[#f5d061] shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Building2 className="h-3.5 w-3.5" />
+                  DEV Preview: Brand Desk
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* =====================================================================
             WORLD 1: BRAND OWNER EXECUTIVE PROFILE (B2B CORPORATE SUITE)
