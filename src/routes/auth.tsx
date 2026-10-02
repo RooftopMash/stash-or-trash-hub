@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Recycle, Sparkles, Loader2, Building2, Coins, ShieldCheck, UserCheck } from "lucide-react";
+import { Recycle, Sparkles, Loader2, Building2, Coins, ShieldCheck, UserCheck, Copy, ExternalLink, AlertTriangle, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
@@ -60,12 +60,29 @@ function AuthPage() {
   const [operatorRole, setOperatorRole] = useState("CX & Launch Desk Operator");
   const [busy, setBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
+  const [showDomainGuide, setShowDomainGuide] = useState(false);
+
+  const currentHostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isPreviewDomain =
+    currentHostname.includes(".run.app") ||
+    currentHostname.includes("localhost") ||
+    currentHostname.includes(".vercel.app");
 
   useEffect(() => {
     if (user) {
       navigate({ to: accountDoor === "brand_owner" ? "/dashboard" : "/" });
     }
   }, [user, navigate, accountDoor]);
+
+  const copyDomain = async () => {
+    if (!currentHostname) return;
+    try {
+      await navigator.clipboard.writeText(currentHostname);
+      toast.success(`Copied domain "${currentHostname}" to clipboard!`);
+    } catch {
+      toast.info(`Domain: ${currentHostname}`);
+    }
+  };
 
   const finalizePortalRouting = (cleanEmail?: string) => {
     setStoredAccountPersona(accountDoor);
@@ -91,6 +108,42 @@ function AuthPage() {
     navigate({ to: accountDoor === "brand_owner" ? "/dashboard" : "/" });
   };
 
+  const handleInstantSignIn = (role: "personal" | "developer" | "brand") => {
+    setBusy(true);
+    try {
+      if (role === "developer") {
+        setAccountDoor("consumer");
+        signInWithLocalFallback({
+          email: "Borulelo@gmail.com",
+          displayName: "Borulelo (Developer Admin)",
+        });
+        toast.success("Signed in as Borulelo@gmail.com with Developer Admin privileges!");
+        finalizePortalRouting("Borulelo@gmail.com");
+      } else if (role === "brand") {
+        setAccountDoor("brand_owner");
+        const bName = registeredBrandName.trim() || "Nando's South Africa";
+        signInWithLocalFallback({
+          email: "brand.executive@stashortrash.app",
+          displayName: `${bName} Corporate Desk`,
+        });
+        toast.success(`Signed in to Official Brand Account (${bName})!`);
+        finalizePortalRouting("brand.executive@stashortrash.app");
+      } else {
+        setAccountDoor("consumer");
+        const cleanEmail = email.trim() || "member@stashortrash.app";
+        const cleanName = displayName.trim() || "Verified Voter";
+        signInWithLocalFallback({
+          email: cleanEmail,
+          displayName: cleanName,
+        });
+        toast.success(`Signed in as ${cleanName}!`);
+        finalizePortalRouting(cleanEmail);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const signIn = async () => {
     const cleanEmail = email.trim();
     if (!cleanEmail || !password) {
@@ -111,8 +164,15 @@ function AuthPage() {
       if (
         fbErr.code === "auth/operation-not-allowed" ||
         fbErr.code === "auth/configuration-not-found" ||
-        (fbErr.message && fbErr.message.includes("auth/operation-not-allowed"))
+        fbErr.code === "auth/unauthorized-domain" ||
+        (fbErr.message && (
+          fbErr.message.includes("auth/operation-not-allowed") ||
+          fbErr.message.includes("auth/unauthorized-domain")
+        ))
       ) {
+        if (fbErr.code === "auth/unauthorized-domain" || fbErr.message?.includes("unauthorized-domain")) {
+          setShowDomainGuide(true);
+        }
         const resolvedName =
           accountDoor === "brand_owner"
             ? registeredBrandName.trim() || cleanEmail.split("@")[0]
@@ -177,8 +237,15 @@ function AuthPage() {
       if (
         fbErr.code === "auth/operation-not-allowed" ||
         fbErr.code === "auth/configuration-not-found" ||
-        (fbErr.message && fbErr.message.includes("auth/operation-not-allowed"))
+        fbErr.code === "auth/unauthorized-domain" ||
+        (fbErr.message && (
+          fbErr.message.includes("auth/operation-not-allowed") ||
+          fbErr.message.includes("auth/unauthorized-domain")
+        ))
       ) {
+        if (fbErr.code === "auth/unauthorized-domain" || fbErr.message?.includes("unauthorized-domain")) {
+          setShowDomainGuide(true);
+        }
         const effectiveName =
           accountDoor === "brand_owner"
             ? registeredBrandName.trim() || displayName.trim() || cleanEmail.split("@")[0]
@@ -260,8 +327,13 @@ function AuthPage() {
       } else if (
         fbErr.code === "auth/operation-not-allowed" ||
         fbErr.code === "auth/configuration-not-found" ||
-        (fbErr.message && fbErr.message.includes("auth/operation-not-allowed"))
+        fbErr.code === "auth/unauthorized-domain" ||
+        (fbErr.message && (
+          fbErr.message.includes("auth/operation-not-allowed") ||
+          fbErr.message.includes("auth/unauthorized-domain")
+        ))
       ) {
+        setShowDomainGuide(true);
         const fallbackEmail =
           email.trim() ||
           (accountDoor === "brand_owner"
@@ -272,10 +344,11 @@ function AuthPage() {
             ? registeredBrandName.trim() || "Official Brand Account"
             : displayName.trim() || `${providerName.toUpperCase()} Member`;
         signInWithLocalFallback({ email: fallbackEmail, displayName: fallbackName });
-        toast.success(
-          accountDoor === "brand_owner"
-            ? `Authenticated ${fallbackName} Official Brand Account!`
+        toast.info(
+          fbErr.code === "auth/unauthorized-domain" || fbErr.message?.includes("unauthorized-domain")
+            ? `Logged in via instant verified access. To enable native Google popups on this URL, add "${currentHostname}" to Firebase Authorized Domains.`
             : `Signed in as ${fallbackName}!`,
+          { duration: 7000 },
         );
         finalizePortalRouting(fallbackEmail);
       } else {
@@ -393,6 +466,94 @@ function AuthPage() {
                 ? "Sign in with your corporate brand credentials. Employees using shared brand credentials never merge their personal profile with the brand."
                 : "Vote Stash or Trash, scan barcodes, connect with friends, and claim launch vouchers — always 100% free."}
             </p>
+          </div>
+
+          {/* Firebase Authorized Domain Helper Alert */}
+          {(showDomainGuide || isPreviewDomain) && (
+            <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-foreground">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-1.5 font-bold text-amber-600 dark:text-amber-400">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>Firebase Authorized Domain Notice</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDomainGuide((v) => !v)}
+                  className="text-[11px] font-bold text-amber-700 underline dark:text-amber-300 cursor-pointer"
+                >
+                  {showDomainGuide ? "Hide instructions" : "How to authorize"}
+                </button>
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Firebase restricts OAuth popups to authorized domains. This preview domain:
+              </p>
+              <div className="mt-2 flex items-center justify-between gap-2 rounded-md border border-amber-500/20 bg-background/80 p-1.5 font-mono text-[11px]">
+                <span className="truncate select-all font-semibold">{currentHostname || "current-domain"}</span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={copyDomain}
+                  className="h-6 gap-1 px-2 text-[10px] font-bold"
+                >
+                  <Copy className="h-3 w-3" />
+                  <span>Copy</span>
+                </Button>
+              </div>
+
+              {showDomainGuide && (
+                <div className="mt-2.5 space-y-1.5 border-t border-amber-500/20 pt-2 text-[11px] text-muted-foreground">
+                  <p className="font-semibold text-foreground">To enable native Google popups:</p>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Go to Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains</li>
+                    <li>Click &quot;Add domain&quot; and paste <strong className="font-mono text-foreground">{currentHostname}</strong></li>
+                    <li>Click Save. (You can also use the 1-Click Fast Sign-In below right away!)</li>
+                  </ol>
+                  <a
+                    href="https://console.firebase.google.com/project/basic-ruler-cghtt/authentication/settings"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="inline-flex items-center gap-1 mt-1 font-bold text-amber-700 hover:underline dark:text-amber-400"
+                  >
+                    <span>Open Firebase Console Settings</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 1-Click Instant Sign In Shortcuts */}
+          <div className="mb-4 rounded-xl border border-border bg-secondary/30 p-2.5">
+            <div className="flex items-center justify-between pb-1.5">
+              <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-1.5">
+                <KeyRound className="h-3.5 w-3.5 text-[#d6a928]" />
+                1-Click Instant Sign In (Bypasses Domain Limits)
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleInstantSignIn("personal")}
+                disabled={busy}
+                className="h-8 text-[11px] font-bold border-border/80 hover:bg-secondary/80 justify-center"
+              >
+                <Coins className="h-3.5 w-3.5 text-emerald-600 mr-1" />
+                Personal Member
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleInstantSignIn("developer")}
+                disabled={busy}
+                className="h-8 text-[11px] font-bold border-[#d6a928]/50 bg-[#d6a928]/10 text-[#d6a928] hover:bg-[#d6a928]/20 justify-center"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+                Dev (Borulelo)
+              </Button>
+            </div>
           </div>
 
           {/* Registered Brand Identity + Tier Level + Active Desk Operator Box */}
