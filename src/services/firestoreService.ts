@@ -299,13 +299,38 @@ export async function getFirestoreUserProfile(userId: string): Promise<DocumentD
   }
 }
 
-export async function updateFirestoreUserProfile(userId: string, data: Record<string, unknown>): Promise<void> {
+export async function updateFirestoreUserProfile(
+  userId: string,
+  data: {
+    email?: string;
+    username?: string;
+    displayName?: string;
+    avatarUrl?: string;
+    bio?: string;
+  },
+): Promise<void> {
   const docPath = `users/${userId}`;
   try {
-    await updateDoc(doc(db, "users", userId), {
-      ...data,
+    const payload: Record<string, unknown> = {
+      id: userId,
       updatedAt: serverTimestamp(),
-    });
+    };
+    if (typeof data.email === "string" && data.email.trim()) {
+      payload.email = data.email.trim();
+    }
+    if (typeof data.username === "string") {
+      payload.username = data.username.trim().slice(0, 50);
+    }
+    if (typeof data.displayName === "string") {
+      payload.displayName = data.displayName.trim().slice(0, 100);
+    }
+    if (typeof data.avatarUrl === "string") {
+      payload.avatarUrl = data.avatarUrl.trim().slice(0, 500);
+    }
+    if (typeof data.bio === "string") {
+      payload.bio = data.bio.trim().slice(0, 500);
+    }
+    await setDoc(doc(db, "users", userId), payload, { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, docPath);
   }

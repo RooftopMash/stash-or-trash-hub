@@ -82,14 +82,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const userRef = doc(db, "users", fbUser.uid);
           const snap = await getDoc(userRef);
           if (!snap.exists()) {
-            await setDoc(userRef, {
+            const initPayload: Record<string, unknown> = {
               id: fbUser.uid,
-              email: fbUser.email,
-              displayName: fbUser.displayName || fbUser.email?.split("@")[0] || "User",
-              avatarUrl: fbUser.photoURL || null,
+              displayName: (fbUser.displayName || fbUser.email?.split("@")[0] || "User").slice(0, 100),
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
-            });
+            };
+            if (fbUser.email) initPayload.email = fbUser.email;
+            if (fbUser.photoURL) initPayload.avatarUrl = fbUser.photoURL.slice(0, 500);
+            await setDoc(userRef, initPayload);
           }
         } catch {
           // If firestore rule or network restricts initial profile write, don't block auth state
@@ -101,7 +102,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    const handleProfileUpdated = (event: Event) => {
+      const custom = event as CustomEvent<{
+        id: string;
+        display_name?: string;
+        avatar_url?: string | null;
+      }>;
+      const detail = custom.detail;
+      if (!detail?.id) return;
+      setUser((prev) => {
+        if (!prev || prev.id !== detail.id) return prev;
+        const nextName = detail.display_name || prev.displayName;
+        const nextPhoto =
+          detail.avatar_url !== undefined ? detail.avatar_url : prev.photoURL;
+        const updated: AuthUser = {
+          ...prev,
+          displayName: nextName,
+          photoURL: nextPhoto,
+          user_metadata: {
+            ...prev.user_metadata,
+            display_name: nextName || prev.user_metadata.display_name,
+            avatar_url: nextPhoto || undefined,
+          },
+        };
+        if (readLocalFallbackUser()?.id === prev.id) {
+          writeLocalFallbackUser(updated);
+        }
+        return updated;
+      });
+    };
+
+    window.addEventListener("sot-profile-updated", handleProfileUpdated);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("sot-profile-updated", handleProfileUpdated);
+    };
   }, []);
 
   const signInWithLocalFallback = ({

@@ -7,6 +7,8 @@ import {
   sendFirestoreFriendRequest,
   updateFirestoreFriendStatus,
   deleteFirestoreFriend,
+  getFirestoreUserProfile,
+  updateFirestoreUserProfile,
   type FirestoreFriend,
 } from "@/services/firestoreService";
 
@@ -742,19 +744,89 @@ export async function markNotificationsRead(userId: string) {
 export type PublicProfile = {
   id: string;
   display_name: string;
+  username?: string | null;
   bio: string | null;
   avatar_url: string | null;
   trust_score: number;
 };
 
+const LOCAL_PROFILES_KEY = "sot_user_profiles_v1";
+
+function readLocalProfileMap(): Record<string, PublicProfile> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(LOCAL_PROFILES_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, PublicProfile>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalProfile(profile: PublicProfile) {
+  if (typeof window === "undefined") return;
+  try {
+    const map = readLocalProfileMap();
+    map[profile.id] = profile;
+    window.localStorage.setItem(LOCAL_PROFILES_KEY, JSON.stringify(map));
+    window.dispatchEvent(new CustomEvent("sot-profile-updated", { detail: profile }));
+  } catch {
+    // ignore storage errors
+  }
+}
+
 export async function getPublicProfile(userId: string): Promise<PublicProfile | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, display_name, bio, avatar_url, trust_score")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  return data ?? null;
+  if (!userId) return null;
+  const localCached = readLocalProfileMap()[userId] ?? null;
+
+  // 1. Check Firestore users/{userId}
+  try {
+    const fsProfile = await getFirestoreUserProfile(userId);
+    if (fsProfile) {
+      const merged: PublicProfile = {
+        id: userId,
+        display_name:
+          (typeof fsProfile.displayName === "string" && fsProfile.displayName.trim()) ||
+          localCached?.display_name ||
+          "Verified Voter",
+        username:
+          (typeof fsProfile.username === "string" && fsProfile.username.trim()) ||
+          localCached?.username ||
+          null,
+        bio:
+          (typeof fsProfile.bio === "string" && fsProfile.bio.trim()) ||
+          localCached?.bio ||
+          null,
+        avatar_url:
+          (typeof fsProfile.avatarUrl === "string" && fsProfile.avatarUrl.trim()) ||
+          localCached?.avatar_url ||
+          null,
+        trust_score: localCached?.trust_score ?? 88,
+      };
+      return merged;
+    }
+  } catch {
+    // Fallback to Supabase / local cache
+  }
+
+  // 2. Check Supabase profiles table
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, display_name, bio, avatar_url, trust_score")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!error && data) {
+      return {
+        ...data,
+        username: localCached?.username ?? null,
+        avatar_url: data.avatar_url || localCached?.avatar_url || null,
+      };
+    }
+  } catch {
+    // Non-UUID or offline fallback
+  }
+
+  return localCached;
 }
 
 export type ProfileStats = {
@@ -768,12 +840,21 @@ export type ProfileStats = {
 /** Public activity counters for a member profile (all from publicly readable tables). */
 export async function getProfileStats(userId: string): Promise<ProfileStats> {
   const [posts, votes, following, myFriends] = await Promise.all([
-    supabase.from("items").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("votes").select("verdict").eq("user_id", userId),
+    supabase
+      .from("items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .then((r) => r, () => ({ count: 0 })),
+    supabase
+      .from("votes")
+      .select("verdict")
+      .eq("user_id", userId)
+      .then((r) => r, () => ({ data: [] as { verdict: string }[] })),
     supabase
       .from("follows")
       .select("id", { count: "exact", head: true })
-      .eq("follower_id", userId),
+      .eq("follower_id", userId)
+      .then((r) => r, () => ({ count: 0 })),
     getMyFriendsAndRequests(userId),
   ]);
   const rows = votes.data ?? [];
@@ -789,16 +870,53 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
 export async function updateMyProfile(input: {
   userId: string;
   display_name: string;
+  username?: string;
   bio: string;
   avatar_url: string;
 }) {
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      display_name: input.display_name.trim() || "Anonymous",
-      bio: input.bio.trim() || null,
-      avatar_url: input.avatar_url.trim() || null,
-    })
-    .eq("id", input.userId);
-  if (error) throw error;
+  const cleanName = input.display_name.trim().slice(0, 100) || "Anonymous";
+  const cleanUsername = (input.username ?? "")
+    .trim()
+    .replace(/^@+/, "")
+    .replace(/[^a-zA-Z0-9_.-]/g, "")
+    .slice(0, 50);
+  const cleanBio = input.bio.trim().slice(0, 500);
+  const cleanAvatar = input.avatar_url.trim().slice(0, 500);
+
+  const existingLocal = readLocalProfileMap()[input.userId];
+  const updatedLocal: PublicProfile = {
+    id: input.userId,
+    display_name: cleanName,
+    username: cleanUsername || existingLocal?.username || null,
+    bio: cleanBio || null,
+    avatar_url: cleanAvatar || null,
+    trust_score: existingLocal?.trust_score ?? 88,
+  };
+  writeLocalProfile(updatedLocal);
+
+  if (auth.currentUser?.uid === input.userId) {
+    try {
+      await updateFirestoreUserProfile(input.userId, {
+        displayName: cleanName,
+        username: cleanUsername,
+        bio: cleanBio,
+        avatarUrl: cleanAvatar,
+      });
+    } catch {
+      // Allow local/supabase fallback if Firestore rules/offline restrict write
+    }
+  }
+
+  try {
+    await supabase
+      .from("profiles")
+      .update({
+        display_name: cleanName,
+        bio: cleanBio || null,
+        avatar_url: cleanAvatar || null,
+      })
+      .eq("id", input.userId);
+  } catch {
+    // Non-UUID or offline fallback
+  }
 }

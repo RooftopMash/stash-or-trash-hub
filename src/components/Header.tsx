@@ -10,7 +10,8 @@ import { SubmitDialog } from "@/components/SubmitDialog";
 import { ProductScannerModal } from "@/components/ProductScannerModal";
 import { LiveBroadcastModal, type IncomingSotCallPayload } from "@/components/LiveBroadcastModal";
 import { LanguageSwitcher, TopLanguageStrip } from "@/components/LanguageSwitcher";
-import { Bell, Building2, Coins, LayoutDashboard, MessageCircle, Shield, Scan, Video, PhoneIncoming, PhoneOff } from "lucide-react";
+import { UserProfile, getAccountPreferences } from "@/components/UserProfile";
+import { Bell, Building2, Coins, LayoutDashboard, MessageCircle, Shield, Scan, PhoneIncoming, PhoneOff } from "lucide-react";
 import { SotWordmark } from "@/components/SotWordmark";
 import { getRegisteredBrandIdentity } from "@/lib/brand-operators";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +19,7 @@ import type { AiScanResult } from "@/lib/ai-scanner";
 import { cn } from "@/lib/utils";
 
 export function Header({ onPosted }: { onPosted?: () => void }) {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const { isAdmin, isDeveloper, isBrand, persona, setPersona } = useRoles();
   const [registeredBrandName, setRegisteredBrandName] = useState(
     () => getRegisteredBrandIdentity().name,
@@ -52,6 +53,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
 
     const handleIncoming = (payload: IncomingSotCallPayload) => {
       if (!payload || !payload.roomChannel) return;
+      if (!getAccountPreferences().callRingAlerts) return;
       // Show ring banner if targeted to this user, or if testing in another tab
       if (!user?.id || payload.recipientId === user.id || payload.callerId !== user.id) {
         setIncomingCall(payload);
@@ -170,28 +172,10 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
                 </span>
               </Link>
             )}
-            {user && (
-              <Link
-                to="/profile"
-                className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
-              >
-                {persona === "brand_owner"
-                  ? "Brand Desk"
-                  : t("nav.profile", { defaultValue: "Profile" })}
-              </Link>
-            )}
-            {user && isAdmin && (
-              <Link
-                to="/admin"
-                className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
-              >
-                {t("nav.admin", { defaultValue: "Admin" })}
-              </Link>
-            )}
           </nav>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5">
           {/* DEVELOPER-ONLY PREVIEW SWITCHER: Hidden from all Personal Users & Brand Owners */}
           {isDeveloper && (
             <button
@@ -200,9 +184,9 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
                 const next = persona === "brand_owner" ? "consumer" : "brand_owner";
                 setPersona(next);
               }}
-              title="Developer-Only View Switcher (Hidden from regular Personal Users and Brand Owners)"
+              title="Developer-Only View Switcher (Also available inside your UserProfile menu)"
               className={cn(
-                "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-black transition cursor-pointer whitespace-nowrap",
+                "hidden xl:inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-black transition cursor-pointer whitespace-nowrap",
                 persona === "brand_owner"
                   ? "border-[#d6a928] bg-slate-950 text-[#f5d061]"
                   : "border-emerald-600/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
@@ -211,7 +195,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               {persona === "brand_owner" ? (
                 <>
                   <Building2 className="h-3 w-3 text-[#d6a928]" />
-                  <span className="max-w-[110px] truncate">DEV: {registeredBrandName}</span>
+                  <span className="max-w-[100px] truncate">DEV: {registeredBrandName}</span>
                 </>
               ) : (
                 <>
@@ -249,7 +233,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
           </Button>
 
           {loading ? null : user ? (
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1.5">
               <Button
                 variant="ghost"
                 size="icon"
@@ -281,14 +265,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
                 )}
               </Button>
               {persona !== "brand_owner" && <SubmitDialog onPosted={onPosted} />}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 shrink-0 whitespace-nowrap px-2 text-xs font-semibold"
-                onClick={() => signOut()}
-              >
-                {t("nav.signOut", { defaultValue: "Sign out" })}
-              </Button>
+              <UserProfile variant="navbar" />
             </div>
           ) : (
             <div className="flex shrink-0 items-center gap-1">

@@ -1,8 +1,29 @@
 let coinDropAudio: HTMLAudioElement | null = null;
 let trashLidAudio: HTMLAudioElement | null = null;
 
-function playAudio(path: string, current: "coin" | "trash") {
+const SOUND_PREF_KEY = "sot_verdict_sound_enabled_v1";
+
+export function isVerdictSoundEnabled(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const raw = window.localStorage.getItem(SOUND_PREF_KEY);
+    return raw === null ? true : raw !== "false";
+  } catch {
+    return true;
+  }
+}
+
+export function setVerdictSoundEnabled(enabled: boolean) {
   if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(SOUND_PREF_KEY, String(enabled));
+  } catch {
+    // ignore
+  }
+}
+
+function playAudio(path: string, current: "coin" | "trash") {
+  if (typeof window === "undefined" || !isVerdictSoundEnabled()) return;
   const audio =
     current === "coin" ? (coinDropAudio ??= new Audio(path)) : (trashLidAudio ??= new Audio(path));
   audio.currentTime = 0;
@@ -10,11 +31,12 @@ function playAudio(path: string, current: "coin" | "trash") {
 }
 
 export function playStashSound() {
+  if (!isVerdictSoundEnabled()) return;
   playAudio("/audio/coin-drop.mp3", "coin");
 }
 
 export function playTrashSound() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !isVerdictSoundEnabled()) return;
   try {
     const AudioCtx =
       window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -95,7 +117,7 @@ export function playTrashSound() {
 }
 
 export function playCoinSpinSound() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !isVerdictSoundEnabled()) return;
   try {
     const AudioCtx =
       window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
