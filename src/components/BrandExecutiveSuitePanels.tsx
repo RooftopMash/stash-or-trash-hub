@@ -9,6 +9,8 @@ import {
   FileSpreadsheet,
   FileText,
   Lock,
+  Megaphone,
+  MessageCircle,
   Plus,
   RefreshCw,
   ShieldCheck,
@@ -244,6 +246,7 @@ export function BrandCxDataAndAwardsMatrix({
   }, [brandName]);
 
   const activeTier = subState.activePlanId;
+  const isFreeTier = activeTier === "free_public_voice";
   const hasTier2Matrix = activeTier === "cx_launch_matrix" || activeTier === "enterprise_intelligence";
   const hasTier3Awards = activeTier === "enterprise_intelligence";
 
@@ -337,6 +340,36 @@ export function BrandCxDataAndAwardsMatrix({
 
   return (
     <div className="space-y-6">
+      {/* FREE PUBLIC VOICE FREEDOM & FAIRNESS MOUTHPIECE BANNER */}
+      {isFreeTier && (
+        <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-500/10 p-4.5 text-xs text-foreground shadow-xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-white font-black text-xs">
+                  <Megaphone className="h-3.5 w-3.5" />
+                </span>
+                <span className="font-display font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                  Free Public Voice Active · Freedom of Speech &amp; Equal Right of Reply
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                As a registered brand on the <strong>100% Free Public Voice Tier</strong>, your business has unrestricted freedom to text in public, reply to consumer posts, defend your products, and tell your brand’s truth on Stash or Trash at zero cost. To preserve this fair, free tier, <strong>no private customer telemetry, analytical reports, or CSV data extractions are generated</strong>.
+              </p>
+            </div>
+            {onUpgradeRequest && (
+              <Button
+                size="sm"
+                onClick={onUpgradeRequest}
+                className="bg-slate-950 text-[#f5d061] hover:bg-slate-900 font-extrabold shrink-0 text-xs whitespace-nowrap"
+              >
+                View Paid Report Tiers →
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* FULL-CYCLE CX DATA EXTRACTION MATRIX */}
       <section className="rounded-3xl border-2 border-[#d6a928]/50 bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-4 border-b border-border pb-4 lg:flex-row lg:items-center lg:justify-between">
@@ -732,12 +765,14 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
         </div>
       </div>
 
-      {/* 3 B2B Plans Grid */}
-      <div className="mt-6 grid gap-5 lg:grid-cols-3">
+      {/* 4 B2B Plans Grid (Including 100% Free Public Voice) */}
+      <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {B2B_BRAND_PLANS.map((plan) => {
           const isCurrent = subState.activePlanId === plan.id;
-          const priceLabel =
-            currency === "ZAR"
+          const isFree = plan.priceZarMonthly === 0;
+          const priceLabel = isFree
+            ? currency === "ZAR" ? "R0" : "$0"
+            : currency === "ZAR"
               ? `R${plan.priceZarMonthly.toLocaleString()}`
               : `$${plan.priceUsdMonthly.toLocaleString()}`;
 
@@ -748,7 +783,9 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
                 "flex flex-col justify-between rounded-2xl border p-5 transition-all",
                 plan.highlighted
                   ? "border-2 border-[#d6a928] bg-slate-950 text-white shadow-lg"
-                  : "border-border bg-background text-foreground",
+                  : isFree && isCurrent
+                    ? "border-2 border-emerald-500 bg-card text-foreground shadow-sm"
+                    : "border-border bg-background text-foreground",
               )}
             >
               <div>
@@ -756,7 +793,11 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
                   <span
                     className={cn(
                       "text-[11px] font-black uppercase tracking-wider",
-                      plan.highlighted ? "text-[#f5d061]" : "text-[#b88914]",
+                      plan.highlighted
+                        ? "text-[#f5d061]"
+                        : isFree
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-[#b88914]",
                     )}
                   >
                     {plan.targetAudience}
@@ -786,7 +827,7 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
                       plan.highlighted ? "text-slate-400" : "text-muted-foreground",
                     )}
                   >
-                    / month per brand
+                    {isFree ? "/ month (100% Free Forever)" : "/ month per brand"}
                   </span>
                 </div>
 
@@ -805,10 +846,22 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
                       <Check
                         className={cn(
                           "mt-0.5 h-3.5 w-3.5 shrink-0",
-                          plan.highlighted ? "text-[#d6a928]" : "text-emerald-600",
+                          plan.highlighted
+                            ? "text-[#d6a928]"
+                            : feat.startsWith("🔒")
+                              ? "text-muted-foreground"
+                              : "text-emerald-600",
                         )}
                       />
-                      <span className={plan.highlighted ? "text-slate-200" : "text-foreground"}>
+                      <span
+                        className={
+                          plan.highlighted
+                            ? "text-slate-200"
+                            : feat.startsWith("🔒")
+                              ? "text-muted-foreground italic"
+                              : "text-foreground"
+                        }
+                      >
                         {feat}
                       </span>
                     </li>
@@ -817,21 +870,43 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
               </div>
 
               <div className="mt-6 space-y-2">
-                <Button
-                  onClick={() => {
-                    setSelectedGateway("google_pay");
-                    setCheckoutPlan(plan);
-                  }}
-                  className={cn(
-                    "w-full gap-2 font-black",
-                    plan.highlighted
-                      ? "bg-[#d6a928] text-slate-950 hover:bg-[#e5b935]"
-                      : "bg-slate-950 text-white hover:bg-slate-900",
-                  )}
-                >
-                  <Wallet className="h-4 w-4" />
-                  Pay with Google Pay / Instant EFT / Card
-                </Button>
+                {isFree ? (
+                  <Button
+                    disabled={isCurrent}
+                    onClick={() => {
+                      setActiveBrandPlanTier("free_public_voice", brandName);
+                      syncSub();
+                      toast.success(
+                        `Activated 100% Free Public Voice for ${brandName}! You have unrestricted freedom to text public replies to all consumers.`,
+                      );
+                    }}
+                    className={cn(
+                      "w-full gap-2 font-black text-xs",
+                      isCurrent
+                        ? "border border-emerald-600/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                        : "bg-emerald-600 text-white hover:bg-emerald-500 cursor-pointer",
+                    )}
+                  >
+                    <Megaphone className="h-4 w-4" />
+                    {isCurrent ? "✓ Active Free Public Voice" : "Activate Free Public Mouthpiece (100% Free)"}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      setSelectedGateway("google_pay");
+                      setCheckoutPlan(plan);
+                    }}
+                    className={cn(
+                      "w-full gap-2 font-black text-xs",
+                      plan.highlighted
+                        ? "bg-[#d6a928] text-slate-950 hover:bg-[#e5b935]"
+                        : "bg-slate-950 text-white hover:bg-slate-900",
+                    )}
+                  >
+                    <Wallet className="h-4 w-4" />
+                    Pay with Google Pay / Instant EFT / Card
+                  </Button>
+                )}
               </div>
             </div>
           );

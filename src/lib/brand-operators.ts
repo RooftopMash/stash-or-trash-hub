@@ -38,7 +38,7 @@ export interface CxLifecycleRecord {
   updatedAt: string;
 }
 
-export type BrandPlanTierId = "pulse_starter" | "cx_launch_matrix" | "enterprise_intelligence";
+export type BrandPlanTierId = "free_public_voice" | "pulse_starter" | "cx_launch_matrix" | "enterprise_intelligence";
 
 export interface BrandSubscriptionPlan {
   id: BrandPlanTierId;
@@ -162,7 +162,8 @@ export function setRegisteredBrandIdentity(
 export function getTierRank(planId: BrandPlanTierId): number {
   if (planId === "enterprise_intelligence") return 3;
   if (planId === "cx_launch_matrix") return 2;
-  return 1;
+  if (planId === "pulse_starter") return 1;
+  return 0; // free_public_voice
 }
 
 export function isTierEntitled(
@@ -293,6 +294,25 @@ export function getBrandSpecificTelemetry(brandName: string): {
 }
 
 export const B2B_BRAND_PLANS: BrandSubscriptionPlan[] = [
+  {
+    id: "free_public_voice",
+    name: "00. Free Public Voice (Fairness & Public Mouthpiece)",
+    tagline: "Unrestricted public right of reply — text in public, defend products & state your truth for free",
+    targetAudience: "For Spazas, Emerging Brands, Startups & Any Business (100% Free Forever)",
+    priceZarMonthly: 0,
+    priceUsdMonthly: 0,
+    broadcastLimitLabel: "Public Text Responses (No Live Video Broadcasts)",
+    operatorSeatsLabel: "1 Official Public Brand Mouthpiece Desk",
+    dataExtractionFeatures: [
+      "Official Claimed Brand Profile & Verified Public Voice Badge",
+      "Public Right of Reply: Text public responses on community Trash & Stash posts",
+      "Public Brand Wall & Community Engagement Desk",
+      "Live Public Stash vs Trash Sentiment Barometer & People's Grade",
+      "100% Free Forever — Freedom & Fairness (Zero Credit Card Required)",
+      "🔒 Private CX Data Extraction & CSV Reports (Requires Paid Tier)",
+      "🔒 Zero-Number Private Calling & Live Video Studios (Requires Paid Tier)",
+    ],
+  },
   {
     id: "pulse_starter",
     name: "01. Pulse Starter (SME & Local Hero)",

@@ -580,6 +580,7 @@ function AuthPage() {
                     aria-label="Registered Brand Subscription Tier"
                     className="h-8 rounded-md border border-slate-700 bg-slate-900 px-2 text-xs font-bold text-[#f5d061] outline-none"
                   >
+                    <option value="free_public_voice">Tier 0: Free Public Voice (R0 / 100% Free Forever)</option>
                     <option value="pulse_starter">Tier 1: Pulse Starter (R1,450/mo)</option>
                     <option value="cx_launch_matrix">Tier 2: CX &amp; Launch Matrix (R4,950/mo)</option>
                     <option value="enterprise_intelligence">Tier 3: Enterprise Intelligence (R14,900/mo)</option>
