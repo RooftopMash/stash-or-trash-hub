@@ -391,36 +391,6 @@ export type Database = {
           },
         ]
       }
-      friends: {
-        Row: {
-          addressee_id: string
-          bond_tag: string
-          created_at: string
-          id: string
-          requester_id: string
-          status: "pending" | "accepted" | "blocked"
-          updated_at: string
-        }
-        Insert: {
-          addressee_id: string
-          bond_tag?: string
-          created_at?: string
-          id?: string
-          requester_id: string
-          status?: "pending" | "accepted" | "blocked"
-          updated_at?: string
-        }
-        Update: {
-          addressee_id?: string
-          bond_tag?: string
-          created_at?: string
-          id?: string
-          requester_id?: string
-          status?: "pending" | "accepted" | "blocked"
-          updated_at?: string
-        }
-        Relationships: []
-      }
       hashtags: {
         Row: {
           created_at: string
