@@ -6,6 +6,8 @@ import { getLocalImportedBrands } from "@/lib/wikidata-import";
 
 export type Verdict = "stash" | "trash";
 
+export type DisputeStatus = "unresolved" | "under_review" | "rectified";
+
 export type FeedItem = {
   id: string;
   user_id: string;
@@ -27,18 +29,20 @@ export type FeedItem = {
   signedImageUrl: string | null;
   audit?: MediaAuditReport | null;
   phash?: string | null;
+  disputeStatus?: DisputeStatus | null;
+  disputeResolutionNotes?: string | null;
 };
 
 export const BUCKET = "item-images";
 
 const ITEM_SELECT =
-  "id, user_id, title, description, image_url, created_at, brand_id, category, audit, phash";
+  "id, user_id, title, description, image_url, created_at, brand_id, category, audit, phash, dispute_status, dispute_resolution_notes";
 const ITEM_SELECT_FALLBACK =
   "id, user_id, title, description, image_url, created_at, brand_id, category";
 
 function colError(e: unknown): boolean {
   const msg = String((e as { message?: string })?.message ?? "");
-  return /audit|phash|column|42703/i.test(msg);
+  return /audit|phash|dispute|column|42703/i.test(msg);
 }
 
 export async function signImages(paths: (string | null)[]): Promise<Map<string, string>> {
@@ -148,6 +152,8 @@ export async function fetchFeed(
       signedImageUrl: item.image_url ? (signed.get(item.image_url) ?? null) : null,
       audit: (item.audit as MediaAuditReport | null | undefined) ?? null,
       phash: (item.phash as string | null | undefined) ?? null,
+      disputeStatus: (item.dispute_status as DisputeStatus | null | undefined) ?? null,
+      disputeResolutionNotes: (item.dispute_resolution_notes as string | null | undefined) ?? null,
     };
   });
 }
@@ -326,6 +332,8 @@ export async function fetchItem(
     signedImageUrl: item.image_url ? (signed.get(item.image_url) ?? null) : null,
     audit: (item.audit as MediaAuditReport | null | undefined) ?? null,
     phash: (item.phash as string | null | undefined) ?? null,
+    disputeStatus: (item.dispute_status as DisputeStatus | null | undefined) ?? null,
+    disputeResolutionNotes: (item.dispute_resolution_notes as string | null | undefined) ?? null,
   };
 }
 
