@@ -47,6 +47,8 @@ import {
   ScanBarcode,
   Video,
   Phone,
+  PhoneCall,
+  PhoneOff,
   Scale,
   Store,
 } from "lucide-react";
@@ -55,6 +57,12 @@ import { PeopleTrustFactor } from "@/components/PeopleTrustFactor";
 import { getBrandTier, getTierInfo } from "@/lib/brandTiers";
 import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
 import { FormalEscalationModal } from "@/components/FormalEscalationModal";
+import { getBrandContactSettings } from "@/lib/brand-operators";
+import { BrandCallRequestModal } from "@/components/BrandCallRequestModal";
+import {
+  MessengerPrivateCallModal,
+  type MessengerCallSession,
+} from "@/components/MessengerPrivateCallModal";
 
 export const Route = createFileRoute("/brands/$slug")({
   component: BrandPage,
@@ -150,6 +158,9 @@ function BrandPage() {
 
   // Strategy C: Brand Counterfeit Verifier & Live Call/Broadcast States
   const [liveCallModalOpen, setLiveCallModalOpen] = useState(false);
+  const [callRequestModalOpen, setCallRequestModalOpen] = useState(false);
+  const [messengerCallOpen, setMessengerCallOpen] = useState(false);
+  const [messengerCallSession, setMessengerCallSession] = useState<MessengerCallSession | null>(null);
   const [cpaGuideModalOpen, setCpaGuideModalOpen] = useState(false);
   const [batchCodeInput, setBatchCodeInput] = useState("");
   const [retailerInput, setRetailerInput] = useState("");
@@ -350,29 +361,95 @@ function BrandPage() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => setLiveCallModalOpen(true)}
-                    className="gap-1.5 bg-rose-600 text-white hover:bg-rose-700 font-bold"
-                  >
-                    <Video className="h-4 w-4" /> Video Cam / Broadcast Situation
-                  </Button>
+                  {/* Brand Contact Controls (Controlled by Brand Dashboard Settings) */}
+                  {(() => {
+                    const contactSettings = getBrandContactSettings(brand.slug);
+                    if (contactSettings.directCallingMode === "disabled") {
+                      return (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            toast.info(
+                              `${brand.name} has direct incoming calls disabled in their Brand Dashboard. You can post public verdicts or reply in public comments.`,
+                            )
+                          }
+                          className="gap-1.5 border-slate-700 bg-secondary/30 text-xs font-bold text-muted-foreground"
+                          title="Direct calls disabled by brand"
+                        >
+                          <PhoneOff className="h-4 w-4 text-muted-foreground" /> Direct Calls Disabled
+                        </Button>
+                      );
+                    }
+                    if (contactSettings.directCallingMode === "request_only") {
+                      return (
+                        <Button
+                          size="sm"
+                          onClick={() => setCallRequestModalOpen(true)}
+                          className="gap-1.5 bg-[#d6a928] text-slate-950 hover:bg-[#e5b935] font-bold text-xs shadow-sm"
+                        >
+                          <PhoneCall className="h-4 w-4" /> Request a Call from {brand.name}
+                        </Button>
+                      );
+                    }
+                    // "open" direct line
+                    return (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setMessengerCallSession({
+                              roomChannel: `sot-private-${brand.slug}-${user?.id || "guest"}-${Date.now()}`,
+                              partnerId: brand.owner_id || `brand-${brand.slug}`,
+                              partnerName: `${brand.name} Desk Operator`,
+                              isBrandCall: true,
+                              brandName: brand.name,
+                              mode: "voice",
+                              callDirection: "user_to_brand",
+                            });
+                            setMessengerCallOpen(true);
+                          }}
+                          className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-500 font-bold text-xs"
+                        >
+                          <Phone className="h-4 w-4" /> Call {brand.name} Desk (Voice)
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setMessengerCallSession({
+                              roomChannel: `sot-private-${brand.slug}-${user?.id || "guest"}-${Date.now()}`,
+                              partnerId: brand.owner_id || `brand-${brand.slug}`,
+                              partnerName: `${brand.name} Desk Operator`,
+                              isBrandCall: true,
+                              brandName: brand.name,
+                              mode: "video",
+                              callDirection: "user_to_brand",
+                            });
+                            setMessengerCallOpen(true);
+                          }}
+                          className="gap-1.5 bg-slate-950 text-[#f5d061] hover:bg-slate-900 font-bold text-xs border border-slate-700"
+                        >
+                          <Video className="h-4 w-4" /> Video Inspect
+                        </Button>
+                      </>
+                    );
+                  })()}
+
                   <Button
                     size="sm"
                     variant="outline"
-                    className="gap-1.5 border-emerald-500/40 bg-emerald-500/10 font-bold text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400"
+                    className="gap-1.5 border-emerald-500/40 bg-emerald-500/10 font-bold text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400 text-xs"
                     onClick={() =>
                       navigate({
                         to: "/messages",
                         search: {
                           to: brand.owner_id || `brand-${brand.slug}`,
                           name: brand.name,
-                          call: "voice",
                         },
                       })
                     }
                   >
-                    <Phone className="h-4 w-4" /> Call / Message in Messaging
+                    <MessageCircle className="h-4 w-4" /> Chat in Messages
                   </Button>
                   <Button
                     size="sm"
@@ -686,10 +763,28 @@ function BrandPage() {
                     </div>
                     <Button
                       size="sm"
-                      onClick={() => setLiveCallModalOpen(true)}
-                      className="gap-1.5 bg-slate-950 text-[#d6a928] hover:bg-slate-900 font-bold shrink-0"
+                      onClick={() => {
+                        const contactSettings = getBrandContactSettings(brand.slug);
+                        if (contactSettings.directCallingMode === "disabled") {
+                          toast.info(`${brand.name} has direct incoming calls disabled in their Brand Dashboard.`);
+                        } else if (contactSettings.directCallingMode === "request_only") {
+                          setCallRequestModalOpen(true);
+                        } else {
+                          setMessengerCallSession({
+                            roomChannel: `sot-private-${brand.slug}-${user?.id || "guest"}-${Date.now()}`,
+                            partnerId: brand.owner_id || `brand-${brand.slug}`,
+                            partnerName: `${brand.name} Desk Operator`,
+                            isBrandCall: true,
+                            brandName: brand.name,
+                            mode: "voice",
+                            callDirection: "user_to_brand",
+                          });
+                          setMessengerCallOpen(true);
+                        }
+                      }}
+                      className="gap-1.5 bg-slate-950 text-[#d6a928] hover:bg-slate-900 font-bold shrink-0 text-xs"
                     >
-                      <Phone className="h-3.5 w-3.5" /> Live Brand / Peer Call
+                      <Phone className="h-3.5 w-3.5" /> Call Brand Desk
                     </Button>
                   </div>
 
@@ -808,6 +903,22 @@ function BrandPage() {
         onOpenChange={setLiveCallModalOpen}
         brandName={brand?.name}
         defaultMode="broadcast"
+      />
+
+      {/* BRAND CALL REQUEST MODAL (Messenger Handshake) */}
+      <BrandCallRequestModal
+        open={callRequestModalOpen}
+        onOpenChange={setCallRequestModalOpen}
+        brandName={brand?.name ?? "Brand"}
+        brandSlug={brand?.slug ?? "brand"}
+      />
+
+      {/* MESSENGER PRIVATE 1-ON-1 CALL MODAL */}
+      <MessengerPrivateCallModal
+        open={messengerCallOpen}
+        onOpenChange={setMessengerCallOpen}
+        session={messengerCallSession}
+        onCallEnded={() => setMessengerCallSession(null)}
       />
 
       {/* STRATEGY C: COUNTERFEIT VERIFIER & CPA / CGSO CONSUMER AWARENESS MODAL */}

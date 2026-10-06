@@ -55,7 +55,7 @@ export default defineConfig({
           vercel: {
             entryFormat: "node",
             functions: {
-              runtime: "nodejs20.x",
+              runtime: "nodejs22.x",
             },
           },
           modules: [

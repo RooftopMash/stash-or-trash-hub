@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Send, Heart, MessageCircle as MessageCircleIcon } from "lucide-react";
+import { Send, Heart, MessageCircle as MessageCircleIcon, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PostText } from "@/components/PostText";
 import { Input } from "@/components/ui/input";
@@ -111,13 +111,26 @@ export function CommentThread({ itemId, currentUserId }: CommentThreadProps) {
               {/* Comment Header */}
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <Link
-                    to="/users/$id"
-                    params={{ id: comment.user_id }}
-                    className="text-sm font-semibold hover:underline"
-                  >
-                    {comment.authorName}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to="/users/$id"
+                      params={{ id: comment.user_id }}
+                      className="text-sm font-semibold hover:underline"
+                    >
+                      {comment.authorName}
+                    </Link>
+                    {currentUserId && currentUserId !== comment.user_id && (
+                      <Link
+                        to="/messages"
+                        search={{ to: comment.user_id, name: comment.authorName, call: "voice" }}
+                        className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition"
+                        title={`Call ${comment.authorName} in SOT Messages to discuss brand verdict`}
+                      >
+                        <Phone className="h-2.5 w-2.5" />
+                        <span>Call</span>
+                      </Link>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {new Date(comment.created_at).toLocaleDateString()}
                   </p>

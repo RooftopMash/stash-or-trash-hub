@@ -73,8 +73,8 @@ const CALL_APPROVAL_PREFIX = "sot_call_approvals_v1_";
 
 export const DEFAULT_COMM_SETTINGS: Omit<UserCommunicationSettings, "userId" | "updatedAt"> = {
   masterMessagingEnabled: true,
-  whoCanMessageMe: "mutuals_and_brands",
-  whoCanCallMe: "friends_and_brands",
+  whoCanMessageMe: "everyone",
+  whoCanCallMe: "everyone",
   allowBrandOutreachWithoutPhone: true,
   workplace: "",
   faithCommunity: "",

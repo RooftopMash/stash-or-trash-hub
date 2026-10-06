@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { SubmitDialog } from "@/components/SubmitDialog";
 import { ProductScannerModal } from "@/components/ProductScannerModal";
 import { LiveBroadcastModal, type IncomingSotCallPayload } from "@/components/LiveBroadcastModal";
+import {
+  MessengerPrivateCallModal,
+  type MessengerCallSession,
+} from "@/components/MessengerPrivateCallModal";
 import { LanguageSwitcher, TopLanguageStrip } from "@/components/LanguageSwitcher";
 import { UserProfile, getAccountPreferences } from "@/components/UserProfile";
 import { Bell, Building2, Coins, LayoutDashboard, MessageCircle, Shield, Scan, PhoneIncoming, PhoneOff } from "lucide-react";
@@ -46,6 +50,10 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
   const [activeCallMode, setActiveCallMode] = useState<"broadcast" | "video_call" | "voice_call">("video_call");
   const [activeCallPartner, setActiveCallPartner] = useState<string | undefined>(undefined);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
+
+  // Private 1-on-1 Messenger Call states
+  const [messengerCallOpen, setMessengerCallOpen] = useState(false);
+  const [messengerCallSession, setMessengerCallSession] = useState<MessengerCallSession | null>(null);
 
   // Listen for real-time Brand-to-User and User-to-User incoming calls on SOT
   useEffect(() => {
@@ -313,15 +321,21 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               <Button
                 size="sm"
                 onClick={() => {
-                  setActiveCallRoom(incomingCall.roomChannel);
-                  setActiveCallMode(incomingCall.mode);
-                  setActiveCallPartner(incomingCall.callerName);
+                  setMessengerCallSession({
+                    roomChannel: incomingCall.roomChannel,
+                    partnerId: incomingCall.callerId,
+                    partnerName: incomingCall.callerName,
+                    isBrandCall: incomingCall.callDirection === "brand_to_user" || incomingCall.callDirection === "user_to_brand",
+                    brandName: incomingCall.brandName,
+                    mode: incomingCall.mode === "video_call" ? "video" : "voice",
+                    callDirection: incomingCall.callDirection,
+                  });
                   setIncomingCall(null);
-                  setLiveStudioOpen(true);
+                  setMessengerCallOpen(true);
                 }}
                 className="h-8 gap-1.5 bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-extrabold text-xs"
               >
-                <PhoneIncoming className="h-3.5 w-3.5" /> Answer Call on SOT
+                <PhoneIncoming className="h-3.5 w-3.5" /> Answer Private Call
               </Button>
               <Button
                 size="sm"
@@ -341,6 +355,14 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
         open={scannerOpen}
         onOpenChange={setScannerOpen}
         onApplyToPost={handleApplyFromScanner}
+      />
+
+      {/* Messenger-Style Private 1-on-1 Call Window */}
+      <MessengerPrivateCallModal
+        open={messengerCallOpen}
+        onOpenChange={setMessengerCallOpen}
+        session={messengerCallSession}
+        onCallEnded={() => setMessengerCallSession(null)}
       />
 
       {/* Global Voice / Video Call & Live Situation Broadcast Modal */}
