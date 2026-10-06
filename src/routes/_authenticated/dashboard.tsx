@@ -82,7 +82,12 @@ import {
   BrandOperatorHandoverBar,
   BrandCxDataAndAwardsMatrix,
   BrandB2BPricingAndCheckoutPanel,
+  BrandInboundContactSettingsPanel,
 } from "@/components/BrandExecutiveSuitePanels";
+import {
+  MessengerPrivateCallModal,
+  type MessengerCallSession,
+} from "@/components/MessengerPrivateCallModal";
 import {
   B2B_BRAND_PLANS,
   addCxLifecycleResolution,
@@ -144,6 +149,10 @@ function DashboardPage() {
     topic: string;
     mode: "voice_call" | "video_call" | "broadcast";
   } | null>(null);
+
+  // Private 1-on-1 Messenger Call state
+  const [messengerCallOpen, setMessengerCallOpen] = useState(false);
+  const [messengerCallSession, setMessengerCallSession] = useState<MessengerCallSession | null>(null);
 
   // Global Wikidata / Country Brand Sourcing states (Admin only)
   const [importCountry, setImportCountry] = useState("ZA");
@@ -953,6 +962,24 @@ function DashboardPage() {
                   </div>
                 )}
 
+                {/* BRAND INBOUND CALLING & CONTACT CONTROLS PANEL */}
+                <BrandInboundContactSettingsPanel
+                  brandName={activeBrand.name}
+                  brandSlug={activeBrand.slug}
+                  onInitiateCall={(target) => {
+                    setMessengerCallSession({
+                      roomChannel: `sot-private-${activeBrand.slug}-${target.id}-${Date.now()}`,
+                      partnerId: target.id,
+                      partnerName: target.name,
+                      isBrandCall: true,
+                      brandName: activeBrand.name,
+                      mode: target.mode,
+                      callDirection: "brand_to_user",
+                    });
+                    setMessengerCallOpen(true);
+                  }}
+                />
+
                 <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
                   <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -963,7 +990,7 @@ function DashboardPage() {
                         {activeBrand.name} Direct Client Calling, Request-to-Call &amp; Recovery Desk
                       </h2>
                       <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-                        Every customer listed below posted about or scanned a <strong>{activeBrand.name}</strong> product. Reach them directly on SOT without needing their phone number, or issue a 1-click replacement voucher to flip their Trash verdict into a Stash.
+                        Every customer listed below posted about or scanned a <strong>{activeBrand.name}</strong> product. Reach them directly on SOT via private Messenger-style 1-on-1 call without needing their phone number, or issue a 1-click replacement voucher to flip their Trash verdict into a Stash.
                       </p>
                     </div>
                   </div>
@@ -1010,29 +1037,35 @@ function DashboardPage() {
                               size="sm"
                               disabled={!hasTier2}
                               onClick={() => {
-                                setCallClientTarget({
-                                  id: clientId,
-                                  name: clientName,
-                                  topic: item.title,
-                                  mode: "voice_call",
+                                setMessengerCallSession({
+                                  roomChannel: `sot-private-${activeBrand.slug}-${clientId}-${Date.now()}`,
+                                  partnerId: clientId,
+                                  partnerName: clientName,
+                                  isBrandCall: true,
+                                  brandName: activeBrand.name,
+                                  mode: "voice",
+                                  callDirection: "brand_to_user",
                                 });
-                                setStudioModalOpen(true);
+                                setMessengerCallOpen(true);
                               }}
                               className="h-8 gap-1.5 bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-500"
                             >
-                              <Phone className="h-3.5 w-3.5" /> Ring on SOT (Voice)
+                              <Phone className="h-3.5 w-3.5" /> Call Customer (Voice)
                             </Button>
                             <Button
                               size="sm"
                               disabled={!hasTier2}
                               onClick={() => {
-                                setCallClientTarget({
-                                  id: clientId,
-                                  name: clientName,
-                                  topic: item.title,
-                                  mode: "video_call",
+                                setMessengerCallSession({
+                                  roomChannel: `sot-private-${activeBrand.slug}-${clientId}-${Date.now()}`,
+                                  partnerId: clientId,
+                                  partnerName: clientName,
+                                  isBrandCall: true,
+                                  brandName: activeBrand.name,
+                                  mode: "video",
+                                  callDirection: "brand_to_user",
                                 });
-                                setStudioModalOpen(true);
+                                setMessengerCallOpen(true);
                               }}
                               className="h-8 gap-1.5 bg-slate-950 text-xs font-bold text-[#f5d061] hover:bg-slate-900"
                             >
@@ -1341,6 +1374,14 @@ function DashboardPage() {
         callDirection="brand_to_user"
         initialPersona="brand_owner"
         initialBrandCategory={studioCategory}
+      />
+
+      {/* Messenger-Style Private 1-on-1 Call Modal */}
+      <MessengerPrivateCallModal
+        open={messengerCallOpen}
+        onOpenChange={setMessengerCallOpen}
+        session={messengerCallSession}
+        onCallEnded={() => setMessengerCallSession(null)}
       />
     </div>
   );

@@ -4,6 +4,8 @@ import {
   BadgeCheck,
   Building2,
   Check,
+  CheckCircle2,
+  Clock,
   CreditCard,
   Download,
   FileSpreadsheet,
@@ -11,13 +13,19 @@ import {
   Lock,
   Megaphone,
   MessageCircle,
+  Phone,
+  PhoneCall,
+  PhoneOff,
   Plus,
   RefreshCw,
+  Settings2,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Trophy,
   UserCheck,
   Users,
+  Video,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -40,11 +48,18 @@ import {
   getOperatorShiftLogs,
   recordBrandSubscriptionPayment,
   switchActiveDeskOperator,
+  getBrandContactSettings,
+  saveBrandContactSettings,
+  getInboundCallRequests,
+  updateInboundCallRequestStatus,
   type BrandDeskOperator,
   type BrandPlanTierId,
   type BrandSubscriptionPlan,
   type CxLifecycleRecord,
   type OperatorShiftLogEntry,
+  type BrandDirectCallingMode,
+  type BrandInboundContactSettings,
+  type InboundCustomerCallRequest,
 } from "@/lib/brand-operators";
 import { cn } from "@/lib/utils";
 
@@ -1051,3 +1066,383 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
     </section>
   );
 }
+
+/**
+ * 4. BRAND INBOUND CONTACT & DIRECT CALLING CONTROLS PANEL
+ * Allows Brand owners/operators to control how customers contact them:
+ * - Direct Calling Mode: Open vs Request-a-Call Only vs Disabled
+ * - Operating Hours & Shift windows
+ * - Require Product / Batch verification before call
+ * - Inbound Call Request Queue with instant 1-click callback
+ */
+export function BrandInboundContactSettingsPanel({
+  brandName = "Official Brand",
+  brandSlug = "official-brand",
+  onInitiateCall,
+}: {
+  brandName?: string;
+  brandSlug?: string;
+  onInitiateCall?: (target: { id: string; name: string; topic: string; mode: "voice" | "video" }) => void;
+}) {
+  const [settings, setSettings] = useState<BrandInboundContactSettings>(() =>
+    getBrandContactSettings(brandSlug),
+  );
+  const [requests, setRequests] = useState<InboundCustomerCallRequest[]>(() =>
+    getInboundCallRequests(brandSlug),
+  );
+  const activeOp = getActiveDeskOperator();
+
+  useEffect(() => {
+    const handleSettingsUpdate = () => {
+      setSettings(getBrandContactSettings(brandSlug));
+    };
+    const handleSync = () => {
+      setRequests(getInboundCallRequests(brandSlug));
+    };
+    window.addEventListener("sot-brand-contact-settings-updated", handleSettingsUpdate);
+    window.addEventListener("sot-inbound-call-request-created", handleSync);
+    window.addEventListener("sot-inbound-call-request-updated", handleSync);
+    return () => {
+      window.removeEventListener("sot-brand-contact-settings-updated", handleSettingsUpdate);
+      window.removeEventListener("sot-inbound-call-request-created", handleSync);
+      window.removeEventListener("sot-inbound-call-request-updated", handleSync);
+    };
+  }, [brandSlug]);
+
+  const handleUpdateMode = (mode: BrandDirectCallingMode) => {
+    const updated = saveBrandContactSettings(brandSlug, { directCallingMode: mode });
+    setSettings(updated);
+    toast.success(
+      mode === "request_only"
+        ? "Calling Mode set to 'Request-a-Call Desk': Customers must submit a call request first before ringing."
+        : mode === "open"
+          ? "Calling Mode set to 'Open Direct Line': Verified customers can now ring your active desk directly."
+          : "Calling Mode set to 'Direct Calls Disabled': Inbound calls blocked; public text responses only.",
+    );
+  };
+
+  const handleSaveHours = (hours: string) => {
+    const updated = saveBrandContactSettings(brandSlug, { operatingHours: hours });
+    setSettings(updated);
+  };
+
+  const handleSaveNotice = (notice: string) => {
+    const updated = saveBrandContactSettings(brandSlug, { contactNotice: notice });
+    setSettings(updated);
+  };
+
+  const handleToggleBatchRequired = () => {
+    const updated = saveBrandContactSettings(brandSlug, {
+      requireOrderOrBatchNumber: !settings.requireOrderOrBatchNumber,
+    });
+    setSettings(updated);
+    toast.info(
+      updated.requireOrderOrBatchNumber
+        ? "Batch/Receipt number is now required for customer call requests."
+        : "Batch/Receipt number is now optional for customer call requests.",
+    );
+  };
+
+  const handleCallCustomerBack = (req: InboundCustomerCallRequest, mode: "voice" | "video") => {
+    updateInboundCallRequestStatus(req.id, "operator_calling", `Called by ${activeOp.name}`);
+    syncRequests();
+    if (onInitiateCall) {
+      onInitiateCall({
+        id: req.customerId,
+        name: req.customerName,
+        topic: req.issueTopic,
+        mode,
+      });
+    } else {
+      toast.info(`Calling ${req.customerName} via SOT Private Messenger line...`);
+    }
+  };
+
+  const handleDismissRequest = (reqId: string) => {
+    updateInboundCallRequestStatus(reqId, "resolved", `Resolved by ${activeOp.name}`);
+    syncRequests();
+    toast.success("Call request marked as resolved.");
+  };
+
+  return (
+    <section className="space-y-6 rounded-3xl border border-slate-800 bg-slate-900/90 p-6 text-white shadow-xl">
+      {/* Header */}
+      <div className="flex flex-col gap-3 border-b border-slate-800 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
+              <PhoneCall className="h-4 w-4" />
+            </span>
+            <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
+              Inbound Customer Calling &amp; Contact Permissions
+            </span>
+          </div>
+          <h2 className="mt-1 font-display text-2xl font-black text-white">
+            {brandName} Direct Calling Controls &amp; Inbound Desk
+          </h2>
+          <p className="mt-1 text-xs text-slate-300 max-w-2xl">
+            You decide how customers and shoppers contact <strong>{brandName}</strong>. Choose between a controlled Request-a-Call queue, an open direct line, or text-only responses.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-950 p-3 text-xs">
+          <span className="text-[11px] font-bold text-slate-400 block">On-Duty Desk Operator:</span>
+          <span className="font-bold text-[#f5d061]">{activeOp.name}</span>
+          <span className="text-slate-400 text-[11px] block">{activeOp.roleTitle}</span>
+        </div>
+      </div>
+
+      {/* 3 Direct Calling Modes */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* Mode 1: Request-a-Call (Recommended) */}
+        <div
+          onClick={() => handleUpdateMode("request_only")}
+          className={cn(
+            "rounded-2xl border p-4 cursor-pointer transition flex flex-col justify-between",
+            settings.directCallingMode === "request_only"
+              ? "border-[#d6a928] bg-slate-950 ring-2 ring-[#d6a928]/30"
+              : "border-slate-800 bg-slate-950/50 hover:border-slate-700",
+          )}
+        >
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#d6a928]/20 text-[#f5d061]">
+                <ShieldCheck className="h-4 w-4" />
+              </span>
+              {settings.directCallingMode === "request_only" && (
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#d6a928] text-slate-950">
+                  Active Setting
+                </span>
+              )}
+            </div>
+            <h3 className="mt-3 font-display text-base font-bold text-white">
+              Request-a-Call Desk
+            </h3>
+            <span className="text-[11px] font-bold text-emerald-400 block mt-0.5">
+              Recommended for Corporate CX
+            </span>
+            <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+              Customers <strong>cannot ring your phone directly</strong>. They submit a 1-click issue summary &amp; batch details; your desk operator reviews it and rings them back at your convenience.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
+            ✓ Prevents spam &amp; random dials · ✓ Creates audit trail
+          </div>
+        </div>
+
+        {/* Mode 2: Open Direct Line */}
+        <div
+          onClick={() => handleUpdateMode("open")}
+          className={cn(
+            "rounded-2xl border p-4 cursor-pointer transition flex flex-col justify-between",
+            settings.directCallingMode === "open"
+              ? "border-emerald-500 bg-slate-950 ring-2 ring-emerald-500/30"
+              : "border-slate-800 bg-slate-950/50 hover:border-slate-700",
+          )}
+        >
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
+                <PhoneCall className="h-4 w-4" />
+              </span>
+              {settings.directCallingMode === "open" && (
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950">
+                  Active Setting
+                </span>
+              )}
+            </div>
+            <h3 className="mt-3 font-display text-base font-bold text-white">
+              Open Direct Line
+            </h3>
+            <span className="text-[11px] font-bold text-emerald-400 block mt-0.5">
+              Instant Inbound Rings
+            </span>
+            <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+              Any verified customer can <strong>ring your desk operator directly</strong> in real time via SOT during desk operating hours (Zero phone numbers needed).
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
+            ✓ Real-time VIP service · ✓ High responsiveness rating
+          </div>
+        </div>
+
+        {/* Mode 3: Direct Calls Disabled */}
+        <div
+          onClick={() => handleUpdateMode("disabled")}
+          className={cn(
+            "rounded-2xl border p-4 cursor-pointer transition flex flex-col justify-between",
+            settings.directCallingMode === "disabled"
+              ? "border-rose-500 bg-slate-950 ring-2 ring-rose-500/30"
+              : "border-slate-800 bg-slate-950/50 hover:border-slate-700",
+          )}
+        >
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/20 text-rose-400">
+                <PhoneOff className="h-4 w-4" />
+              </span>
+              {settings.directCallingMode === "disabled" && (
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-500 text-slate-950">
+                  Active Setting
+                </span>
+              )}
+            </div>
+            <h3 className="mt-3 font-display text-base font-bold text-white">
+              Direct Calls Disabled
+            </h3>
+            <span className="text-[11px] font-bold text-rose-400 block mt-0.5">
+              Public Text Responses Only
+            </span>
+            <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+              Direct calls are completely blocked. Customers can only post public verdicts and reply to your brand in public comments (Default for 100% Free Tier).
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
+            ✓ Zero phone interruptions · ✓ 100% Public transparency
+          </div>
+        </div>
+      </div>
+
+      {/* Desk Operational Controls */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-4">
+        <h3 className="font-display text-base font-bold text-[#f5d061] flex items-center gap-2">
+          <Settings2 className="h-4 w-4" /> Desk Operational Parameters &amp; Requirements
+        </h3>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-xs font-bold text-slate-300">
+              Desk Operating Hours (Shown to Customers)
+            </label>
+            <Input
+              value={settings.operatingHours}
+              onChange={(e) => handleSaveHours(e.target.value)}
+              placeholder="e.g. 08:00 - 17:00 (SAST Desk)"
+              className="h-9 border-slate-800 bg-slate-900 text-xs text-white"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-bold text-slate-300">
+              Require Batch / Till Slip Number
+            </label>
+            <button
+              type="button"
+              onClick={handleToggleBatchRequired}
+              className={cn(
+                "h-9 w-full rounded-md border px-3 text-xs font-bold flex items-center justify-between transition cursor-pointer",
+                settings.requireOrderOrBatchNumber
+                  ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
+                  : "border-slate-800 bg-slate-900 text-slate-400",
+              )}
+            >
+              <span>Mandatory Barcode / Batch:</span>
+              <span>{settings.requireOrderOrBatchNumber ? "REQUIRED (ON)" : "OPTIONAL (OFF)"}</span>
+            </button>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-bold text-slate-300">
+              Customer Guidance / Hold Notice
+            </label>
+            <Input
+              value={settings.contactNotice}
+              onChange={(e) => handleSaveNotice(e.target.value)}
+              placeholder="e.g. Operators respond to call requests within 15 minutes."
+              className="h-9 border-slate-800 bg-slate-900 text-xs text-white"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Inbound Customer Call Request Queue */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
+              <Clock className="h-4 w-4 text-[#d6a928]" /> Inbound Customer Call Request Queue
+            </h3>
+            <p className="text-xs text-slate-400">
+              Live customer requests waiting for your on-duty operator ({activeOp.name}) to ring back.
+            </p>
+          </div>
+          <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs font-bold text-white">
+            {requests.filter((r) => r.status === "pending").length} Pending
+          </span>
+        </div>
+
+        {requests.length === 0 ? (
+          <div className="py-8 text-center text-xs text-slate-400">
+            <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500/50 mb-2" />
+            No pending customer call requests. All inbound customer tickets are resolved.
+          </div>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {requests.map((req) => (
+              <div
+                key={req.id}
+                className="flex flex-col justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 sm:flex-row sm:items-center"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold text-white text-sm">{req.customerName}</span>
+                    <span className="text-slate-500">·</span>
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[10px] font-black uppercase",
+                        req.urgency === "urgent_cpa"
+                          ? "bg-rose-500/20 text-rose-400 border border-rose-500/40"
+                          : req.urgency === "high"
+                            ? "bg-amber-500/20 text-amber-400"
+                            : "bg-slate-800 text-slate-300",
+                      )}
+                    >
+                      {req.urgency.replace("_", " ")}
+                    </span>
+                    <span className="text-slate-500">·</span>
+                    <span className="text-slate-400 text-xs font-mono">
+                      {new Date(req.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-200 font-medium">“{req.issueTopic}”</p>
+                  {(req.productName || req.batchOrReceiptNumber) && (
+                    <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-slate-400">
+                      {req.productName && <span>Product: {req.productName}</span>}
+                      {req.batchOrReceiptNumber && <span>Batch/Receipt: {req.batchOrReceiptNumber}</span>}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    onClick={() => handleCallCustomerBack(req, "voice")}
+                    className="h-8 gap-1.5 bg-emerald-600 font-bold text-white hover:bg-emerald-500 text-xs"
+                  >
+                    <Phone className="h-3.5 w-3.5" /> Call (Voice)
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleCallCustomerBack(req, "video")}
+                    className="h-8 gap-1.5 bg-slate-950 font-bold text-[#f5d061] hover:bg-slate-800 text-xs border border-slate-700"
+                  >
+                    <Video className="h-3.5 w-3.5" /> Video Inspect
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDismissRequest(req.id)}
+                    className="h-8 text-xs text-slate-400 hover:text-white"
+                  >
+                    Resolve
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+

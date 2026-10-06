@@ -4,7 +4,7 @@ import type { FeedItem, Verdict } from "@/lib/stash";
 import { castVote, removeVote, deleteItem } from "@/lib/stash";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, Building2, ArrowUp, ArrowDown, Phone, Video } from "lucide-react";
+import { X, Building2, ArrowUp, ArrowDown, Phone, PhoneCall, Video } from "lucide-react";
 import coinIcon from "@/assets/icon-coin.png";
 import binIcon from "@/assets/icon-bin.png";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,8 @@ import { AuditBadge } from "@/components/AuditBadge";
 import { BrandResponses } from "@/components/BrandResponses";
 import { FormalEscalationModal } from "@/components/FormalEscalationModal";
 import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
+import { BrandCallRequestModal } from "@/components/BrandCallRequestModal";
+import { getBrandContactSettings } from "@/lib/brand-operators";
 import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 import { useRoles } from "@/hooks/useRoles";
@@ -44,6 +46,7 @@ export function ItemCard({
   const [commentsOpen, setCommentsOpen] = useState(defaultCommentsOpen);
   const [stashCelebration, setStashCelebration] = useState(false);
   const [broadcastSituationOpen, setBroadcastSituationOpen] = useState(false);
+  const [brandCallReqOpen, setBrandCallReqOpen] = useState(false);
 
   const total = item.stashCount + item.trashCount;
   const stashPct = total === 0 ? 50 : Math.round((item.stashCount / total) * 100);
@@ -220,17 +223,37 @@ export function ItemCard({
                 title={`Call ${item.authorName} in SOT Messaging Services`}
               >
                 <Phone className="h-2.5 w-2.5" />
-                <span>Call in Messages</span>
+                <span>Call Author</span>
               </Link>
-              <button
-                type="button"
-                onClick={() => setBroadcastSituationOpen(true)}
-                className="inline-flex items-center gap-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold text-rose-600 hover:bg-rose-500/20 transition"
-                title={`Video Cam / Broadcast Situation for ${item.brandName || item.title}`}
-              >
-                <Video className="h-2.5 w-2.5" />
-                <span>Broadcast Cam</span>
-              </button>
+              {item.brandSlug && item.brandName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const contactSettings = getBrandContactSettings(item.brandSlug!);
+                    if (contactSettings.directCallingMode === "disabled") {
+                      toast.info(
+                        `${item.brandName} has direct incoming calls disabled in their Brand Dashboard. You can post public verdicts or comments.`,
+                      );
+                    } else if (contactSettings.directCallingMode === "request_only") {
+                      setBrandCallReqOpen(true);
+                    } else {
+                      navigate({
+                        to: "/messages",
+                        search: {
+                          to: `brand-${item.brandSlug}`,
+                          name: item.brandName,
+                          call: "voice",
+                        },
+                      });
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md border border-[#d6a928]/40 bg-[#d6a928]/10 px-2 py-0.5 text-[10px] font-bold text-[#b88914] dark:text-[#f5d061] hover:bg-[#d6a928]/20 transition"
+                  title={`Request a Call or Contact ${item.brandName} Desk`}
+                >
+                  <PhoneCall className="h-2.5 w-2.5" />
+                  <span>Call {item.brandName}</span>
+                </button>
+              )}
             </div>
           </div>
           {user?.id === item.user_id && (
@@ -333,6 +356,17 @@ export function ItemCard({
         defaultMode="broadcast"
         callDirection={isBrand ? "brand_to_user" : "user_to_user"}
       />
+
+      {/* Brand Call Request Modal */}
+      {item.brandSlug && item.brandName && (
+        <BrandCallRequestModal
+          open={brandCallReqOpen}
+          onOpenChange={setBrandCallReqOpen}
+          brandName={item.brandName}
+          brandSlug={item.brandSlug}
+          prefilledProduct={item.title}
+        />
+      )}
     </article>
   );
 }

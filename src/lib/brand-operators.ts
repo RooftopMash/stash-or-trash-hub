@@ -786,3 +786,160 @@ export function recordBrandSubscriptionPayment(params: {
   emitOperatorUpdate();
   return receipt;
 }
+
+export type BrandDirectCallingMode = "open" | "request_only" | "disabled";
+
+export interface BrandInboundContactSettings {
+  brandSlug: string;
+  directCallingMode: BrandDirectCallingMode;
+  operatingHours: string;
+  requireOrderOrBatchNumber: boolean;
+  contactNotice: string;
+  allowedCallTypes: "voice_and_video" | "voice_only" | "messages_only";
+  autoDeclineOffHours: boolean;
+  updatedAt: string;
+}
+
+export interface InboundCustomerCallRequest {
+  id: string;
+  brandSlug: string;
+  brandName: string;
+  customerId: string;
+  customerName: string;
+  issueTopic: string;
+  productName?: string;
+  batchOrReceiptNumber?: string;
+  urgency: "low" | "medium" | "high" | "urgent_cpa";
+  requestedCallMode: "voice" | "video";
+  status: "pending" | "operator_calling" | "resolved" | "declined";
+  createdAt: string;
+  operatorNotes?: string;
+}
+
+const BRAND_CONTACT_SETTINGS_PREFIX = "sot_brand_contact_settings_v1_";
+const INBOUND_CALL_REQUESTS_KEY = "sot_inbound_call_requests_v1";
+
+export function getBrandContactSettings(brandSlug: string): BrandInboundContactSettings {
+  const normSlug = (brandSlug || "official-brand").toLowerCase().trim();
+  const sub = getActiveBrandSubscription();
+  const isFreeTier = sub.activePlanId === "free_public_voice";
+
+  const defaultSettings: BrandInboundContactSettings = {
+    brandSlug: normSlug,
+    directCallingMode: isFreeTier ? "disabled" : "request_only",
+    operatingHours: "08:00 - 17:00 (SAST Desk)",
+    requireOrderOrBatchNumber: false,
+    contactNotice: isFreeTier
+      ? "Public text right-of-reply only. Upgrade to Pulse Starter or higher to unlock Zero-Phone Inbound Calling & Request-to-Call Desk."
+      : "Our verified desk operators respond to call requests within 15 minutes during desk hours.",
+    allowedCallTypes: "voice_and_video",
+    autoDeclineOffHours: false,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (typeof window === "undefined") return defaultSettings;
+  try {
+    const raw = window.localStorage.getItem(`${BRAND_CONTACT_SETTINGS_PREFIX}${normSlug}`);
+    if (!raw) return defaultSettings;
+    const parsed = JSON.parse(raw);
+    return {
+      ...defaultSettings,
+      ...parsed,
+    };
+  } catch {
+    return defaultSettings;
+  }
+}
+
+export function saveBrandContactSettings(
+  brandSlug: string,
+  updates: Partial<BrandInboundContactSettings>,
+): BrandInboundContactSettings {
+  const normSlug = (brandSlug || "official-brand").toLowerCase().trim();
+  const current = getBrandContactSettings(normSlug);
+  const updated: BrandInboundContactSettings = {
+    ...current,
+    ...updates,
+    brandSlug: normSlug,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(
+        `${BRAND_CONTACT_SETTINGS_PREFIX}${normSlug}`,
+        JSON.stringify(updated),
+      );
+      window.dispatchEvent(
+        new CustomEvent("sot-brand-contact-settings-updated", { detail: updated }),
+      );
+    } catch {
+      // ignore
+    }
+  }
+  emitOperatorUpdate();
+  return updated;
+}
+
+export function getInboundCallRequests(brandSlug?: string): InboundCustomerCallRequest[] {
+  const normSlug = brandSlug ? brandSlug.toLowerCase().trim() : undefined;
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(INBOUND_CALL_REQUESTS_KEY);
+    if (!raw) return [];
+    const list: InboundCustomerCallRequest[] = JSON.parse(raw);
+    if (!Array.isArray(list)) return [];
+    if (!normSlug) return list;
+    return list.filter((r) => r.brandSlug.toLowerCase() === normSlug);
+  } catch {
+    return [];
+  }
+}
+
+export function submitInboundCallRequest(
+  request: Omit<InboundCustomerCallRequest, "id" | "status" | "createdAt">,
+): InboundCustomerCallRequest {
+  const created: InboundCustomerCallRequest = {
+    ...request,
+    id: `call-req-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  };
+
+  if (typeof window !== "undefined") {
+    try {
+      const all = getInboundCallRequests();
+      const updated = [created, ...all].slice(0, 100);
+      window.localStorage.setItem(INBOUND_CALL_REQUESTS_KEY, JSON.stringify(updated));
+      window.dispatchEvent(
+        new CustomEvent("sot-inbound-call-request-created", { detail: created }),
+      );
+    } catch {
+      // ignore
+    }
+  }
+  emitOperatorUpdate();
+  return created;
+}
+
+export function updateInboundCallRequestStatus(
+  requestId: string,
+  status: InboundCustomerCallRequest["status"],
+  notes?: string,
+): void {
+  if (typeof window === "undefined") return;
+  try {
+    const all = getInboundCallRequests();
+    const updated = all.map((r) =>
+      r.id === requestId ? { ...r, status, ...(notes ? { operatorNotes: notes } : {}) } : r,
+    );
+    window.localStorage.setItem(INBOUND_CALL_REQUESTS_KEY, JSON.stringify(updated));
+    window.dispatchEvent(
+      new CustomEvent("sot-inbound-call-request-updated", { detail: { requestId, status } }),
+    );
+  } catch {
+    // ignore
+  }
+  emitOperatorUpdate();
+}
+
