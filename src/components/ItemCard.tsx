@@ -16,6 +16,7 @@ import { ItemCardActions } from "@/components/ItemCardActions";
 import { CommentThread } from "@/components/CommentThread";
 import { PostText } from "@/components/PostText";
 import { AuditBadge } from "@/components/AuditBadge";
+import { DisputeResolutionBadge } from "@/components/DisputeResolutionBadge";
 import { BrandResponses } from "@/components/BrandResponses";
 import { FormalEscalationModal } from "@/components/FormalEscalationModal";
 import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
@@ -273,6 +274,8 @@ export function ItemCard({
             <PostText text={item.description} />
           </p>
         )}
+
+        <DisputeResolutionBadge item={item} onChange={onChange} />
 
         {/* verdict meter */}
         <div className="mt-4">

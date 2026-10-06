@@ -5,7 +5,6 @@ import { INTERNATIONAL_SEED_BRANDS, SOUTH_AFRICAN_SEED_BRANDS } from "@/lib/seed
 import { getLocalImportedBrands } from "@/lib/wikidata-import";
 
 export type Verdict = "stash" | "trash";
-
 export type DisputeStatus = "unresolved" | "under_review" | "rectified";
 
 export type FeedItem = {
@@ -152,8 +151,14 @@ export async function fetchFeed(
       signedImageUrl: item.image_url ? (signed.get(item.image_url) ?? null) : null,
       audit: (item.audit as MediaAuditReport | null | undefined) ?? null,
       phash: (item.phash as string | null | undefined) ?? null,
-      disputeStatus: (item.dispute_status as DisputeStatus | null | undefined) ?? null,
-      disputeResolutionNotes: (item.dispute_resolution_notes as string | null | undefined) ?? null,
+      disputeStatus:
+        (item.dispute_status as DisputeStatus | null | undefined) ??
+        getStoredDispute(item.id)?.status ??
+        null,
+      disputeResolutionNotes:
+        (item.dispute_resolution_notes as string | null | undefined) ??
+        getStoredDispute(item.id)?.notes ??
+        null,
     };
   });
 }
@@ -332,9 +337,60 @@ export async function fetchItem(
     signedImageUrl: item.image_url ? (signed.get(item.image_url) ?? null) : null,
     audit: (item.audit as MediaAuditReport | null | undefined) ?? null,
     phash: (item.phash as string | null | undefined) ?? null,
-    disputeStatus: (item.dispute_status as DisputeStatus | null | undefined) ?? null,
-    disputeResolutionNotes: (item.dispute_resolution_notes as string | null | undefined) ?? null,
+    disputeStatus:
+      (item.dispute_status as DisputeStatus | null | undefined) ??
+      getStoredDispute(item.id)?.status ??
+      null,
+    disputeResolutionNotes:
+      (item.dispute_resolution_notes as string | null | undefined) ??
+      getStoredDispute(item.id)?.notes ??
+      null,
   };
+}
+
+const DISPUTE_STORAGE_KEY = "sot_dispute_resolutions_v1";
+
+function getStoredDispute(itemId: string): { status: DisputeStatus; notes: string | null } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(DISPUTE_STORAGE_KEY);
+    if (!raw) return null;
+    const map = JSON.parse(raw);
+    return map[itemId] || null;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredDispute(itemId: string, status: DisputeStatus, notes?: string | null) {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = localStorage.getItem(DISPUTE_STORAGE_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    map[itemId] = { status, notes: notes || null, updatedAt: new Date().toISOString() };
+    localStorage.setItem(DISPUTE_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+export async function updateItemDisputeStatus(
+  itemId: string,
+  status: DisputeStatus,
+  notes?: string | null,
+): Promise<void> {
+  saveStoredDispute(itemId, status, notes);
+  try {
+    await supabase
+      .from("items")
+      .update({
+        dispute_status: status,
+        dispute_resolution_notes: notes || null,
+      } as never)
+      .eq("id", itemId);
+  } catch {
+    // Best-effort in Supabase; fallback already saved locally
+  }
 }
 
 /** Posts authored by one user. */
