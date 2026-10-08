@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
+import { SeoHelmet } from "@/components/SeoHelmet";
 import { ProductAuthenticityCameraScanner } from "@/components/ProductAuthenticityCameraScanner";
 import { SubmitDialog } from "@/components/SubmitDialog";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,11 @@ function ScanPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <SeoHelmet
+        title="AI Product & Counterfeit Verifier — SOT Brand Barometer"
+        description="Scan product packaging, barcodes, luxury logos, and care tags to verify genuine origin, detect counterfeits, and check brand trust ratings."
+        ogType="website"
+      />
       <Header />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-8 space-y-8">

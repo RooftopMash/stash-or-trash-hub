@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Header } from "@/components/Header";
+import { SeoHelmet } from "@/components/SeoHelmet";
 import { SubmitDialog } from "@/components/SubmitDialog";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BrandVerdict } from "@/components/BrandVerdict";
@@ -301,6 +302,19 @@ function BrandPage() {
           </div>
         ) : (
           <>
+            <SeoHelmet
+              title={`${brand.name} — SOT Brand Barometer`}
+              description={`Explore ${brand.name} on SOT (Stash Or Trash) — community trust score (${brand.trust_score}%), consumer verdicts, counterfeit verifier, and verified proof.`}
+              ogImage={brand.signedLogoUrl || brand.logo_url || "/apple-touch-icon.png"}
+              ogType="product"
+              structuredData={{
+                "@context": "https://schema.org",
+                "@type": "Brand",
+                name: brand.name,
+                description: brand.description || `Consumer verdicts and authenticity status for ${brand.name}`,
+                logo: brand.signedLogoUrl || brand.logo_url || undefined,
+              }}
+            />
             {/* Brand Core Header Card */}
             <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 sm:flex-row shadow-sm">
               <BrandLogo

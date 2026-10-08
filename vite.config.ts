@@ -52,6 +52,10 @@ export default defineConfig({
           preset: "vercel",
           compatibilityDate: "2025-05-01",
           noExternals: true,
+          alias: {
+            "@zxing/library": path.resolve(process.cwd(), "src/lib/stubs/empty-scanner.ts"),
+            "agora-rtc-sdk-ng": path.resolve(process.cwd(), "src/lib/stubs/empty-agora.ts"),
+          },
           vercel: {
             entryFormat: "node",
             functions: {
@@ -106,6 +110,10 @@ export default defineConfig({
       : {
           preset: process.env.NITRO_PRESET || "cloudflare-module",
           compatibilityDate: "2025-05-01",
+          alias: {
+            "@zxing/library": path.resolve(process.cwd(), "src/lib/stubs/empty-scanner.ts"),
+            "agora-rtc-sdk-ng": path.resolve(process.cwd(), "src/lib/stubs/empty-agora.ts"),
+          },
           cloudflare: {
             deployConfig: true,
             nodeCompat: true,

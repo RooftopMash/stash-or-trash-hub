@@ -20,7 +20,23 @@ import { OfflineStatus } from "@/components/OfflineStatus";
 import { ProductionMonitoring } from "@/components/ProductionMonitoring";
 import { VerdictSuccess } from "@/components/VerdictSuccess";
 import { autoSeedFirestoreIfEmpty } from "@/lib/seedFirestore";
+import { SeoHelmet } from "@/components/SeoHelmet";
 import "@/lib/i18n";
+
+const BRAND_BAROMETER_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "SOT — Stash Or Trash | The Brand Barometer",
+  description:
+    "SOT (Stash Or Trash) is the Brand Barometer — a CX/UX marketing & PR platform where consumers deliver real-time verdicts on brands with verified proof.",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "All",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+};
 
 if (typeof window !== "undefined") {
   installProductionSecurityShield();
@@ -154,6 +170,7 @@ function RootComponent() {
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <SeoHelmet structuredData={BRAND_BAROMETER_SCHEMA} />
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
           <VerdictSuccess listenGlobal />
