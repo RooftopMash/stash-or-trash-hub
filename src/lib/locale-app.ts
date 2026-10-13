@@ -1,20 +1,78 @@
 export interface AppLocaleDefinition {
-  code: "en" | "es" | "fr" | "zu" | "xh" | "st" | "de" | "pt";
+  code: string;
   label: string;
   native: string;
   short: string;
+  direction?: "ltr" | "rtl";
 }
 
 export const APP_SUPPORTED_LOCALES: AppLocaleDefinition[] = [
-  { code: "en", label: "English", native: "English", short: "EN" },
-  { code: "es", label: "Spanish", native: "Español", short: "ES" },
-  { code: "fr", label: "French", native: "Français", short: "FR" },
-  { code: "zu", label: "Zulu", native: "isiZulu", short: "ZU" },
-  { code: "xh", label: "Xhosa", native: "isiXhosa", short: "XH" },
-  { code: "st", label: "Sesotho", native: "Sesotho", short: "ST" },
-  { code: "de", label: "German", native: "Deutsch", short: "DE" },
-  { code: "pt", label: "Portuguese", native: "Português", short: "PT" },
+  // Core & Global (21)
+  { code: "en", label: "English", native: "English", short: "EN", direction: "ltr" },
+  { code: "es", label: "Spanish", native: "Español", short: "ES", direction: "ltr" },
+  { code: "fr", label: "French", native: "Français", short: "FR", direction: "ltr" },
+  { code: "de", label: "German", native: "Deutsch", short: "DE", direction: "ltr" },
+  { code: "pt", label: "Portuguese", native: "Português", short: "PT", direction: "ltr" },
+  { code: "it", label: "Italian", native: "Italiano", short: "IT", direction: "ltr" },
+  { code: "nl", label: "Dutch", native: "Nederlands", short: "NL", direction: "ltr" },
+  { code: "pl", label: "Polish", native: "Polski", short: "PL", direction: "ltr" },
+  { code: "ro", label: "Romanian", native: "Română", short: "RO", direction: "ltr" },
+  { code: "sv", label: "Swedish", native: "Svenska", short: "SV", direction: "ltr" },
+  { code: "no", label: "Norwegian", native: "Norsk", short: "NO", direction: "ltr" },
+  { code: "da", label: "Danish", native: "Dansk", short: "DA", direction: "ltr" },
+  { code: "fi", label: "Finnish", native: "Suomi", short: "FI", direction: "ltr" },
+  { code: "cs", label: "Czech", native: "Čeština", short: "CS", direction: "ltr" },
+  { code: "sk", label: "Slovak", native: "Slovenčina", short: "SK", direction: "ltr" },
+  { code: "hu", label: "Hungarian", native: "Magyar", short: "HU", direction: "ltr" },
+  { code: "el", label: "Greek", native: "Ελληνικά", short: "EL", direction: "ltr" },
+  { code: "bg", label: "Bulgarian", native: "Български", short: "BG", direction: "ltr" },
+  { code: "uk", label: "Ukrainian", native: "Українська", short: "UK", direction: "ltr" },
+  { code: "ru", label: "Russian", native: "Русский", short: "RU", direction: "ltr" },
+  { code: "tr", label: "Turkish", native: "Türkçe", short: "TR", direction: "ltr" },
+
+  // Middle Eastern & RTL (4)
+  { code: "ar", label: "Arabic", native: "العربية", short: "AR", direction: "rtl" },
+  { code: "he", label: "Hebrew", native: "עברית", short: "HE", direction: "rtl" },
+  { code: "fa", label: "Persian", native: "فارسی", short: "FA", direction: "rtl" },
+  { code: "ur", label: "Urdu", native: "اردو", short: "UR", direction: "rtl" },
+
+  // South Asian (7)
+  { code: "hi", label: "Hindi", native: "हिन्दी", short: "HI", direction: "ltr" },
+  { code: "bn", label: "Bengali", native: "বাংলা", short: "BN", direction: "ltr" },
+  { code: "ta", label: "Tamil", native: "தமிழ்", short: "TA", direction: "ltr" },
+  { code: "te", label: "Telugu", native: "తెలుగు", short: "TE", direction: "ltr" },
+  { code: "mr", label: "Marathi", native: "मराठी", short: "MR", direction: "ltr" },
+  { code: "gu", label: "Gujarati", native: "ગુજરાતી", short: "GU", direction: "ltr" },
+  { code: "pa", label: "Punjabi", native: "ਪੰਜਾਬੀ", short: "PA", direction: "ltr" },
+
+  // East & Southeast Asian (9)
+  { code: "th", label: "Thai", native: "ไทย", short: "TH", direction: "ltr" },
+  { code: "vi", label: "Vietnamese", native: "Tiếng Việt", short: "VI", direction: "ltr" },
+  { code: "id", label: "Indonesian", native: "Bahasa Indonesia", short: "ID", direction: "ltr" },
+  { code: "ms", label: "Malay", native: "Bahasa Melayu", short: "MS", direction: "ltr" },
+  { code: "fil", label: "Filipino", native: "Filipino", short: "FIL", direction: "ltr" },
+  { code: "zh-CN", label: "Chinese (Simplified)", native: "简体中文", short: "ZH", direction: "ltr" },
+  { code: "zh-TW", label: "Chinese (Traditional)", native: "繁體中文", short: "TW", direction: "ltr" },
+  { code: "ja", label: "Japanese", native: "日本語", short: "JA", direction: "ltr" },
+  { code: "ko", label: "Korean", native: "한국어", short: "KO", direction: "ltr" },
+
+  // African Flagship & Regional (11)
+  { code: "zu", label: "Zulu", native: "isiZulu", short: "ZU", direction: "ltr" },
+  { code: "xh", label: "Xhosa", native: "isiXhosa", short: "XH", direction: "ltr" },
+  { code: "st", label: "Sesotho", native: "Sesotho", short: "ST", direction: "ltr" },
+  { code: "tn", label: "Setswana", native: "Setswana", short: "TN", direction: "ltr" },
+  { code: "nso", label: "Sepedi", native: "Sepedi", short: "NSO", direction: "ltr" },
+  { code: "af", label: "Afrikaans", native: "Afrikaans", short: "AF", direction: "ltr" },
+  { code: "sw", label: "Swahili", native: "Kiswahili", short: "SW", direction: "ltr" },
+  { code: "ha", label: "Hausa", native: "Hausa", short: "HA", direction: "ltr" },
+  { code: "yo", label: "Yoruba", native: "Yorùbá", short: "YO", direction: "ltr" },
+  { code: "ig", label: "Igbo", native: "Igbo", short: "IG", direction: "ltr" },
+  { code: "am", label: "Amharic", native: "አማርኛ", short: "AM", direction: "ltr" },
 ];
+
+export const APP_CORE_LOCALES: AppLocaleDefinition[] = APP_SUPPORTED_LOCALES.filter((l) =>
+  ["en", "es", "fr", "zu", "xh", "st", "de", "pt"].includes(l.code),
+);
 
 export const appTranslations: Record<
   string,

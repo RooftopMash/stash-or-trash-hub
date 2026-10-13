@@ -7,9 +7,13 @@ const config: CapacitorConfig = {
   bundledWebRuntime: false,
   server: {
     androidScheme: "https",
-    url:
-      process.env.CAPACITOR_SERVER_URL ||
-      "https://stash-or-trash-hub.lovable.app",
+    ...(process.env.CAPACITOR_SERVER_URL
+      ? { url: process.env.CAPACITOR_SERVER_URL }
+      : process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? { url: `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` }
+        : process.env.VERCEL_URL
+          ? { url: `https://${process.env.VERCEL_URL}` }
+          : {}),
     cleartext: false,
   },
 };

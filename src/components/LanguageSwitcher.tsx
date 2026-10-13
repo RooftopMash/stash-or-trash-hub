@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LANGUAGES, RTL_LANGUAGES } from "@/lib/i18n";
-import { APP_SUPPORTED_LOCALES } from "@/lib/locale-app";
+import { APP_SUPPORTED_LOCALES, APP_CORE_LOCALES } from "@/lib/locale-app";
 import { COUNTRY_LANGUAGE_DIRECTORY } from "@/lib/country-languages";
 import {
   DropdownMenu,
@@ -27,7 +27,7 @@ export async function switchAppLanguage(
   }
 }
 
-const FEATURED_CODES = new Set<string>(APP_SUPPORTED_LOCALES.map((l) => l.code));
+const FEATURED_CODES = new Set<string>(APP_CORE_LOCALES.map((l) => l.code));
 
 /**
  * Single unified top-of-screen language bar for the 8 core locales in src/lib/locale-app.ts
@@ -76,7 +76,7 @@ export function TopLanguageStrip() {
         </div>
 
         <div className="flex items-center gap-1">
-          {APP_SUPPORTED_LOCALES.map((locale) => {
+          {APP_CORE_LOCALES.map((locale) => {
             const isActive = activeCode === locale.code;
             return (
               <button

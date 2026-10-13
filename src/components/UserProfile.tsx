@@ -885,11 +885,13 @@ export function UserProfile({
                 </div>
 
                 <div className="space-y-2 rounded-lg border border-border p-3">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                    <Globe className="h-3.5 w-3.5 text-[#d6a928]" />
-                    <span>Preferred Interface Language</span>
+                  <div className="flex items-center justify-between text-xs font-bold text-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <Globe className="h-3.5 w-3.5 text-[#d6a928]" />
+                      <span>Preferred Interface Language ({APP_SUPPORTED_LOCALES.length} Languages)</span>
+                    </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 pt-1">
+                  <div className="flex flex-wrap gap-1.5 pt-1 max-h-48 overflow-y-auto pr-1">
                     {APP_SUPPORTED_LOCALES.map((loc) => {
                       const active = activeLangCode === loc.code;
                       return (

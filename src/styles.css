@@ -562,6 +562,15 @@
    LIVE FALLING WATERMARK RAIN ANIMATIONS (Stash Gold Coins & Trash Cans)
    Infinitely descending waterfall/rain effect for the split-screen background
    ========================================================================= */
+@keyframes waterfall {
+  0% {
+    background-position: 0px 0px;
+  }
+  100% {
+    background-position: 0px 560px;
+  }
+}
+
 @keyframes sot-rain-falling-coins {
   0% {
     background-position: 0px 0px;
