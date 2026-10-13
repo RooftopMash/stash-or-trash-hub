@@ -21,6 +21,8 @@ import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import { cn } from "@/lib/utils";
 import coinIcon from "@/assets/icon-coin.png";
 import binIcon from "@/assets/icon-bin.png";
+import coinsWatermark from "@/assets/watermark-coins.png";
+import binsWatermark from "@/assets/watermark-bins.png";
 
 const cascade = [
   { letter: "S", className: "text-[#d6a928]" },
@@ -155,9 +157,33 @@ export function SotHomeHero() {
 
   return (
     <section className="relative isolate overflow-hidden border-b-2 border-[#d6a928]/30 bg-white text-slate-950">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.08]">
-        <div className="absolute left-[10%] top-8 h-72 w-72 rounded-full border-[20px] border-[#d6a928]" />
-        <div className="absolute right-[12%] top-16 h-60 w-48 rotate-6 rounded-[2.5rem] border-[14px] border-slate-900" />
+      {/* Split-screen brand watermark: falling gold coins on the left half, falling silver trash cans on the right half */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Left Half: Falling Gold Coins Watermark */}
+        <div
+          className="absolute inset-y-0 left-0 w-1/2 opacity-35"
+          style={{
+            backgroundImage: `url(${coinsWatermark})`,
+            backgroundSize: "280px 280px",
+            backgroundRepeat: "repeat",
+            maskImage: "linear-gradient(to right, black 65%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to right, black 65%, transparent 100%)",
+          }}
+        />
+        {/* Right Half: Falling Silver Trash Cans Watermark */}
+        <div
+          className="absolute inset-y-0 right-0 w-1/2 opacity-35"
+          style={{
+            backgroundImage: `url(${binsWatermark})`,
+            backgroundSize: "280px 280px",
+            backgroundRepeat: "repeat",
+            maskImage: "linear-gradient(to left, black 65%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to left, black 65%, transparent 100%)",
+          }}
+        />
+        {/* Subtle split-screen atmospheric ambient tones */}
+        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-amber-100/25 via-amber-50/10 to-transparent pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-slate-200/30 via-slate-100/10 to-transparent pointer-events-none" />
       </div>
 
       <div className="relative mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:py-16">
@@ -188,8 +214,8 @@ export function SotHomeHero() {
         {/* Hero Interactive Objects: South African Spinning Coin (Left) & Randy Hungry Trash Can (Right) */}
         <div className="flex min-h-[320px] items-center justify-center lg:min-h-[400px]">
           <div className="mx-auto grid w-full max-w-4xl gap-8 sm:grid-cols-2 lg:max-w-4xl">
-            {/* Left Object: Stash Gold Coin */}
-            <div className="group relative flex flex-col items-center overflow-hidden rounded-3xl border-2 border-[#d6a928]/60 bg-gradient-to-b from-[#fffbeb] via-amber-50/40 to-white p-6 shadow-[0_12px_32px_-12px_rgba(214,169,40,0.35)] transition hover:border-[#d6a928] hover:shadow-[0_18px_40px_-10px_rgba(214,169,40,0.5)]">
+            {/* Left Object: Stash Gold Coin (Frameless & Free-Floating) */}
+            <div className="group relative flex flex-col items-center p-2 sm:p-4 transition">
               <VerdictSuccess
                 active={activeObject === "coin"}
                 inline
@@ -252,8 +278,8 @@ export function SotHomeHero() {
               </div>
             </div>
 
-            {/* Right Object: Randy The Trash Can — Disconnected Free-Floating Lid & Squash-and-Stretch Barrel */}
-            <div className="group relative flex flex-col items-center rounded-3xl border-2 border-slate-900/25 bg-gradient-to-b from-slate-100/90 via-slate-50/50 to-white p-6 shadow-[0_12px_32px_-12px_rgba(15,23,42,0.22)] transition hover:border-slate-950 hover:shadow-[0_18px_40px_-10px_rgba(15,23,42,0.35)]">
+            {/* Right Object: Randy The Trash Can (Frameless & Free-Floating) */}
+            <div className="group relative flex flex-col items-center p-2 sm:p-4 transition">
               <button
                 type="button"
                 aria-label="Slam trash can for Trashes of the Day"

@@ -14,7 +14,7 @@ function Index() {
       {/* Split-screen brand watermark: gold coins (Stash) on the left, falling bins (Trash) on the right */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div
-          className="absolute inset-y-0 left-0 w-1/2 opacity-[0.07]"
+          className="absolute inset-y-0 left-0 w-1/2 opacity-25"
           style={{
             backgroundImage: `url(${coinsWatermark})`,
             backgroundSize: "320px 320px",
@@ -24,7 +24,7 @@ function Index() {
           }}
         />
         <div
-          className="absolute inset-y-0 right-0 w-1/2 opacity-[0.07]"
+          className="absolute inset-y-0 right-0 w-1/2 opacity-25"
           style={{
             backgroundImage: `url(${binsWatermark})`,
             backgroundSize: "320px 320px",
