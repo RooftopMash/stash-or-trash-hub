@@ -28,17 +28,9 @@ export const Route = createFileRoute("/_authenticated")({
       // Ignore network errors
     }
 
-    // Allow dashboard and brand creation to load without redirect loops
-    if (
-      location.pathname.startsWith("/dashboard") ||
-      location.pathname.startsWith("/brands/new") ||
-      location.pathname.startsWith("/admin")
-    ) {
-      return { user: null };
-    }
-
-    // Redirect unauthenticated visitors on private user routes
-    throw redirect({ to: "/auth" });
+    // Every route in this layout is private. Do not render authenticated
+    // surfaces with a null user when auth initialization or the network fails.
+    throw redirect({ to: "/auth", search: { redirect: location.href } });
   },
   component: () => <Outlet />,
 });

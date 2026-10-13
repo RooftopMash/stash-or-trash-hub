@@ -33,17 +33,16 @@ function createSupabaseAdminClient() {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  const effectiveUrl =
-    SUPABASE_URL || "https://ypbyouaddkdfuhfpnguu.supabase.co";
-  const effectiveKey = SUPABASE_SERVICE_ROLE_KEY || "placeholder-service-role-key";
-
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     const missing = [
-      ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-      ...(!SUPABASE_SERVICE_ROLE_KEY ? ['SUPABASE_SERVICE_ROLE_KEY'] : []),
+      ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
+      ...(!SUPABASE_SERVICE_ROLE_KEY ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
     ];
-    console.warn(`[Supabase] Missing Supabase server environment variable(s): ${missing.join(', ')}. Using mock fallback credentials.`);
+    throw new Error(`Supabase server configuration is incomplete. Missing: ${missing.join(", ")}`);
   }
+
+  const effectiveUrl = SUPABASE_URL;
+  const effectiveKey = SUPABASE_SERVICE_ROLE_KEY;
 
   return createClient<Database>(effectiveUrl, effectiveKey, {
     global: {
