@@ -29,7 +29,7 @@ const initialReviews = [
 ] as const;
 
 export function ContentSafetyGate() {
-  const [reviews, setReviews] = useState(initialReviews);
+  const [reviews, setReviews] = useState<Array<{ id: string; type: string; title: string; status: string; finding: string }>>([...initialReviews]);
   const approve = (id: string) =>
     setReviews((items) =>
       items.map((item) =>

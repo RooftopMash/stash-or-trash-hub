@@ -131,7 +131,8 @@ function ProfilePage() {
         signedLogoUrl: null,
         verified: reg.verified,
         trust_score: reg.trust_score,
-        owner_id: user?.id ?? null,
+        created_at: new Date().toISOString(),
+        owner_id: user?.id ?? "brand-owner",
         ownerName: `${reg.name} Official Executive Desk`,
       };
       const collected: Brand[] = [primaryBrand];

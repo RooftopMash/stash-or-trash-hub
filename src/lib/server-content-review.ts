@@ -41,7 +41,7 @@ export async function reviewContent(input: {
   const parsedFindings = findings && findings.toLowerCase() !== "none" ? findings.split(",").map((item) => item.trim()).filter(Boolean) : [];
   const requiresHumanReview = human === "yes" || parsedDecision === "needs_review";
 
-  await supabaseAdmin.from("ai_content_reviews").insert({
+  await (supabaseAdmin as any).from("ai_content_reviews").insert({
     owner_id: input.ownerId,
     asset_type: input.assetType,
     asset_url: input.assetUrl ?? null,

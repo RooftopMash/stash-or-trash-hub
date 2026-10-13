@@ -191,7 +191,7 @@ if (!i18n.isInitialized) {
         caches: ["localStorage"],
         lookupLocalStorage: "sot-lang",
       },
-    });
+    } as any);
 }
 
 export default i18n;

@@ -282,7 +282,8 @@ function MessagesPage() {
   const sendCallRequestHandshake = async () => {
     if (!user || !active) return;
     const callerLabel =
-      user.user_metadata?.full_name ||
+      user.user_metadata?.display_name ||
+      (user.user_metadata as Record<string, any>)?.full_name ||
       user.email?.split("@")[0] ||
       (isBrand ? "Verified Brand Representative" : "SOT Member");
     const handshakeText = isBrand

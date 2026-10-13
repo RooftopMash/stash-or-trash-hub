@@ -312,7 +312,7 @@ export async function getFriendshipBetween(
     }
   }
   try {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("friends")
       .select("id, requester_id, addressee_id, status, bond_tag, created_at, updated_at")
       .or(
@@ -361,7 +361,7 @@ export async function sendFriendRequest(
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("friends")
       .insert({
         requester_id: requesterId,
@@ -408,7 +408,7 @@ export async function acceptFriendRequest(
     }
   }
   try {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("friends")
       .update({ status: "accepted", updated_at: now })
       .or(
@@ -469,7 +469,7 @@ export async function blockFriendConnection(
   }
   try {
     if (existing) {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("friends")
         .update({ status: "blocked", updated_at: now })
         .eq("id", existing.id)
@@ -477,7 +477,7 @@ export async function blockFriendConnection(
         .maybeSingle();
       if (!error && data) return data as FriendRecord;
     } else {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("friends")
         .insert({
           requester_id: currentUserId,
@@ -526,7 +526,7 @@ export async function removeFriendConnection(
     }
   }
   try {
-    await supabase
+    await (supabase as any)
       .from("friends")
       .delete()
       .or(
@@ -558,7 +558,7 @@ export async function getMyFriendsAndRequests(userId: string): Promise<FriendRec
     }
   }
   try {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("friends")
       .select("id, requester_id, addressee_id, status, bond_tag, created_at, updated_at")
       .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
@@ -590,7 +590,7 @@ export async function updateFriendBondTag(
     }
   }
   try {
-    await supabase
+    await (supabase as any)
       .from("friends")
       .update({ bond_tag: bondTag, updated_at: now })
       .or(
@@ -833,6 +833,8 @@ export type ProfileStats = {
   posts: number;
   stash: number;
   trash: number;
+  stashVotes?: number;
+  trashVotes?: number;
   following: number;
   friends: number;
 };
@@ -858,10 +860,14 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
     getMyFriendsAndRequests(userId),
   ]);
   const rows = votes.data ?? [];
+  const stash = rows.filter((v) => v.verdict === "stash").length;
+  const trash = rows.filter((v) => v.verdict === "trash").length;
   return {
     posts: posts.count ?? 0,
-    stash: rows.filter((v) => v.verdict === "stash").length,
-    trash: rows.filter((v) => v.verdict === "trash").length,
+    stash,
+    trash,
+    stashVotes: stash,
+    trashVotes: trash,
     following: following.count ?? 0,
     friends: myFriends.filter((f) => f.status === "accepted").length,
   };

@@ -195,6 +195,7 @@ function DashboardPage() {
       signedLogoUrl: null,
       verified: registeredBrand.verified,
       trust_score: registeredBrand.trust_score,
+      created_at: new Date().toISOString(),
       owner_id: user?.id ?? "brand-owner",
       ownerName: `${registeredBrand.name} Executive Desk`,
     }),

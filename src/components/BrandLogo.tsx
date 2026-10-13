@@ -17,8 +17,9 @@ export function BrandLogo({
 }) {
   return (
     <div
+      translate="no"
       className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary p-1 font-bold",
+        "notranslate flex shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary p-1 font-bold",
         className,
       )}
     >

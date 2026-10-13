@@ -9,13 +9,13 @@ export function AdminAppealsQueue() {
   const { data: appeals, refetch } = useQuery({
     queryKey: ["admin-content-appeals"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("content_appeals" as any)
+      const { data, error } = await (supabase as any)
+        .from("content_appeals")
         .select("id, review_id, appellant_id, reason, status, created_at")
         .in("status", ["open", "reviewing"])
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as Array<{
+      return (data ?? []) as any as Array<{
         id: string;
         review_id: string;
         appellant_id: string;
@@ -27,8 +27,8 @@ export function AdminAppealsQueue() {
   });
 
   async function resolve(id: string, status: "upheld" | "overturned") {
-    const { error } = await supabase
-      .from("content_appeals" as any)
+    const { error } = await (supabase as any)
+      .from("content_appeals")
       .update({ status, resolved_at: new Date().toISOString() })
       .eq("id", id);
     if (error) {

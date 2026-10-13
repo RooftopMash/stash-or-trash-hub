@@ -142,14 +142,14 @@ export function SotHomeHero() {
     switch (tierOption) {
       case "All tiers":
         return t("hero.allTiers", { defaultValue: "All tiers" });
-      case "Super Brands":
-        return t("hero.superBrands", { defaultValue: "Super Brands" });
-      case "National Powerhouses":
-        return t("hero.nationalPowerhouses", { defaultValue: "National Powerhouses" });
-      case "Emerging Challengers":
-        return t("hero.emergingChallengers", { defaultValue: "Emerging Challengers" });
-      case "Local Heroes":
-        return t("hero.localHeroes", { defaultValue: "Local Heroes" });
+      case "Luxury":
+        return t("hero.luxury", { defaultValue: "Luxury" });
+      case "Premium":
+        return t("hero.premium", { defaultValue: "Premium" });
+      case "Mass Market":
+        return t("hero.massMarket", { defaultValue: "Mass Market" });
+      case "Budget":
+        return t("hero.budget", { defaultValue: "Budget" });
       default:
         return tierOption;
     }
@@ -159,9 +159,9 @@ export function SotHomeHero() {
     <section className="relative isolate overflow-hidden border-b-2 border-[#d6a928]/30 bg-white text-slate-950">
       {/* Split-screen brand watermark: falling gold coins on the left half, falling silver trash cans on the right half */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Left Half: Falling Gold Coins Watermark */}
+        {/* Left Half: Falling Gold Coins Watermark (Continuous Waterfall Rain) */}
         <div
-          className="absolute inset-y-0 left-0 w-1/2 opacity-35"
+          className="sot-watermark-rain-coins absolute inset-y-0 left-0 w-1/2 opacity-35"
           style={{
             backgroundImage: `url(${coinsWatermark})`,
             backgroundSize: "280px 280px",
@@ -170,9 +170,9 @@ export function SotHomeHero() {
             WebkitMaskImage: "linear-gradient(to right, black 65%, transparent 100%)",
           }}
         />
-        {/* Right Half: Falling Silver Trash Cans Watermark */}
+        {/* Right Half: Falling Silver Trash Cans Watermark (Continuous Waterfall Rain) */}
         <div
-          className="absolute inset-y-0 right-0 w-1/2 opacity-35"
+          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-35"
           style={{
             backgroundImage: `url(${binsWatermark})`,
             backgroundSize: "280px 280px",

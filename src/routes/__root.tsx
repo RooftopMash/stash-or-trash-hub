@@ -64,10 +64,10 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: any; reset: () => void }) {
   const router = useRouter();
   useEffect(() => {
-    reportApplicationError(error, { boundary: "tanstack_root_error_component" });
+    reportApplicationError(error instanceof Error ? error : new Error(String(error)), { boundary: "tanstack_root_error_component" });
   }, [error]);
 
   return (

@@ -557,12 +557,47 @@
 .sot-letter-cascade {
   animation: sot-letter-cascade 2.2s ease-in-out infinite;
 }
+
+/* =========================================================================
+   LIVE FALLING WATERMARK RAIN ANIMATIONS (Stash Gold Coins & Trash Cans)
+   Infinitely descending waterfall/rain effect for the split-screen background
+   ========================================================================= */
+@keyframes sot-rain-falling-coins {
+  0% {
+    background-position: 0px 0px;
+  }
+  100% {
+    background-position: 0px 560px;
+  }
+}
+
+@keyframes sot-rain-falling-bins {
+  0% {
+    background-position: 0px 0px;
+  }
+  100% {
+    background-position: 0px 560px;
+  }
+}
+
+.sot-watermark-rain-coins {
+  animation: sot-rain-falling-coins 15s linear infinite;
+  will-change: background-position;
+}
+
+.sot-watermark-rain-bins {
+  animation: sot-rain-falling-bins 17s linear infinite;
+  will-change: background-position;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sot-coin-art,
   .sot-bin-art,
   .sot-bin-body,
   .sot-bin-lid,
-  .sot-letter-cascade {
+  .sot-letter-cascade,
+  .sot-watermark-rain-coins,
+  .sot-watermark-rain-bins {
     animation: none;
   }
 }

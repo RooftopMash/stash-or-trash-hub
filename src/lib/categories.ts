@@ -171,8 +171,8 @@ export function brandCategory(
   name: string | null | undefined,
   value: string | null | undefined,
 ): BrandCategory {
-  const override = name && brandNameOverrides[name.trim().toLowerCase()];
-  return override ?? normalizeCategory(value);
+  const override = name ? brandNameOverrides[name.trim().toLowerCase()] : undefined;
+  return (override || normalizeCategory(value)) as BrandCategory;
 }
 
 export function matchesCategory(value: string | null | undefined, selected: string): boolean {
@@ -184,7 +184,7 @@ export function categoryOptions(_values: Array<string | null | undefined> = []):
 }
 
 export function categoryClass(category: string | null | undefined): string {
-  const styles: Partial<Record<BrandCategory, string>> = {
+  const styles: Record<string, string> = {
     "Food & Fast Food": "bg-orange-500/10 text-orange-700 dark:text-orange-300",
     "Fashion & Beauty": "bg-pink-500/10 text-pink-700 dark:text-pink-300",
     "Technology & Telecom": "bg-blue-500/10 text-blue-700 dark:text-blue-300",

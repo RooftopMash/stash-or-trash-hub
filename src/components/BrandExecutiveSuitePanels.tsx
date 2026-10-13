@@ -52,6 +52,7 @@ import {
   saveBrandContactSettings,
   getInboundCallRequests,
   updateInboundCallRequestStatus,
+  setActiveBrandPlanTier,
   type BrandDeskOperator,
   type BrandPlanTierId,
   type BrandSubscriptionPlan,
@@ -1091,6 +1092,9 @@ export function BrandInboundContactSettingsPanel({
     getInboundCallRequests(brandSlug),
   );
   const activeOp = getActiveDeskOperator();
+  const syncRequests = () => {
+    setRequests(getInboundCallRequests(brandSlug));
+  };
 
   useEffect(() => {
     const handleSettingsUpdate = () => {

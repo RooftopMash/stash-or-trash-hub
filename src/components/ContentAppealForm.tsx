@@ -18,7 +18,7 @@ export function ContentAppealForm({ reviewId }: { reviewId: string }) {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("content_appeals").insert({
+    const { error } = await (supabase as any).from("content_appeals").insert({
       review_id: reviewId,
       appellant_id: user.id,
       reason: reason.trim(),
@@ -65,7 +65,7 @@ export function ContentAppealForm({ reviewId }: { reviewId: string }) {
 }
 
 export async function fetchMyAppeals(userId: string) {
-  return supabase
+  return (supabase as any)
     .from("content_appeals")
     .select("id, review_id, status, reason, created_at, resolved_at")
     .eq("appellant_id", userId)

@@ -172,8 +172,7 @@ export function ProductAuthenticityCameraScanner({
   useEffect(() => {
     if (typeof navigator !== "undefined" && navigator.permissions?.query) {
       navigator.permissions
-        // @ts-expect-error camera permission query
-        .query({ name: "camera" })
+        .query({ name: "camera" as PermissionName })
         .then((permissionStatus) => {
           if (permissionStatus.state === "granted") {
             setPermissionState("granted");
@@ -1229,7 +1228,7 @@ Verified on Stash Or Trash Brand Barometer`;
                         {matchedBrand.name} in Stash Or Trash
                       </div>
                       <div className="text-muted-foreground">
-                        Overall Verdict: {matchedBrand.verdict} • Rating: {matchedBrand.averageScore}/10
+                        Overall Trust Score: {matchedBrand.trust_score}/100 • Verdict: {matchedBrand.trust_score >= 60 ? "Stash" : "Trash"}
                       </div>
                     </div>
                     <Button

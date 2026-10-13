@@ -190,10 +190,10 @@ const KNOWN_BARCODES: Record<
   },
 };
 
-export const Route = createFileRoute("/api/ai-scan")({
+export const Route = (createFileRoute("/api/ai-scan") as any)({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      POST: async ({ request }: { request: Request }) => {
         try {
           const body = (await request.json().catch(() => null)) as {
             image?: string; // base64 data url or raw base64

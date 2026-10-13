@@ -404,7 +404,7 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
                   </div>
 
                   <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                    <Flag country />
+                    <Flag country={country} />
                     {country?.name.common ?? countryName(code) ?? "Global"}
                     <span className="text-xs">{code}</span>
                   </p>

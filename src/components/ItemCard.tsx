@@ -159,7 +159,7 @@ export function ItemCard({
                     params={{ slug: item.brandSlug }}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
                   >
-                    <span>{item.brandName}</span>
+                    <span translate="no" className="notranslate">{item.brandName}</span>
                     {resolvedTrust !== null && (
                       <span
                         title={

@@ -47,7 +47,7 @@ export default defineConfig({
     jsxRuntime: "automatic",
   },
   nitro:
-    process.env.VERCEL || process.env.NOW_BUILDER
+    (process.env.VERCEL || process.env.NOW_BUILDER
       ? {
           preset: "vercel",
           compatibilityDate: "2025-05-01",
@@ -63,7 +63,7 @@ export default defineConfig({
             },
           },
           modules: [
-            (nitro) => {
+            (nitro: any) => {
               nitro.hooks.hook("compiled", () => {
                 try {
                   const entryPath = path.resolve(
@@ -121,7 +121,7 @@ export default defineConfig({
               name: "stash-or-trash-hub",
             },
           },
-        },
+        }) as any,
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     server: { entry: "server" },

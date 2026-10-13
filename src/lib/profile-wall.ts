@@ -11,7 +11,7 @@ export type ProfileWallPost = {
   created_at: string;
 };
 
-const wallTable = () => supabase.from("profile_wall_posts" as never);
+const wallTable = () => (supabase as any).from("profile_wall_posts");
 
 export async function fetchProfileWallPosts(authorId: string) {
   const { data, error } = await wallTable()

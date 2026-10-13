@@ -231,7 +231,8 @@ export function LiveCollaborationPanel({
   const ringRecipientOnSot = useCallback(
     async (room: string, mode: "voice" | "video" | "broadcast") => {
       const callerDisplayName =
-        user?.user_metadata?.full_name ||
+        user?.user_metadata?.display_name ||
+        (user?.user_metadata as Record<string, any>)?.full_name ||
         user?.email?.split("@")[0] ||
         (isBrandWorkspace ? "Verified Brand Representative" : "SOT Community Member");
 
@@ -306,7 +307,7 @@ export function LiveCollaborationPanel({
         method: "POST",
         headers: {
           "content-type": "application/json",
-          ...(session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {}),
+          ...((session as any)?.access_token ? { authorization: `Bearer ${(session as any).access_token}` } : {}),
         },
         body: JSON.stringify({
           partnerId: customRoom || partnerId || "community-room",

@@ -324,7 +324,7 @@ function BrandPage() {
               />
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="font-display text-2xl font-extrabold">{brand.name}</h1>
+                  <h1 translate="no" className="notranslate font-display text-2xl font-extrabold">{brand.name}</h1>
                   {brand.verified && <BadgeCheck className="h-5 w-5 text-primary" />}
 
                   {/* SOT People's Rating Badge */}
@@ -351,7 +351,7 @@ function BrandPage() {
                 {brand.category && <p className="text-sm text-muted-foreground mt-0.5">{brand.category}</p>}
                 {brand.description && <p className="mt-2 text-sm text-foreground/80 leading-relaxed">{brand.description}</p>}
 
-                <div className="mt-4"><PeopleTrustFactor signals={{ evidence: Math.min(100, 50 + (feed?.length ?? 0) * 2), response: Math.min(100, 40 + (feed?.filter((item) => item.status === "resolved").length ?? 0) * 10), experience: Math.min(100, Math.max(0, brand.trust_score)), trust: Math.min(100, Math.max(0, brand.trust_score)) }} compact /></div>
+                <div className="mt-4"><PeopleTrustFactor signals={{ evidence: Math.min(100, 50 + (feed?.length ?? 0) * 2), response: Math.min(100, 40 + (feed?.filter((item) => (item as any).status === "resolved").length ?? 0) * 10), experience: Math.min(100, Math.max(0, brand.trust_score)), trust: Math.min(100, Math.max(0, brand.trust_score)) }} compact /></div>
 
   <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
                   <span className="flex items-center gap-1.5">

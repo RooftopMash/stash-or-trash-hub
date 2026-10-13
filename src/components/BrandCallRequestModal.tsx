@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 import {
   getBrandContactSettings,
   getActiveDeskOperator,
@@ -73,7 +74,8 @@ export function BrandCallRequestModal({
 
     setBusy(true);
     const customerDisplayName =
-      user?.user_metadata?.full_name ||
+      user?.user_metadata?.display_name ||
+      (user?.user_metadata as Record<string, any>)?.full_name ||
       user?.email?.split("@")[0] ||
       `Customer ${user?.id ? user.id.slice(0, 6) : "Guest"}`;
 

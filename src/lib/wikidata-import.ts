@@ -809,20 +809,23 @@ async function persistApprovedBrandRecord(
 
   // 2. Save to Firestore `brands` collection (respecting firestore.rules schema)
   try {
-    await createFirestoreBrand(cleanId, {
-      name: cand.name.slice(0, 200),
-      slug: cand.slug.slice(0, 200),
-      country: (cand.country || "ZA").slice(0, 100),
-      category: (cand.category || "Consumer Brand").slice(0, 100),
-      description: (cand.description || `${cand.name} brand page`).slice(0, 2000),
-      website: cand.website || "",
-      logoUrl: cand.logo_url || "",
-      trustScore: 78,
-      riskScore: 12,
-      status: "active",
-      isVerified: true,
-      createdBy: ownerId,
-    });
+    await createFirestoreBrand(
+      {
+        name: cand.name.slice(0, 200),
+        slug: cand.slug.slice(0, 200),
+        country: (cand.country || "ZA").slice(0, 100),
+        category: (cand.category || "Consumer Brand").slice(0, 100),
+        description: (cand.description || `${cand.name} brand page`).slice(0, 2000),
+        website: cand.website || "",
+        logoUrl: cand.logo_url || "",
+        trustScore: 78,
+        riskScore: 12,
+        status: "active",
+        isVerified: true,
+        createdBy: ownerId,
+      },
+      cleanId,
+    );
   } catch {
     /* ignore if unauthenticated or offline */
   }
@@ -881,10 +884,10 @@ export async function approveBrandCandidate(
         cand = {
           id: String(data.id),
           source: data.source,
-          source_id: data.source_id,
+          source_id: data.source_id ?? "",
           name: data.name,
           slug: data.slug,
-          country: data.country,
+          country: data.country ?? "ZA",
           category: data.category,
           description: data.description,
           website: data.website,

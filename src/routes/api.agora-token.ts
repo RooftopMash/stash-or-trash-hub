@@ -13,10 +13,10 @@ const GOOGLE_ICE_SERVERS = [
   { urls: "stun:stun4.l.google.com:19302" },
 ];
 
-export const Route = createFileRoute("/api/agora-token")({
+export const Route = (createFileRoute("/api/agora-token") as any)({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      POST: async ({ request }: { request: Request }) => {
         const body = (await request.json().catch(() => null)) as {
           partnerId?: string;
           channelName?: string;

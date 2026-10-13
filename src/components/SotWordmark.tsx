@@ -16,9 +16,10 @@ export function SotWordmark({
 
   return (
     <span
+      translate="no"
       aria-label="Stash Or Trash"
       className={cn(
-        "inline-flex items-baseline whitespace-nowrap font-display font-extrabold tracking-tight text-foreground",
+        "notranslate inline-flex items-baseline whitespace-nowrap font-display font-extrabold tracking-tight text-foreground",
         sizeClass,
         className,
       )}

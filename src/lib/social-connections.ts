@@ -23,7 +23,7 @@ export async function getSocialConnections(userId: string): Promise<SocialConnec
 }
 
 export async function prepareSocialConnection(userId: string, provider: SocialProvider) {
-  const { error } = await supabase.from("social_connections" as never).upsert(
+  const { error } = await (supabase as any).from("social_connections").upsert(
     { user_id: userId, provider, status: "pending" },
     { onConflict: "user_id,provider" },
   );
@@ -40,8 +40,8 @@ export function validateProviderCallbackState(expectedState: string | null, rece
 }
 
 export async function disconnectSocialConnection(userId: string, provider: SocialProvider) {
-  const { error } = await supabase
-    .from("social_connections" as never)
+  const { error } = await (supabase as any)
+    .from("social_connections")
     .update({ status: "revoked", updated_at: new Date().toISOString() })
     .eq("user_id", userId)
     .eq("provider", provider);

@@ -55,18 +55,22 @@ export async function signImages(paths: (string | null)[]): Promise<Map<string, 
   return map;
 }
 
+let hasDisputeColumns = true;
+
 export async function fetchFeed(
   currentUserId: string | null,
   opts?: { brandId?: string },
 ): Promise<FeedItem[]> {
+  const selectQuery = hasDisputeColumns ? ITEM_SELECT : ITEM_SELECT_FALLBACK;
   const q = supabase
     .from("items")
-    .select(ITEM_SELECT)
+    .select(selectQuery)
     .order("created_at", { ascending: false });
   const first = await (opts?.brandId ? q.eq("brand_id", opts.brandId) : q);
   let items: any[] | null = first.data;
   let error: any = first.error;
   if (error && colError(error)) {
+    hasDisputeColumns = false;
     const fb = supabase
       .from("items")
       .select(ITEM_SELECT_FALLBACK)
@@ -112,7 +116,7 @@ export async function fetchFeed(
       id: b.id,
       name: b.name,
       slug: b.slug,
-      logo_url: b.logo_url ?? b.signedLogoUrl ?? null,
+      logo_url: b.logo_url ?? ("signedLogoUrl" in b ? (b as any).signedLogoUrl : null) ?? null,
       country: b.country ?? null,
       trust_score: b.trust_score ?? 75,
     });

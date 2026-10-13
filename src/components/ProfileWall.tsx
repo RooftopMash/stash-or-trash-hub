@@ -41,9 +41,9 @@ export function ProfileWall({ profileId, isOwner }: { profileId: string; isOwner
         throw new Error(
           "Your post could not be reviewed. Please try again when the safety service is available.",
         );
-      if (review.data.decision !== "approved") {
+      if (!review.data || review.data.decision !== "approved") {
         throw new Error(
-          review.data.decision === "blocked"
+          review.data?.decision === "blocked"
             ? "This post cannot be published because it failed the safety review."
             : "This post needs human review before it can be published.",
         );
