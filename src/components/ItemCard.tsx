@@ -242,7 +242,7 @@ export function ItemCard({
                         to: "/messages",
                         search: {
                           to: `brand-${item.brandSlug}`,
-                          name: item.brandName,
+                          name: item.brandName ?? undefined,
                           call: "voice",
                         },
                       });
