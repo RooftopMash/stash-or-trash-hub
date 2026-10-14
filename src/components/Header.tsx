@@ -123,7 +123,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
           <Link to="/" className="group flex shrink-0 items-center gap-2 whitespace-nowrap">
             <span
               aria-label="SOrT — Stash Or Trash logo"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-extrabold tracking-[-0.12em] text-background shadow-sm transition-transform group-hover:scale-105"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-extrabold tracking-[-0.12em] text-background shadow-sm transition-transform grou[...]"
             >
               <span className="text-stash">S</span>
               <span>O</span>
@@ -136,20 +136,20 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
           <nav className="flex min-w-0 items-center gap-0.5 overflow-x-auto text-xs font-semibold no-scrollbar sm:gap-1">
             <Link
               to="/"
-              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:tex[...]
             >
               {t("nav.home", { defaultValue: "Home" })}
             </Link>
             <Link
               to="/feed"
-              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:tex[...]
             >
               {t("nav.feed", { defaultValue: "Feed" })}
             </Link>
             {persona !== "brand_owner" && (
               <Link
                 to="/scan"
-                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:b[...]
               >
                 <Scan className="h-3 w-3 shrink-0 text-[#d6a928]" />
                 <span>{t("nav.scan", { defaultValue: "Scan" })}</span>
@@ -157,20 +157,21 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
             )}
             <Link
               to="/brands"
-              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:tex[...]
             >
               {t("nav.brands", { defaultValue: "Brands" })}
             </Link>
             <Link
               to="/awards"
-              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:tex[...]
             >
               {t("nav.awards", { defaultValue: "Awards" })}
             </Link>
             {user && (
-              <Link
-                to="/dashboard"
-                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              <button
+                type="button"
+                onClick={() => navigate({ to: "/dashboard" })}
+                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
               >
                 <LayoutDashboard className="h-3 w-3 shrink-0 text-[#d6a928]" />
                 <span>
@@ -178,7 +179,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
                     ? "Brand Suite"
                     : t("nav.dashboard", { defaultValue: "My Hub" })}
                 </span>
-              </Link>
+              </button>
             )}
           </nav>
         </div>
@@ -307,7 +308,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               </span>
               <div>
                 <p className="font-display font-extrabold">
-                  Incoming {incomingCall.mode === "voice_call" ? "Voice Call" : "Video Call"} from{" "}
+                  Incoming {incomingCall.mode === "voice_call" ? "Voice Call" : "Video Call"} from {" "}
                   <span className="text-[#f5d061]">{incomingCall.callerName}</span>
                 </p>
                 <p className="text-[11px] text-emerald-200">
@@ -383,7 +384,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
           defaultBrandId={prefilledPost.matchedBrandId}
           initialValues={{
             title: `${prefilledPost.brandName} ${prefilledPost.productName || ""}`.trim(),
-            description: `Brand: ${prefilledPost.brandName} | Corporate Owner: ${prefilledPost.brandOwner}\n${prefilledPost.scanResult.brandInfo.parentCompanyContext}\n[Forensic Authenticity Score: ${prefilledPost.scanResult.authenticity.score}% - ${prefilledPost.scanResult.authenticity.badgeLabel}]`,
+            description: `Brand: ${prefilledPost.brandName} | Corporate Owner: ${prefilledPost.brandOwner}\n${prefilledPost.scanResult.brandInfo.parentCompanyContext}\n[Forensic Authenticity Scor[...]`,
             category: prefilledPost.category,
             file: prefilledPost.file || null,
             aiScanResult: prefilledPost.scanResult,
