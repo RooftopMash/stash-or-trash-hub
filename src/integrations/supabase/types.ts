@@ -389,7 +389,10 @@ export type Database = {
           created_at: string
           id: string
           reason: string
+          resolved_at: string | null
           review_id: string
+          reviewed_by: string | null
+          reviewer_notes: string | null
           status: string
         }
         Insert: {
@@ -397,7 +400,10 @@ export type Database = {
           created_at?: string
           id?: string
           reason: string
+          resolved_at?: string | null
           review_id: string
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
           status?: string
         }
         Update: {
@@ -405,7 +411,10 @@ export type Database = {
           created_at?: string
           id?: string
           reason?: string
+          resolved_at?: string | null
           review_id?: string
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
           status?: string
         }
         Relationships: []
@@ -844,6 +853,9 @@ export type Database = {
           id: string
           reason: string
           reporter_id: string
+          resolved_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
           status: string
           target_id: string
           target_type: string
@@ -855,6 +867,9 @@ export type Database = {
           id?: string
           reason: string
           reporter_id: string
+          resolved_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
           status?: string
           target_id: string
           target_type: string
@@ -866,6 +881,9 @@ export type Database = {
           id?: string
           reason?: string
           reporter_id?: string
+          resolved_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
           status?: string
           target_id?: string
           target_type?: string
