@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletion_requests: {
+        Row: {
+          completed_at: string | null
+          id: string
+          requested_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          requested_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          requested_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       brand_crisis_alerts: {
         Row: {
           baseline_share: number
@@ -359,6 +383,33 @@ export type Database = {
           },
         ]
       }
+      content_appeals: {
+        Row: {
+          appellant_id: string
+          created_at: string
+          id: string
+          reason: string
+          review_id: string
+          status: string
+        }
+        Insert: {
+          appellant_id: string
+          created_at?: string
+          id?: string
+          reason: string
+          review_id: string
+          status?: string
+        }
+        Update: {
+          appellant_id?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          review_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           brand_id: string | null
@@ -390,6 +441,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      friends: {
+        Row: {
+          addressee_id: string
+          bond_tag: string
+          created_at: string
+          id: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          addressee_id: string
+          bond_tag?: string
+          created_at?: string
+          id?: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          addressee_id?: string
+          bond_tag?: string
+          created_at?: string
+          id?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       hashtags: {
         Row: {
@@ -466,6 +547,8 @@ export type Database = {
           category: string | null
           created_at: string
           description: string | null
+          dispute_resolution_notes: string | null
+          dispute_status: string | null
           id: string
           image_url: string | null
           phash: string | null
@@ -480,6 +563,8 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          dispute_resolution_notes?: string | null
+          dispute_status?: string | null
           id?: string
           image_url?: string | null
           phash?: string | null
@@ -494,6 +579,8 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          dispute_resolution_notes?: string | null
+          dispute_status?: string | null
           id?: string
           image_url?: string | null
           phash?: string | null
@@ -749,6 +836,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ugc_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          status: string
+          target_id: string
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          status?: string
+          target_id: string
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          status?: string
+          target_id?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      user_consents: {
+        Row: {
+          consented_at: string
+          id: string
+          marketing_opt_in: boolean
+          privacy_version: string
+          terms_version: string
+          user_id: string
+        }
+        Insert: {
+          consented_at?: string
+          id?: string
+          marketing_opt_in?: boolean
+          privacy_version: string
+          terms_version: string
+          user_id: string
+        }
+        Update: {
+          consented_at?: string
+          id?: string
+          marketing_opt_in?: boolean
+          privacy_version?: string
+          terms_version?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
