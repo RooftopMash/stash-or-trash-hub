@@ -43,6 +43,13 @@
       "when": 1791966235250,
       "tag": "0005_store_compliance_and_disputes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791966708350,
+      "tag": "0006_admin_moderation_policies",
+      "breakpoints": true
     }
   ]
 }
