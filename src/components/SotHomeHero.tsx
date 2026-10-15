@@ -21,8 +21,8 @@ import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import { cn } from "@/lib/utils";
 import coinIcon from "@/assets/icon-coin.png";
 import binIcon from "@/assets/icon-bin.png";
-import coinsWatermark from "@/assets/watermark-coins.png";
-import binsWatermark from "@/assets/watermark-bins.png";
+import coinsWatermark from "@/assets/images/falling_gold_coins_1791614784681.jpg";
+import binsWatermark from "@/assets/images/sleek_trash_can_1789736750388.jpg";
 
 const cascade = [
   { letter: "S", className: "text-[#d6a928]" },
