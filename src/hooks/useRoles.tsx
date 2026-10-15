@@ -98,12 +98,11 @@ export function useRoles() {
   const isDeveloper = isOwnerEmail || isAdmin;
   const hasBrandRole = roles.includes("brand") || isAdmin;
 
-  const [persona, setPersonaState] = useState<ActiveAccountPersona>("consumer");
+  const [persona, setPersonaState] = useState<ActiveAccountPersona>(() =>
+    getStoredAccountPersona(roles.includes("brand")),
+  );
 
   useEffect(() => {
-    // Synchronize stored persona after mount to guarantee identical SSR hydration
-    setPersonaState(getStoredAccountPersona(roles.includes("brand")));
-
     const syncPersona = () => {
       setPersonaState(getStoredAccountPersona(roles.includes("brand")));
     };

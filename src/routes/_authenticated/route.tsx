@@ -18,22 +18,7 @@ export const Route = createFileRoute("/_authenticated")({
       return { user: auth.currentUser };
     }
 
-    // 2. Check local fallback verified storage (instant verified access)
-    if (typeof window !== "undefined") {
-      try {
-        const raw = window.localStorage.getItem("sot_fallback_auth_user_v1");
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && (parsed.id || parsed.uid)) {
-            return { user: parsed };
-          }
-        }
-      } catch {
-        // Ignore storage error
-      }
-    }
-
-    // 3. Check legacy Supabase session if present
+    // 2. Check legacy session if present
     try {
       const { data } = await supabase.auth.getUser();
       if (data?.user) {
@@ -43,15 +28,8 @@ export const Route = createFileRoute("/_authenticated")({
       // Ignore network errors
     }
 
-    // 4. Allow dashboard and brand creation to load without redirect loops
-    if (
-      location.pathname.startsWith("/dashboard") ||
-      location.pathname.startsWith("/brands/new")
-    ) {
-      return { user: null };
-    }
-
-    // Redirect unauthenticated visitors on strictly private account settings routes
+    // Every route in this layout is private. Do not render authenticated
+    // surfaces with a null user when auth initialization or the network fails.
     throw redirect({ to: "/auth", search: { redirect: location.href } });
   },
   component: () => <Outlet />,

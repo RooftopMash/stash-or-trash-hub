@@ -109,10 +109,6 @@ import {
 } from "@/lib/live-broadcasts";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  validateSearch: (search: Record<string, unknown>): { view?: string; tab?: string } => ({
-    view: typeof search.view === "string" ? search.view : undefined,
-    tab: typeof search.tab === "string" ? search.tab : undefined,
-  }),
   component: DashboardPage,
 });
 
@@ -130,29 +126,12 @@ function DashboardPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const search = Route.useSearch();
 
-  const [activeTab, setActiveTab] = useState<DashboardTab>(() => {
-    if (search.tab && ["command", "launch_studio", "client_desk", "cx_awards", "b2b_pricing", "admin_sourcing"].includes(search.tab)) {
-      return search.tab as DashboardTab;
-    }
-    return "command";
-  });
+  const [activeTab, setActiveTab] = useState<DashboardTab>("command");
   const [registeredBrand, setRegisteredBrand] = useState<RegisteredBrandIdentity>(() =>
     getRegisteredBrandIdentity(),
   );
   const [subState, setSubState] = useState(() => getActiveBrandSubscription());
-
-  useEffect(() => {
-    if (search.view === "brand" || search.view === "brand_owner") {
-      setPersona("brand_owner");
-    } else if (search.view === "consumer") {
-      setPersona("consumer");
-    }
-    if (search.tab && ["command", "launch_studio", "client_desk", "cx_awards", "b2b_pricing", "admin_sourcing"].includes(search.tab)) {
-      setActiveTab(search.tab as DashboardTab);
-    }
-  }, [search.view, search.tab, setPersona]);
 
   // Inline editor for updating the Brand Owner's single registered brand identity
   const [editingBrand, setEditingBrand] = useState(false);
@@ -443,47 +422,45 @@ function DashboardPage() {
       <Header />
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         {/* =====================================================================
-            DEVELOPER-ONLY INSPECTION TOGGLE (EXCLUSIVELY FOR PLATFORM OWNER / DEVELOPER)
-            Hidden from all regular consumers and standard brand employees!
+            DEVELOPER-ONLY INSPECTION BAR (HIDDEN FROM ALL REGULAR USERS & BRANDS)
            ===================================================================== */}
         {isDeveloper && (
-          <section className="mb-6 rounded-2xl border-2 border-dashed border-[#d6a928]/60 bg-[#d6a928]/10 p-3.5 shadow-sm">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <section className="mb-6 rounded-2xl border border-dashed border-[#d6a928] bg-card p-3 shadow-xs">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-xs">
-                <span className="font-black uppercase tracking-wider text-[#b88914] flex items-center gap-1.5">
-                  <Building2 className="h-4 w-4 text-[#d6a928]" />
-                  🛠️ Developer Inspection Toggle (Only Visible to Borulelo / Admin):
+                <span className="font-black uppercase tracking-wider text-[#b88914]">
+                  🛠️ Developer-Only Inspection Toggle (Hidden from Users &amp; Brands):
+                </span>{" "}
+                <span className="text-muted-foreground">
+                  Regular Personal Users and Brand Owners only ever see their own isolated account type and never see this toggle.
                 </span>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Regular consumers and brand reps never see this toggle. They only see their isolated account.
-                </p>
               </div>
               <div className="flex items-center gap-1.5 rounded-xl bg-secondary p-1 shrink-0">
                 <button
                   type="button"
                   onClick={() => setPersona("consumer")}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-black transition cursor-pointer whitespace-nowrap",
+                    "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition cursor-pointer whitespace-nowrap",
                     persona === "consumer"
                       ? "bg-emerald-600 text-white shadow-xs"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <Coins className="h-3.5 w-3.5" />
-                  Personal Consumer Hub
+                  DEV Preview: Personal User
                 </button>
                 <button
                   type="button"
                   onClick={() => setPersona("brand_owner")}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-black transition cursor-pointer whitespace-nowrap",
+                    "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition cursor-pointer whitespace-nowrap",
                     persona === "brand_owner"
                       ? "bg-slate-950 text-[#f5d061] shadow-xs"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <Building2 className="h-3.5 w-3.5 text-[#d6a928]" />
-                  Brand Suite ({activeBrand.name})
+                  DEV Preview: Brand ({activeBrand.name})
                 </button>
               </div>
             </div>

@@ -25,14 +25,15 @@ import { cn } from "@/lib/utils";
 export function Header({ onPosted }: { onPosted?: () => void }) {
   const { user, loading } = useAuth();
   const { isAdmin, isDeveloper, isBrand, persona, setPersona } = useRoles();
-  const [registeredBrandName, setRegisteredBrandName] = useState("Nando's South Africa");
+  const [registeredBrandName, setRegisteredBrandName] = useState(
+    () => getRegisteredBrandIdentity().name,
+  );
   const { t } = useTranslation();
   const navigate = useNavigate();
   const unread = useUnreadCount(user?.id);
   const unreadNotifs = useUnreadNotifications(user?.id);
 
   useEffect(() => {
-    setRegisteredBrandName(getRegisteredBrandIdentity().name);
     const syncBrand = () => setRegisteredBrandName(getRegisteredBrandIdentity().name);
     window.addEventListener("sot-registered-brand-updated", syncBrand);
     window.addEventListener("sot-brand-operator-updated", syncBrand);
@@ -166,22 +167,17 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
             >
               {t("nav.awards", { defaultValue: "Awards" })}
             </Link>
-            <Link
-              to="/dashboard"
-              search={{ view: "brand" }}
-              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-[#d6a928]/40 bg-[#d6a928]/10 px-2.5 py-1 text-xs font-black text-[#d6a928] transition-all hover:bg-[#d6a928] hover:text-slate-950 [&.active]:bg-[#d6a928] [&.active]:text-slate-950"
-            >
-              <Building2 className="h-3 w-3 shrink-0" />
-              <span>Brand Suite</span>
-            </Link>
             {user && (
               <Link
                 to="/dashboard"
-                search={{ view: "consumer" }}
                 className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
               >
                 <LayoutDashboard className="h-3 w-3 shrink-0 text-[#d6a928]" />
-                <span>{t("nav.dashboard", { defaultValue: "My Hub" })}</span>
+                <span>
+                  {persona === "brand_owner"
+                    ? "Brand Suite"
+                    : t("nav.dashboard", { defaultValue: "My Hub" })}
+                </span>
               </Link>
             )}
           </nav>

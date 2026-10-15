@@ -34,7 +34,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { fetchFeed } from "@/lib/stash";
 import { fetchBrands } from "@/lib/brands";
 import { brandCategory, categoryOptions, matchesCategory } from "@/lib/categories";
-import { countryFlag, countryName, countryOptions, normalizeCountryCode, detectCountry } from "@/lib/geo";
+import { countryFlag, countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/feed")({
@@ -62,7 +62,7 @@ function Feed() {
   );
   const [query, setQuery] = useState(search.q ?? "");
   const [selectedBrandSlug, setSelectedBrandSlug] = useState<string | null>(search.brand ?? null);
-  const [selectedCountry, setSelectedCountry] = useState(() => detectCountry()?.toUpperCase() ?? "ZA");
+  const [selectedCountry, setSelectedCountry] = useState("ZA");
   const [searchAllCountries, setSearchAllCountries] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All categories");
   const [resultScope, setResultScope] = useState<"all" | "brands" | "posts">("all");

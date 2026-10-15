@@ -16,10 +16,6 @@ dist-ssr
 .nitro
 .vercel
 *.local
-.env
-.env.*
-!.env.example
-.aistudio/
 
 # Wrangler / Cloudflare
 .wrangler/

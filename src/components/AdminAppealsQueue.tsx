@@ -10,35 +10,25 @@ import { useAuth } from "@/hooks/useAuth";
 export type AppealStatus = "pending" | "under_review" | "upheld" | "reversed";
 export const OPEN_APPEAL_STATUSES: AppealStatus[] = ["pending", "under_review"];
 
-type Appeal = {
-  id: string;
-  review_id: string;
-  appellant_id: string;
-  reason: string;
-  status: AppealStatus;
-  created_at: string;
-  reviewer_notes: string | null;
-};
-
 export function AdminAppealsQueue() {
   const { user } = useAuth();
   const [notes, setNotes] = useState<Record<string, string>>({});
   const { data: appeals, refetch } = useQuery({
     queryKey: ["admin-content-appeals"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("content_appeals")
         .select("id, review_id, appellant_id, reason, status, created_at, reviewer_notes")
         .in("status", OPEN_APPEAL_STATUSES)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as Appeal[];
+      return data ?? [];
     },
   });
 
   async function setStatus(id: string, status: AppealStatus) {
     const final = status === "upheld" || status === "reversed";
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("content_appeals")
       .update({
         status,
@@ -51,7 +41,9 @@ export function AdminAppealsQueue() {
       toast.error("Could not update this appeal");
       return;
     }
-    toast.success(status === "reversed" ? "Appeal reversed" : status === "upheld" ? "Appeal upheld" : "Marked under review");
+    toast.success(
+      status === "reversed" ? "Appeal reversed" : status === "upheld" ? "Appeal upheld" : "Marked under review",
+    );
     refetch();
   }
 
@@ -66,7 +58,8 @@ export function AdminAppealsQueue() {
               <Gavel className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted-foreground">
-                  Review {appeal.review_id} · User {appeal.appellant_id} · {appeal.status === "under_review" ? "Under review" : "Pending"}
+                  Review {appeal.review_id} · User {appeal.appellant_id} ·{" "}
+                  {appeal.status === "under_review" ? "Under review" : "Pending"}
                 </p>
                 <p className="mt-2 whitespace-pre-wrap text-sm">{appeal.reason}</p>
                 <Textarea
@@ -74,7 +67,7 @@ export function AdminAppealsQueue() {
                   placeholder="Optional reviewer note"
                   aria-label="Reviewer note"
                   value={notes[appeal.id] ?? appeal.reviewer_notes ?? ""}
-                  onChange={(e) => setNotes((current) => ({ ...current, [appeal.id]: e.target.value }))}
+                  onChange={(e) => setNotes((n) => ({ ...n, [appeal.id]: e.target.value }))}
                 />
                 <div className="mt-3 flex flex-wrap gap-2">
                   {appeal.status === "pending" && (

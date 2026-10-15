@@ -42,22 +42,6 @@ function sotProductionShieldPlugin(): Plugin {
   };
 }
 
-function stripUseClientPlugin(): Plugin {
-  return {
-    name: "strip-use-client",
-    enforce: "pre",
-    transform(code, id) {
-      if (id.includes("node_modules") && /^["']use client["'];?\s*/.test(code)) {
-        return {
-          code: code.replace(/^["']use client["'];?\s*/, ""),
-          map: null,
-        };
-      }
-      return null;
-    },
-  };
-}
-
 export default defineConfig({
   react: {
     jsxRuntime: "automatic",
@@ -139,19 +123,15 @@ export default defineConfig({
           },
         }) as any,
   tanstackStart: {
-    // Redirect TanStack Start's bundled entries to src/server.ts and src/client.tsx
+    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     server: { entry: "server" },
-    client: { entry: "client" },
   },
   vite: {
     envPrefix: ["VITE_"],
-    plugins: [stripUseClientPlugin(), sotProductionShieldPlugin()],
+    plugins: [sotProductionShieldPlugin()],
     server: {
       host: "0.0.0.0",
       port: 3000,
-      fs: {
-        strict: false,
-      },
     },
     esbuild: {
       drop: process.env.NODE_ENV === "production" ? ["console", "debugger"] : [],
@@ -178,18 +158,18 @@ export default defineConfig({
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
         process.env.VITE_SUPABASE_URL ||
           process.env.SUPABASE_URL ||
-          "https://gbdqylnvbtmkrvoxzmfj.supabase.co",
+          "https://ypbyouaddkdfuhfpnguu.supabase.co",
       ),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
         process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
           process.env.SUPABASE_PUBLISHABLE_KEY ||
           process.env.SUPABASE_ANON_KEY ||
-          "sb_publishable_laxSV6WZcW-QGNze_wliRA_mBvluj0T",
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwYnlvdWFkZGtkZnVoZnBuZ3V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1OTY0OTgsImV4cCI6MjA5OTE3MjQ5OH0.IEHBd2gZuTpIvedgDPpytWxeoDUglcWIsZctl5Z9TvI",
       ),
       "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(
         process.env.VITE_SUPABASE_PROJECT_ID ||
           process.env.SUPABASE_PROJECT_ID ||
-          "gbdqylnvbtmkrvoxzmfj",
+          "ypbyouaddkdfuhfpnguu",
       ),
     },
   },
