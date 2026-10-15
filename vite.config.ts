@@ -139,8 +139,9 @@ export default defineConfig({
           },
         }) as any,
   tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
+    // Redirect TanStack Start's bundled entries to src/server.ts and src/client.tsx
     server: { entry: "server" },
+    client: { entry: "client" },
   },
   vite: {
     envPrefix: ["VITE_"],
@@ -148,6 +149,9 @@ export default defineConfig({
     server: {
       host: "0.0.0.0",
       port: 3000,
+      fs: {
+        strict: false,
+      },
     },
     esbuild: {
       drop: process.env.NODE_ENV === "production" ? ["console", "debugger"] : [],

@@ -25,15 +25,14 @@ import { cn } from "@/lib/utils";
 export function Header({ onPosted }: { onPosted?: () => void }) {
   const { user, loading } = useAuth();
   const { isAdmin, isDeveloper, isBrand, persona, setPersona } = useRoles();
-  const [registeredBrandName, setRegisteredBrandName] = useState(
-    () => getRegisteredBrandIdentity().name,
-  );
+  const [registeredBrandName, setRegisteredBrandName] = useState("Nando's South Africa");
   const { t } = useTranslation();
   const navigate = useNavigate();
   const unread = useUnreadCount(user?.id);
   const unreadNotifs = useUnreadNotifications(user?.id);
 
   useEffect(() => {
+    setRegisteredBrandName(getRegisteredBrandIdentity().name);
     const syncBrand = () => setRegisteredBrandName(getRegisteredBrandIdentity().name);
     window.addEventListener("sot-registered-brand-updated", syncBrand);
     window.addEventListener("sot-brand-operator-updated", syncBrand);

@@ -443,49 +443,52 @@ function DashboardPage() {
       <Header />
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         {/* =====================================================================
-            TOP ACCOUNT SWITCHER: PERSONAL MEMBER HUB vs BRAND SUITE COMMAND CENTER
+            DEVELOPER-ONLY INSPECTION TOGGLE (EXCLUSIVELY FOR PLATFORM OWNER / DEVELOPER)
+            Hidden from all regular consumers and standard brand employees!
            ===================================================================== */}
-        <section className="mb-6 rounded-2xl border-2 border-[#d6a928]/40 bg-card p-3.5 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-xs">
-              <span className="font-black uppercase tracking-wider text-[#b88914] flex items-center gap-1.5">
-                <Building2 className="h-4 w-4 text-[#d6a928]" />
-                Account Command View:
-              </span>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Toggle between your Personal Consumer Hub and the Official Brand Executive Suite.
-              </p>
+        {isDeveloper && (
+          <section className="mb-6 rounded-2xl border-2 border-dashed border-[#d6a928]/60 bg-[#d6a928]/10 p-3.5 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-xs">
+                <span className="font-black uppercase tracking-wider text-[#b88914] flex items-center gap-1.5">
+                  <Building2 className="h-4 w-4 text-[#d6a928]" />
+                  🛠️ Developer Inspection Toggle (Only Visible to Borulelo / Admin):
+                </span>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Regular consumers and brand reps never see this toggle. They only see their isolated account.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-xl bg-secondary p-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setPersona("consumer")}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-black transition cursor-pointer whitespace-nowrap",
+                    persona === "consumer"
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Coins className="h-3.5 w-3.5" />
+                  Personal Consumer Hub
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPersona("brand_owner")}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-black transition cursor-pointer whitespace-nowrap",
+                    persona === "brand_owner"
+                      ? "bg-slate-950 text-[#f5d061] shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Building2 className="h-3.5 w-3.5 text-[#d6a928]" />
+                  Brand Suite ({activeBrand.name})
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5 rounded-xl bg-secondary p-1 shrink-0">
-              <button
-                type="button"
-                onClick={() => setPersona("consumer")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-black transition cursor-pointer whitespace-nowrap",
-                  persona === "consumer"
-                    ? "bg-emerald-600 text-white shadow-xs"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Coins className="h-3.5 w-3.5" />
-                Personal Consumer Hub
-              </button>
-              <button
-                type="button"
-                onClick={() => setPersona("brand_owner")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-black transition cursor-pointer whitespace-nowrap",
-                  persona === "brand_owner"
-                    ? "bg-slate-950 text-[#f5d061] shadow-xs"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Building2 className="h-3.5 w-3.5 text-[#d6a928]" />
-                Brand Suite ({activeBrand.name})
-              </button>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* =====================================================================
             MODE A: PERSONAL CONSUMER HUB (100% ISOLATED CONSUMER VIEW)
