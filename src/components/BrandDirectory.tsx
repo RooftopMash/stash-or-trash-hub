@@ -12,7 +12,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { ProductScannerModal } from "@/components/ProductScannerModal";
 import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
 import { brandCategory, categoryClass, categoryOptions, matchesCategory } from "@/lib/categories";
-import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
+import { countryName, countryOptions, normalizeCountryCode, detectCountry } from "@/lib/geo";
 import { BRAND_TIERS, type BrandTierFilter, getBrandTier, getTierInfo, matchesTier, compareBrandTiers } from "@/lib/brandTiers";
 import { publishBrandsFromWikidata, SUPPORTED_IMPORT_COUNTRIES } from "@/lib/wikidata-import";
 import type { Brand } from "@/lib/brands";
@@ -71,11 +71,12 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
   const [scannerOpen, setScannerOpen] = useState(false);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [countryCode, setCountryCode] = useState("ALL");
+  const detected = useMemo(() => detectCountry()?.toUpperCase() ?? "ZA", []);
+  const [countryCode, setCountryCode] = useState(() => detectCountry()?.toUpperCase() ?? "ALL");
   const [category, setCategory] = useState("All categories");
   const [tier, setTier] = useState<BrandTierFilter>("All tiers");
   const [sortBy, setSortBy] = useState<"tier" | "trust" | "name">("tier");
-  const [sourcingCountry, setSourcingCountry] = useState("ZA");
+  const [sourcingCountry, setSourcingCountry] = useState(() => detected);
   const [sourcing, setSourcing] = useState(false);
 
   const handleSourceCountryBrands = async (targetCountry?: string, searchKeyword?: string) => {

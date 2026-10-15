@@ -162,7 +162,7 @@ const INITIAL_INSTITUTIONAL_BALLOTS: InstitutionalBallot[] = [
   },
 ];
 
-export function AwardsPage() {
+function AwardsPage() {
   const { t } = useTranslation();
   const { data: brands, isLoading } = useQuery({
     queryKey: ["brands"],

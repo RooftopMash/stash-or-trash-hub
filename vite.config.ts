@@ -42,6 +42,22 @@ function sotProductionShieldPlugin(): Plugin {
   };
 }
 
+function stripUseClientPlugin(): Plugin {
+  return {
+    name: "strip-use-client",
+    enforce: "pre",
+    transform(code, id) {
+      if (id.includes("node_modules") && /^["']use client["'];?\s*/.test(code)) {
+        return {
+          code: code.replace(/^["']use client["'];?\s*/, ""),
+          map: null,
+        };
+      }
+      return null;
+    },
+  };
+}
+
 export default defineConfig({
   react: {
     jsxRuntime: "automatic",
@@ -128,7 +144,7 @@ export default defineConfig({
   },
   vite: {
     envPrefix: ["VITE_"],
-    plugins: [sotProductionShieldPlugin()],
+    plugins: [stripUseClientPlugin(), sotProductionShieldPlugin()],
     server: {
       host: "0.0.0.0",
       port: 3000,
@@ -158,18 +174,18 @@ export default defineConfig({
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
         process.env.VITE_SUPABASE_URL ||
           process.env.SUPABASE_URL ||
-          "https://ypbyouaddkdfuhfpnguu.supabase.co",
+          "https://gbdqylnvbtmkrvoxzmfj.supabase.co",
       ),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
         process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
           process.env.SUPABASE_PUBLISHABLE_KEY ||
           process.env.SUPABASE_ANON_KEY ||
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwYnlvdWFkZGtkZnVoZnBuZ3V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1OTY0OTgsImV4cCI6MjA5OTE3MjQ5OH0.IEHBd2gZuTpIvedgDPpytWxeoDUglcWIsZctl5Z9TvI",
+          "sb_publishable_laxSV6WZcW-QGNze_wliRA_mBvluj0T",
       ),
       "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(
         process.env.VITE_SUPABASE_PROJECT_ID ||
           process.env.SUPABASE_PROJECT_ID ||
-          "ypbyouaddkdfuhfpnguu",
+          "gbdqylnvbtmkrvoxzmfj",
       ),
     },
   },

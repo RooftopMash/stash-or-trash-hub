@@ -32,6 +32,14 @@ import { Recycle, Sparkles, Loader2, Building2, Coins, ShieldCheck, UserCheck, C
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { redirect?: string; tab?: string; intent?: string; brand?: string } => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+    tab: typeof search.tab === "string" ? search.tab : undefined,
+    intent: typeof search.intent === "string" ? search.intent : undefined,
+    brand: typeof search.brand === "string" ? search.brand : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Sign in — Stash or Trash" },
@@ -68,11 +76,34 @@ function AuthPage() {
     currentHostname.includes("localhost") ||
     currentHostname.includes(".vercel.app");
 
+  const search = Route.useSearch();
+  useEffect(() => {
+    if (search.intent === "brand") {
+      setAccountDoor("brand_owner");
+    }
+    if (search.brand) {
+      setRegisteredBrandName(search.brand);
+    }
+  }, [search.intent, search.brand]);
   useEffect(() => {
     if (user) {
+      if (search.redirect) {
+        try {
+          const url = new URL(search.redirect, window.location.origin);
+          if (url.origin === window.location.origin) {
+            navigate({ to: url.pathname as any, search: Object.fromEntries(url.searchParams) as any });
+            return;
+          }
+        } catch {
+          if (search.redirect.startsWith("/")) {
+            navigate({ to: search.redirect as any });
+            return;
+          }
+        }
+      }
       navigate({ to: accountDoor === "brand_owner" ? "/dashboard" : "/" });
     }
-  }, [user, navigate, accountDoor]);
+  }, [user, navigate, accountDoor, search.redirect]);
 
   const copyDomain = async () => {
     if (!currentHostname) return;

@@ -46,10 +46,10 @@ function createSupabaseClient() {
     envObj.SUPABASE_ANON_KEY;
 
   const effectiveUrl =
-    SUPABASE_URL || "https://ypbyouaddkdfuhfpnguu.supabase.co";
+    SUPABASE_URL || "https://gbdqylnvbtmkrvoxzmfj.supabase.co";
   const effectiveKey =
     SUPABASE_PUBLISHABLE_KEY ||
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwYnlvdWFkZGtkZnVoZnBuZ3V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1OTY0OTgsImV4cCI6MjA5OTE3MjQ5OH0.IEHBd2gZuTpIvedgDPpytWxeoDUglcWIsZctl5Z9TvI";
+    "sb_publishable_laxSV6WZcW-QGNze_wliRA_mBvluj0T";
 
   return createClient<Database>(effectiveUrl, effectiveKey, {
     global: {
