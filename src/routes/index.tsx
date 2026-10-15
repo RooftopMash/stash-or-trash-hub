@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { SotHomeHero } from "@/components/SotHomeHero";
-import coinsWatermark from "@/assets/watermark-coins.png";
-import binsWatermark from "@/assets/watermark-bins.png";
+import coinsWatermark from "@/assets/images/falling_gold_coins_1791614784681.jpg";
+import binsWatermark from "@/assets/images/sleek_trash_can_1789736750388.jpg";
 
 export const Route = createFileRoute("/")({
   component: Index,
