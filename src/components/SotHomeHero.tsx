@@ -189,7 +189,7 @@ export function SotHomeHero() {
       <div className="relative mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:py-16">
         {/* Top Header Text: Signature Black & Gold Two-Tone Contrast */}
         <div className="mx-auto max-w-3xl text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#d6a928]/50 bg-slate-950 px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.18em] text-[#f5d061] shadow-sm">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#d6a928]/50 bg-slate-950 px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.18em] text-[#f5d061] shadow-[...]">
             <Coins className="h-3.5 w-3.5 text-[#d6a928]" aria-hidden="true" />
             <span>{t("hero.badge", { defaultValue: "The Brand Barometer" })}</span>
           </div>
@@ -266,7 +266,7 @@ export function SotHomeHero() {
                       sublabel: "Keep what serves you · Community Gold Standard",
                     })
                   }
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-slate-950 bg-[#d6a928] px-5 py-2 text-xs font-black uppercase tracking-wider text-slate-950 shadow-[0_4px_0_0_#0a0a0c] transition hover:bg-[#e3b634] active:translate-y-0.5"
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-slate-950 bg-[#d6a928] px-5 py-2 text-xs font-black uppercase tracking-wider text-slate-950 shadow-[0_4px_18px_rgba(214,169,40,0.28)] transition hover:brightness-105"
                 >
                   <Coins className="h-4 w-4" />
                   {t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })} ({totalStashes})
@@ -307,7 +307,7 @@ export function SotHomeHero() {
                     <div
                       aria-hidden="true"
                       className={cn(
-                        "randy-mouth-cavity pointer-events-none absolute top-[15.5%] left-[13%] right-[13%] z-5 h-9 rounded-[50%] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 shadow-[inset_0_6px_12px_rgba(0,0,0,0.95)] ring-2 ring-slate-400/40",
+                        "randy-mouth-cavity pointer-events-none absolute top-[15.5%] left-[13%] right-[13%] z-5 h-9 rounded-[50%] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 shadow-[inset_0_10px_20px_rgba(0,0,0,0.2)]",
                         activeObject === "bin" && "randy-active",
                       )}
                     />
@@ -438,7 +438,7 @@ export function SotHomeHero() {
                 <Link
                   to="/feed"
                   search={{ filter: "trash" }}
-                  className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-xs font-black uppercase tracking-wider text-white shadow-sm transition hover:bg-slate-800 hover:shadow-md"
+                  className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-xs font-black uppercase tracking-wider text-white shadow-sm transition hover:bg-slate-800"
                 >
                   <Recycle className="h-4 w-4" />
                   {t("feed.trashesOfDay", { defaultValue: "Trashes of the Day" })} ({totalTrashes})
@@ -477,7 +477,7 @@ export function SotHomeHero() {
                   Open Your Dedicated Brand Command &amp; Launch Suite
                 </h3>
                 <p className="mt-1.5 max-w-2xl text-xs font-medium leading-relaxed text-slate-300 sm:text-sm">
-                  Access your single-brand intelligence barometer, host live product launches &amp; relaunches, manage corporate desk operator seats, and resolve customer issues within the CPA window.
+                  Access your single-brand intelligence barometer, host live product launches &amp; relaunches, manage corporate desk operator seats, and resolve customer issues within the CPA with your chosen teams.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -657,7 +657,7 @@ export function SotHomeHero() {
                     key={brand.id}
                     to="/brands/$slug"
                     params={{ slug: brand.slug }}
-                    className="group flex flex-col justify-between rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-xs"
+                    className="group flex flex-col justify-between rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2">
@@ -825,4 +825,3 @@ export function SotHomeHero() {
     </section>
   );
 }
-
