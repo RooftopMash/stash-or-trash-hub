@@ -28,7 +28,9 @@ export const Route = createFileRoute("/_authenticated")({
             return { user: parsed };
           }
         }
-      } catch {}
+      } catch {
+        // Ignore storage error
+      }
     }
 
     // 3. Check legacy Supabase session if present
