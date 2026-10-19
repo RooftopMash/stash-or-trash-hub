@@ -15,20 +15,20 @@ function Index() {
       {/* Split-screen brand watermark: gold coins (Stash) on the left, falling bins (Trash) on the right (Continuous Waterfall Rain) */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div
-          className="sot-watermark-rain-coins absolute inset-y-0 left-0 w-1/2 opacity-25"
+          className="sot-watermark-rain-coins absolute inset-y-0 left-0 w-1/2 opacity-20"
           style={{
             backgroundImage: `url(${coinsWatermark})`,
-            backgroundSize: "220px 220px",
+            backgroundSize: "340px 340px",
             backgroundRepeat: "repeat",
             maskImage: "linear-gradient(to right, black 55%, transparent 100%)",
             WebkitMaskImage: "linear-gradient(to right, black 55%, transparent 100%)",
           }}
         />
         <div
-          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-25"
+          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-20"
           style={{
             backgroundImage: `url(${binsWatermark})`,
-            backgroundSize: "220px 220px",
+            backgroundSize: "340px 340px",
             backgroundRepeat: "repeat",
             maskImage: "linear-gradient(to left, black 55%, transparent 100%)",
             WebkitMaskImage: "linear-gradient(to left, black 55%, transparent 100%)",
