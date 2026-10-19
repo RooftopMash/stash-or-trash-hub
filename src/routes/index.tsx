@@ -15,7 +15,7 @@ function Index() {
       {/* Split-screen brand watermark: gold coins (Stash) on the left, falling bins (Trash) on the right (Continuous Waterfall Rain) */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div
-          className="sot-watermark-rain-coins absolute inset-y-0 left-0 w-1/2 opacity-20"
+          className="sot-watermark-rain-coins absolute inset-y-0 left-0 w-1/2 opacity-30 sm:opacity-35"
           style={{
             backgroundImage: `url(${coinsWatermark})`,
             backgroundSize: "340px 340px",
@@ -25,7 +25,7 @@ function Index() {
           }}
         />
         <div
-          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-20"
+          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-30 sm:opacity-35"
           style={{
             backgroundImage: `url(${binsWatermark})`,
             backgroundSize: "340px 340px",

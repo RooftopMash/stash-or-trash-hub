@@ -567,7 +567,7 @@
     background-position: 0px 0px;
   }
   100% {
-    background-position: 0px 560px;
+    background-position: 0px 600px;
   }
 }
 
@@ -576,27 +576,45 @@
     background-position: 0px 0px;
   }
   100% {
-    background-position: 0px 560px;
+    background-position: 0px 600px;
   }
 }
 
+/* =========================================================================
+   STEEL TRASH CAN FALLING WATERMARK ANIMATION
+   Mirrors the physical weight, brushed metallic specular reflections,
+   and subtle natural drift of the hero Steel Trash Can object.
+   ========================================================================= */
 @keyframes sot-rain-falling-bins {
   0% {
     background-position: 0px 0px;
   }
+  25% {
+    background-position: 4px 150px;
+  }
+  50% {
+    background-position: 0px 300px;
+  }
+  75% {
+    background-position: -4px 450px;
+  }
   100% {
-    background-position: 0px 560px;
+    background-position: 0px 600px;
   }
 }
 
 .sot-watermark-rain-coins {
-  animation: sot-rain-falling-coins 15s linear infinite;
+  animation: sot-rain-falling-coins 16s linear infinite;
   will-change: background-position;
+  filter: drop-shadow(0 4px 10px rgba(214, 169, 40, 0.25)) brightness(1.02);
 }
 
 .sot-watermark-rain-bins {
-  animation: sot-rain-falling-bins 17s linear infinite;
-  will-change: background-position;
+  animation: sot-rain-falling-bins 18s ease-in-out infinite;
+  will-change: background-position, filter;
+  /* Visual styling matching the Steel Trash Can:
+     Sharp metallic specular highlights, brushed chrome contrast, and grounding ambient shadow */
+  filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.28)) contrast(1.15) brightness(0.98);
 }
 
 @media (prefers-reduced-motion: reduce) {
