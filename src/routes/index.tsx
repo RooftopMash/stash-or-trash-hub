@@ -18,7 +18,7 @@ function Index() {
           className="sot-watermark-rain-coins absolute inset-y-0 left-0 w-1/2 opacity-30 sm:opacity-35"
           style={{
             backgroundImage: `url(${coinsWatermark})`,
-            backgroundSize: "340px 340px",
+            backgroundSize: "384px 384px",
             backgroundRepeat: "repeat",
             maskImage: "linear-gradient(to right, black 55%, transparent 100%)",
             WebkitMaskImage: "linear-gradient(to right, black 55%, transparent 100%)",
@@ -28,7 +28,7 @@ function Index() {
           className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-30 sm:opacity-35"
           style={{
             backgroundImage: `url(${binsWatermark})`,
-            backgroundSize: "340px 340px",
+            backgroundSize: "384px 384px",
             backgroundRepeat: "repeat",
             maskImage: "linear-gradient(to left, black 55%, transparent 100%)",
             WebkitMaskImage: "linear-gradient(to left, black 55%, transparent 100%)",
