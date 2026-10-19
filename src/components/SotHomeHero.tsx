@@ -157,33 +157,10 @@ export function SotHomeHero() {
 
   return (
     <section className="relative isolate overflow-hidden border-b-2 border-[#d6a928]/30 bg-white text-slate-950">
-      {/* Split-screen brand watermark: falling gold coins on the left half, falling silver trash cans on the right half */}
+      {/* Split-screen subtle ambient background tones */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Left Half: Falling Gold Coins Watermark (Continuous Waterfall Rain) */}
-        <div
-          className="sot-watermark-rain-coins absolute inset-y-0 left-0 w-1/2 opacity-35"
-          style={{
-            backgroundImage: `url(${coinsWatermark})`,
-            backgroundSize: "280px 280px",
-            backgroundRepeat: "repeat",
-            maskImage: "linear-gradient(to right, black 65%, transparent 100%)",
-            WebkitMaskImage: "linear-gradient(to right, black 65%, transparent 100%)",
-          }}
-        />
-        {/* Right Half: Falling Silver Trash Cans Watermark (Continuous Waterfall Rain) */}
-        <div
-          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-35"
-          style={{
-            backgroundImage: `url(${binsWatermark})`,
-            backgroundSize: "280px 280px",
-            backgroundRepeat: "repeat",
-            maskImage: "linear-gradient(to left, black 65%, transparent 100%)",
-            WebkitMaskImage: "linear-gradient(to left, black 65%, transparent 100%)",
-          }}
-        />
-        {/* Subtle split-screen atmospheric ambient tones */}
-        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-amber-100/25 via-amber-50/10 to-transparent pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-slate-200/30 via-slate-100/10 to-transparent pointer-events-none" />
+        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-amber-100/20 via-amber-50/10 to-transparent pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-slate-200/25 via-slate-100/10 to-transparent pointer-events-none" />
       </div>
 
       <div className="relative mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:py-16">

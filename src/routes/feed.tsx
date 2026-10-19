@@ -38,6 +38,7 @@ import { countryFlag, countryName, countryOptions, normalizeCountryCode } from "
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/feed")({
+  ssr: false,
   validateSearch: (
     search: Record<string, unknown>,
   ): { filter?: "all" | "stash" | "trash"; q?: string; brand?: string } => ({
@@ -123,9 +124,10 @@ function Feed() {
     if (isSearching && searchAllCountries) {
       return allItems;
     }
-    return allItems.filter(
+    const matching = allItems.filter(
       (item) => normalizeCountryCode(item.brandCountry) === selectedCountry,
     );
+    return matching.length > 0 ? matching : allItems;
   }, [feedData, selectedCountry, isSearching, searchAllCountries]);
 
   // Country-scoped brands (or all countries when searching with global toggle enabled)
@@ -134,9 +136,10 @@ function Feed() {
     if (isSearching && searchAllCountries) {
       return allBrands;
     }
-    return allBrands.filter(
+    const matching = allBrands.filter(
       (brand) => normalizeCountryCode(brand.country) === selectedCountry,
     );
+    return matching.length > 0 ? matching : allBrands;
   }, [brandsData, selectedCountry, isSearching, searchAllCountries]);
 
   const categories = useMemo(() => {

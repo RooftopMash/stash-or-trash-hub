@@ -28,28 +28,29 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 
 function createSupabaseClient() {
-  const envObj = typeof process !== 'undefined' && process.env ? process.env : {};
+  const metaEnv = (typeof import.meta !== 'undefined' && (import.meta as any).env) ? (import.meta as any).env : {};
+  const procEnv = (typeof process !== 'undefined' && process.env) ? process.env : {};
 
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
   const SUPABASE_URL =
-    import.meta.env.VITE_SUPABASE_URL ||
-    import.meta.env.NEXT_PUBLIC_SUPABASE_URL ||
-    envObj.VITE_SUPABASE_URL ||
-    envObj.SUPABASE_URL;
-  const SUPABASE_PUBLISHABLE_KEY =
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    envObj.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    envObj.SUPABASE_PUBLISHABLE_KEY ||
-    envObj.SUPABASE_ANON_KEY;
+    metaEnv.VITE_SUPABASE_URL ||
+    metaEnv.NEXT_PUBLIC_SUPABASE_URL ||
+    procEnv.VITE_SUPABASE_URL ||
+    procEnv.SUPABASE_URL ||
+    "https://gbdqylnvbtmkrvoxzmfj.supabase.co";
 
-  const effectiveUrl =
-    SUPABASE_URL || "https://ypbyouaddkdfuhfpnguu.supabase.co";
-  const effectiveKey =
-    SUPABASE_PUBLISHABLE_KEY ||
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwYnlvdWFkZGtkZnVoZnBuZ3V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1OTY0OTgsImV4cCI6MjA5OTE3MjQ5OH0.IEHBd2gZuTpIvedgDPpytWxeoDUglcWIsZctl5Z9TvI";
+  const SUPABASE_PUBLISHABLE_KEY =
+    metaEnv.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    metaEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    metaEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    procEnv.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    procEnv.SUPABASE_PUBLISHABLE_KEY ||
+    procEnv.SUPABASE_ANON_KEY ||
+    "sb_publishable_laxSV6WZcW-QGNze_wliRA_mBvluj0T";
+
+  const effectiveUrl = SUPABASE_URL;
+  const effectiveKey = SUPABASE_PUBLISHABLE_KEY;
 
   return createClient<Database>(effectiveUrl, effectiveKey, {
     global: {

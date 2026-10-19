@@ -44,6 +44,7 @@ import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/awards")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "The SOT Awards & Verified Voting | Stash Or Trash — The Brand Barometer" },
