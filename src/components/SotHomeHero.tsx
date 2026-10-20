@@ -19,10 +19,10 @@ import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSucce
 import { useRoles } from "@/hooks/useRoles";
 import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import { cn } from "@/lib/utils";
-import coinIcon from "@/assets/icon-coin.png";
-import binIcon from "@/assets/icon-bin.png";
-import coinsWatermark from "@/assets/watermark-coins.png";
-import binsWatermark from "@/assets/watermark-bins.png";
+import coinIcon from "@/assets/icon-coin.webp";
+import binIcon from "@/assets/icon-bin.webp";
+import coinsWatermark from "@/assets/watermark-coins.webp";
+import binsWatermark from "@/assets/watermark-bins.webp";
 
 const cascade = [
   { letter: "S", className: "text-[#d6a928]" },
@@ -247,6 +247,9 @@ export function SotHomeHero() {
                   <img
                     src={coinIcon}
                     alt="$OrT South African spinning gold coin"
+                    width={250}
+                    height={250}
+                    fetchPriority="high"
                     className={cn(
                       "sot-coin-art relative z-10 w-full max-w-[210px] sm:max-w-[250px] drop-shadow-md transition-transform group-hover:scale-105",
                       activeObject === "coin" && "sot-object-active",
@@ -407,6 +410,9 @@ export function SotHomeHero() {
                       <img
                         src={binIcon}
                         alt="SOrT solid stainless steel metallic trash can"
+                        width={285}
+                        height={392}
+                        fetchPriority="high"
                         className="h-full w-full object-contain select-none"
                       />
                     </div>
@@ -426,6 +432,8 @@ export function SotHomeHero() {
                         src={binIcon}
                         alt=""
                         aria-hidden="true"
+                        width={285}
+                        height={392}
                         className="h-full w-full object-contain select-none"
                       />
                     </div>
@@ -593,8 +601,12 @@ export function SotHomeHero() {
 
               {/* Sorting Control */}
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-500">{t("hero.sortBy", { defaultValue: "Sort Barometer:" })}</span>
+                <label htmlFor="barometer-sort-select" className="text-xs font-semibold text-slate-500">
+                  {t("hero.sortBy", { defaultValue: "Sort Barometer:" })}
+                </label>
                 <select
+                  id="barometer-sort-select"
+                  aria-label={t("hero.sortBy", { defaultValue: "Sort Barometer:" })}
                   value={barometerSort}
                   onChange={(e) => setBarometerSort(e.target.value as "trust" | "tier" | "name")}
                   className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-800 outline-none hover:bg-slate-100 transition-colors"

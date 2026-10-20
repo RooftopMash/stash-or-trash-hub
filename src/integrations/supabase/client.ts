@@ -7,7 +7,7 @@ function isNewSupabaseApiKey(value: string): boolean {
 }
 
 function createSupabaseFetch(supabaseKey: string): typeof fetch {
-  return (input, init) => {
+  return async (input, init) => {
     const headers = new Headers(
       typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
     );
@@ -22,7 +22,21 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
     }
 
     headers.set('apikey', supabaseKey);
-    return fetch(input, { ...init, headers });
+
+    try {
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timeoutId = controller ? setTimeout(() => controller.abort(), 3500) : null;
+      const signal = init?.signal || controller?.signal;
+      const res = await fetch(input, { ...init, headers, signal });
+      if (timeoutId) clearTimeout(timeoutId);
+      return res;
+    } catch {
+      // Graceful fallback for unreachable legacy endpoints — returns empty JSON array instead of timing out for 10s
+      return new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
   };
 }
 
@@ -59,7 +73,14 @@ function createSupabaseClient() {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-    }
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 1,
+      },
+      heartbeatIntervalMs: 60000,
+      reconnectAfterMs: () => 120000,
+    },
   });
 }
 

@@ -11,7 +11,9 @@ function Index() {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-white">
       <Header />
-      <SotHomeHero />
+      <main id="main-content">
+        <SotHomeHero />
+      </main>
     </div>
   );
 }
