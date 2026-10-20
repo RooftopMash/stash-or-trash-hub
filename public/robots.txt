@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /auth
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /messages
+Disallow: /notifications
+Disallow: /profile
+
+Sitemap: https://stash-or-trash-hub.vercel.app/sitemap.xml

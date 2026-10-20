@@ -25,17 +25,28 @@ import "@/lib/i18n";
 
 const BRAND_BAROMETER_SCHEMA = {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "SOT — Stash Or Trash | The Brand Barometer",
-  description:
-    "SOT (Stash Or Trash) is the Brand Barometer — a CX/UX marketing & PR platform where consumers deliver real-time verdicts on brands with verified proof.",
-  applicationCategory: "BusinessApplication",
-  operatingSystem: "All",
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
-  },
+  "@graph": [
+    {
+      "@type": "Organization",
+      name: "SOT — Stash Or Trash",
+      url: "https://stash-or-trash-hub.vercel.app/",
+      logo: "https://stash-or-trash-hub.vercel.app/apple-touch-icon.png",
+      description: "The Brand Barometer for community-powered brand trust and live sentiment.",
+    },
+    {
+      "@type": "WebApplication",
+      name: "SOT — Stash Or Trash | The Brand Barometer",
+      description:
+        "A community-powered Brand Barometer where people share proof, cast Stash or Trash verdicts, and track live brand trust.",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "All",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+      },
+    },
+  ],
 };
 
 if (typeof window !== "undefined") {
@@ -106,18 +117,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SOT — Stash Or Trash | The Brand Barometer" },
+      { title: "SOT — Brand Trust & Live Community Verdicts" },
       {
         name: "description",
         content:
-          "SOT (Stash Or Trash) is the Brand Barometer — a CX/UX marketing & PR tool where the community delivers a live verdict on brands. Cast yours and keep your streak alive.",
+          "Discover live brand sentiment with SOT. Share proof, cast Stash or Trash verdicts, and see what the community really thinks about brands.",
       },
+      { name: "robots", content: "index, follow, max-image-preview:large" },
+      { name: "theme-color", content: "#ffffff" },
+      { property: "og:url", content: "https://stash-or-trash-hub.vercel.app/" },
       { name: "author", content: "SOT — Stash Or Trash" },
-      { property: "og:title", content: "SOT — Stash Or Trash | The Brand Barometer" },
+      { property: "og:title", content: "SOT — Brand Trust & Live Community Verdicts" },
       {
         property: "og:description",
-        content: "Post anything about a brand and let the community decide: Stash it Or Trash it.",
+        content: "Share proof, cast Stash or Trash verdicts, and discover live community sentiment across brands.",
       },
+      { property: "og:image", content: "https://stash-or-trash-hub.vercel.app/apple-touch-icon.png" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

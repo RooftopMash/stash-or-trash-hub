@@ -1,0 +1,15 @@
+# SOT — Stash Or Trash
+
+> The Brand Barometer for live, community-powered brand trust.
+
+SOT helps people share proof about brands, cast Stash or Trash verdicts, and discover live community sentiment. Public areas include the brand directory, community feed, awards, privacy policy, and terms.
+
+## Public pages
+- [Home](https://stash-or-trash-hub.vercel.app/): Product overview and live brand trust entry point.
+- [Brand directory](https://stash-or-trash-hub.vercel.app/brands): Browse brands and their community sentiment.
+- [Community feed](https://stash-or-trash-hub.vercel.app/feed): Discover public brand verdicts and evidence.
+- [Awards](https://stash-or-trash-hub.vercel.app/awards): Explore recognized brands and community signals.
+- [Privacy](https://stash-or-trash-hub.vercel.app/privacy)
+- [Terms](https://stash-or-trash-hub.vercel.app/terms)
+
+SOT is a community platform. Brand scores and verdicts represent user-generated sentiment and should not be treated as professional, legal, financial, or purchasing advice.
