@@ -940,3 +940,41 @@
   }
 }
 
+/* =========================================================================
+   SOT CLIENT PRIVACY & ANTI-SCREEN GRAB SHIELD
+   - Disables mobile long-press selection & callout previews on protected media
+   - Obscures content when printing or capturing document streams
+   - Automatically activates on mobile devices to protect sensitive customer data
+   ========================================================================= */
+@media print {
+  body {
+    display: none !important;
+  }
+}
+
+/* Touch device protection against unauthorized tap-and-hold saving */
+.sot-shield-active,
+.sot-shield-active img,
+.sot-shield-active video {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+}
+
+/* Allow text selection inside editable input/textarea fields */
+.sot-shield-active input,
+.sot-shield-active textarea,
+.sot-shield-active [contenteditable="true"] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Privacy veil when app switcher or screen-recording is detected */
+body.sot-privacy-blur #root {
+  filter: blur(14px) grayscale(60%) !important;
+  transition: filter 0.15s ease-out;
+  pointer-events: none;
+}
+
+

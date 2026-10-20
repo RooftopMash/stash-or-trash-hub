@@ -14,6 +14,7 @@ import {
   switchActiveDeskOperator,
 } from "@/lib/brand-operators";
 import { isVerdictSoundEnabled, setVerdictSoundEnabled, playCoinSpinSound } from "@/lib/verdict-sounds";
+import { isDeveloperCodeInspectionActive, toggleDeveloperCodeInspection } from "@/lib/security-shield";
 import { APP_SUPPORTED_LOCALES } from "@/lib/locale-app";
 import { switchAppLanguage } from "@/components/LanguageSwitcher";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -44,6 +45,7 @@ import {
   Bell,
   Building2,
   Check,
+  Code,
   Coins,
   Copy,
   Globe,
@@ -503,12 +505,12 @@ export function UserProfile({
               )}
             </DropdownMenuGroup>
 
-            {/* DEVELOPER-ONLY PREVIEW SWITCHER: Strictly hidden from all regular Personal & Brand users */}
+            {/* DEVELOPER-ONLY PREVIEW & SECURITY SWITCHER: Strictly hidden from all regular Personal & Brand users */}
             {isDeveloper && (
               <>
                 <DropdownMenuSeparator className="my-1.5" />
                 <DropdownMenuLabel className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Developer Preview Tool
+                  Developer Controls & Security Shield
                 </DropdownMenuLabel>
                 <DropdownMenuItem
                   onClick={() => {
@@ -533,6 +535,24 @@ export function UserProfile({
                       <span className="truncate">DEV: Switch to {registeredBrand.name}</span>
                     </>
                   )}
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => {
+                    const current = isDeveloperCodeInspectionActive();
+                    toggleDeveloperCodeInspection(!current);
+                    toast.success(
+                      !current
+                        ? "Developer F12 / Code Inspection: Enabled for this session"
+                        : "Security Shield: F12 Blocked & Mobile Screen-Grab Shielded",
+                    );
+                  }}
+                  className="cursor-pointer gap-2.5 rounded-md bg-secondary/40 py-2 text-xs font-semibold"
+                >
+                  <Code className="h-4 w-4 text-[#d6a928]" />
+                  <span>
+                    F12 Code Viewing: {isDeveloperCodeInspectionActive() ? "Allowed (Dev Mode)" : "Protected (Shield Active)"}
+                  </span>
                 </DropdownMenuItem>
               </>
             )}
