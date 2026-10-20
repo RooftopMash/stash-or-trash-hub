@@ -21,8 +21,8 @@ import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import { cn } from "@/lib/utils";
 import coinIcon from "@/assets/icon-coin.png";
 import binIcon from "@/assets/icon-bin.png";
-import coinsWatermark from "@/assets/images/falling_gold_coins_1791614784681.jpg";
-import binsWatermark from "@/assets/images/sleek_trash_can_1789736750388.jpg";
+import coinsWatermark from "@/assets/watermark-coins.png";
+import binsWatermark from "@/assets/watermark-bins.png";
 
 const cascade = [
   { letter: "S", className: "text-[#d6a928]" },
@@ -157,13 +157,36 @@ export function SotHomeHero() {
 
   return (
     <section className="relative isolate overflow-hidden border-b-2 border-[#d6a928]/30 bg-white text-slate-950">
-      {/* Split-screen subtle ambient background tones */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+      {/* Split-screen brand watermark: falling gold coins on left half, falling silver trash cans on right half */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+        {/* Left Half: Falling Gold Coins Watermark (Continuous Waterfall Rain) */}
+        <div
+          className="sot-watermark-rain-coins absolute inset-y-0 left-0 w-1/2 opacity-35"
+          style={{
+            backgroundImage: `url(${coinsWatermark})`,
+            backgroundSize: "140px 140px",
+            backgroundRepeat: "repeat",
+            maskImage: "linear-gradient(to right, black 65%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to right, black 65%, transparent 100%)",
+          }}
+        />
+        {/* Right Half: Falling Silver Trash Cans Watermark (Continuous Waterfall Rain) */}
+        <div
+          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-35"
+          style={{
+            backgroundImage: `url(${binsWatermark})`,
+            backgroundSize: "140px 140px",
+            backgroundRepeat: "repeat",
+            maskImage: "linear-gradient(to left, black 65%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to left, black 65%, transparent 100%)",
+          }}
+        />
+        {/* Subtle split-screen atmospheric ambient tones */}
         <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-amber-100/20 via-amber-50/10 to-transparent pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-slate-200/25 via-slate-100/10 to-transparent pointer-events-none" />
       </div>
 
-      <div className="relative mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:py-16">
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:py-16">
         {/* Top Header Text: Signature Black & Gold Two-Tone Contrast */}
         <div className="mx-auto max-w-3xl text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#d6a928]/50 bg-slate-950 px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.18em] text-[#f5d061] shadow-[...]">

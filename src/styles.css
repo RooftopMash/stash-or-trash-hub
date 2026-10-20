@@ -567,7 +567,7 @@
     background-position: 0px 0px;
   }
   100% {
-    background-position: 0px 384px;
+    background-position: 0px 140px;
   }
 }
 
@@ -576,7 +576,7 @@
     background-position: 0px 0px;
   }
   100% {
-    background-position: 0px 384px;
+    background-position: 0px 140px;
   }
 }
 
@@ -590,16 +590,16 @@
     background-position: 0px 0px;
   }
   25% {
-    background-position: 3px 96px;
+    background-position: 2px 35px;
   }
   50% {
-    background-position: 0px 192px;
+    background-position: 0px 70px;
   }
   75% {
-    background-position: -3px 288px;
+    background-position: -2px 105px;
   }
   100% {
-    background-position: 0px 384px;
+    background-position: 0px 140px;
   }
 }
 
