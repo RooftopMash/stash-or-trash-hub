@@ -32,6 +32,12 @@ import { Recycle, Sparkles, Loader2, Building2, Coins, ShieldCheck, UserCheck, C
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { redirect?: string; tab?: string } => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+    tab: typeof search.tab === "string" ? search.tab : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Sign in — Stash or Trash" },
@@ -47,6 +53,7 @@ function AuthPage() {
   const { user, signInWithLocalFallback } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const search = Route.useSearch();
 
   const [accountDoor, setAccountDoor] = useState<SotAccountPersona>("consumer");
   const [email, setEmail] = useState("");
@@ -70,9 +77,22 @@ function AuthPage() {
 
   useEffect(() => {
     if (user) {
-      navigate({ to: accountDoor === "brand_owner" ? "/dashboard" : "/" });
+      if (search.redirect) {
+        if (search.redirect.startsWith("http")) {
+          try {
+            const url = new URL(search.redirect);
+            navigate({ href: url.pathname + url.search + url.hash });
+          } catch {
+            navigate({ to: "/dashboard" });
+          }
+        } else {
+          navigate({ href: search.redirect });
+        }
+      } else {
+        navigate({ to: "/dashboard" });
+      }
     }
-  }, [user, navigate, accountDoor]);
+  }, [user, navigate, search.redirect]);
 
   const copyDomain = async () => {
     if (!currentHostname) return;
@@ -105,7 +125,20 @@ function AuthPage() {
         });
       }
     }
-    navigate({ to: accountDoor === "brand_owner" ? "/dashboard" : "/" });
+    if (search.redirect) {
+      if (search.redirect.startsWith("http")) {
+        try {
+          const url = new URL(search.redirect);
+          navigate({ href: url.pathname + url.search + url.hash });
+        } catch {
+          navigate({ to: "/dashboard" });
+        }
+      } else {
+        navigate({ href: search.redirect });
+      }
+    } else {
+      navigate({ to: "/dashboard" });
+    }
   };
 
   const handleInstantSignIn = (role: "personal" | "developer" | "brand") => {

@@ -26,6 +26,7 @@ import {
 import type { AiScanResult } from "@/lib/ai-scanner";
 
 export const Route = createFileRoute("/scan")({
+  ssr: false,
   component: ScanPage,
 });
 

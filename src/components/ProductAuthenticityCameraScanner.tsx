@@ -587,26 +587,37 @@ Verified on Stash Or Trash Brand Barometer`;
         {/* If Still Live Camera or Preparing */}
         {!scanResult && (
           <div className="relative w-full aspect-video sm:aspect-[16/9] max-h-[460px] rounded-2xl overflow-hidden bg-black flex items-center justify-center shadow-inner group">
-            {/* Permission Prompt Screen */}
+            {/* Live Video Feed (Background Layer) */}
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-300 ${
+                streamActive && !scanning ? "opacity-100" : "opacity-0"
+              }`}
+            />
+
+            {/* Permission Prompt Screen - Centered in the middle */}
             {permissionState === "prompt" && (
-              <div className="text-center p-6 space-y-4 max-w-md z-10">
-                <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/20 text-primary flex items-center justify-center border border-primary/30">
+              <div className="relative z-10 w-full max-w-md mx-auto flex flex-col items-center justify-center text-center p-6 space-y-4">
+                <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/20 text-primary flex items-center justify-center border border-primary/30 shadow-lg">
                   <Camera className="h-8 w-8" />
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-white">{t("scanner.cameraAccessRequired", { defaultValue: "Camera Access Required" })}</h3>
-                  <p className="text-xs text-white/70">
+                <div className="space-y-1.5 text-center">
+                  <h3 className="text-lg font-bold text-white tracking-tight">{t("scanner.cameraAccessRequired", { defaultValue: "Camera Access Required" })}</h3>
+                  <p className="text-xs text-white/80 max-w-sm mx-auto leading-relaxed">
                     {t("scanner.cameraAccessDesc", { defaultValue: "Allow camera access to inspect physical packaging, barcodes, luxury logos, and verify if the product is legit or fake." })}
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
-                  <Button onClick={startCamera} className="gap-2 font-semibold">
+                <div className="flex flex-col sm:flex-row gap-2.5 justify-center items-center pt-2 w-full max-w-xs sm:max-w-sm mx-auto">
+                  <Button onClick={startCamera} className="w-full sm:w-auto gap-2 font-semibold shadow-md">
                     <Camera className="h-4 w-4" /> {t("scanner.grantPermission", { defaultValue: "Grant Camera Permission" })}
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => fileInputRef.current?.click()}
-                    className="gap-2 text-white border-white/20 bg-white/5 hover:bg-white/10"
+                    className="w-full sm:w-auto gap-2 text-white border-white/20 bg-white/10 hover:bg-white/20"
                   >
                     <Upload className="h-4 w-4" /> {t("scanner.uploadPhotoInstead", { defaultValue: "Upload Photo Instead" })}
                   </Button>
@@ -614,57 +625,46 @@ Verified on Stash Or Trash Brand Barometer`;
               </div>
             )}
 
-            {/* Permission Denied Screen */}
+            {/* Permission Denied Screen - Centered in the middle */}
             {permissionState === "denied" && (
-              <div className="text-center p-6 space-y-3 max-w-md z-10">
-                <div className="mx-auto h-14 w-14 rounded-2xl bg-destructive/20 text-destructive flex items-center justify-center border border-destructive/30">
+              <div className="relative z-10 w-full max-w-md mx-auto flex flex-col items-center justify-center text-center p-6 space-y-3">
+                <div className="mx-auto h-14 w-14 rounded-2xl bg-destructive/20 text-destructive flex items-center justify-center border border-destructive/30 shadow-lg">
                   <ShieldAlert className="h-7 w-7" />
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 text-center">
                   <h3 className="text-lg font-bold text-white">{t("scanner.cameraBlocked", { defaultValue: "Camera Permission Was Blocked" })}</h3>
-                  <p className="text-xs text-white/70 leading-relaxed">
+                  <p className="text-xs text-white/80 max-w-sm mx-auto leading-relaxed">
                     {t("scanner.cameraBlockedDesc", { defaultValue: "Your browser has restricted camera access for this page. Click the camera icon or padlock in your browser's address bar to change permissions to Allow." })}
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
-                  <Button onClick={startCamera} variant="secondary" className="gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 justify-center items-center pt-2 w-full max-w-xs sm:max-w-sm mx-auto">
+                  <Button onClick={startCamera} variant="secondary" className="w-full sm:w-auto gap-2">
                     <RefreshCw className="h-4 w-4" /> {t("scanner.retryCamera", { defaultValue: "Retry Camera Access" })}
                   </Button>
-                  <Button onClick={() => fileInputRef.current?.click()} className="gap-2">
+                  <Button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto gap-2">
                     <Upload className="h-4 w-4" /> {t("scanner.uploadFile", { defaultValue: "Choose File to Inspect" })}
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* Device Unsupported Screen */}
+            {/* Device Unsupported Screen - Centered in the middle */}
             {permissionState === "unsupported" && (
-              <div className="text-center p-6 space-y-3 max-w-md z-10">
-                <div className="mx-auto h-14 w-14 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+              <div className="relative z-10 w-full max-w-md mx-auto flex flex-col items-center justify-center text-center p-6 space-y-3">
+                <div className="mx-auto h-14 w-14 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 shadow-lg">
                   <AlertTriangle className="h-7 w-7" />
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 text-center">
                   <h3 className="text-lg font-bold text-white">{t("scanner.noWebcam", { defaultValue: "No Webcam Detected" })}</h3>
-                  <p className="text-xs text-white/70">
+                  <p className="text-xs text-white/80 max-w-sm mx-auto leading-relaxed">
                     {t("scanner.noWebcamDesc", { defaultValue: "No hardware camera was detected. You can upload a photo or video recording of the item." })}
                   </p>
                 </div>
-                <Button onClick={() => fileInputRef.current?.click()} className="gap-2">
+                <Button onClick={() => fileInputRef.current?.click()} className="gap-2 w-full max-w-xs mx-auto">
                   <Upload className="h-4 w-4" /> {t("scanner.uploadProductMedia", { defaultValue: "Upload Product Media" })}
                 </Button>
               </div>
             )}
-
-            {/* Live Video Feed */}
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className={`w-full h-full object-cover transition-opacity duration-300 ${
-                streamActive && !scanning ? "opacity-100" : "opacity-30"
-              }`}
-            />
 
             {/* Reticle & Targeting HUD Overlay */}
             {streamActive && !scanning && (
