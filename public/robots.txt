@@ -1,0 +1,10 @@
+# Stash Or Trash (SOT) — Robots.txt
+# Allows all search engine crawlers and AI agents to index public pages
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /api/private/
+
+# XML Sitemap Location
+Sitemap: https://stash-or-trash-hub.vercel.app/sitemap.xml

@@ -25,17 +25,32 @@ import "@/lib/i18n";
 
 const BRAND_BAROMETER_SCHEMA = {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "SOT — Stash Or Trash | The Brand Barometer",
-  description:
-    "SOT (Stash Or Trash) is the Brand Barometer — a CX/UX marketing & PR platform where consumers deliver real-time verdicts on brands with verified proof.",
-  applicationCategory: "BusinessApplication",
-  operatingSystem: "All",
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
-  },
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://stash-or-trash-hub.vercel.app/#organization",
+      name: "SOT — Stash Or Trash",
+      url: "https://stash-or-trash-hub.vercel.app",
+      logo: "https://stash-or-trash-hub.vercel.app/apple-touch-icon.png",
+      description:
+        "SOT is the global Brand Barometer providing authentic customer reviews, trust ratings, and anti-counterfeit verification.",
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://stash-or-trash-hub.vercel.app/#webapp",
+      name: "SOT — Stash Or Trash | Brand Barometer",
+      url: "https://stash-or-trash-hub.vercel.app",
+      description:
+        "Live CX & PR platform where consumers deliver real-time verdicts on brands with verified proof.",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "All",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+      },
+    },
+  ],
 };
 
 function NotFoundComponent() {
@@ -102,20 +117,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SOT — Stash Or Trash | The Brand Barometer" },
+      { title: "SOT — Stash Or Trash | Brand Barometer & Consumer Reviews" },
       {
         name: "description",
         content:
-          "SOT (Stash Or Trash) is the Brand Barometer — a CX/UX marketing & PR tool where the community delivers a live verdict on brands. Cast yours and keep your streak alive.",
+          "SOT (Stash Or Trash) is the Brand Barometer — a live CX/UX verdict platform for authentic consumer brand reviews and accountability. Cast your verdict now.",
       },
       { name: "author", content: "SOT — Stash Or Trash" },
-      { property: "og:title", content: "SOT — Stash Or Trash | The Brand Barometer" },
+      { property: "og:title", content: "SOT — Stash Or Trash | Brand Barometer & Consumer Reviews" },
       {
         property: "og:description",
-        content: "Post anything about a brand and let the community decide: Stash it Or Trash it.",
+        content:
+          "SOT (Stash Or Trash) is the Brand Barometer — a live CX/UX verdict platform for authentic consumer brand reviews and accountability. Cast your verdict now.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "SOT — Stash Or Trash | Brand Barometer & Consumer Reviews" },
+      {
+        name: "twitter:description",
+        content:
+          "SOT (Stash Or Trash) is the Brand Barometer — a live CX/UX verdict platform for authentic consumer brand reviews and accountability. Cast your verdict now.",
+      },
     ],
     links: [
       {

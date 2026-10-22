@@ -430,8 +430,7 @@ export function SotHomeHero() {
                     >
                       <img
                         src={binIcon}
-                        alt=""
-                        aria-hidden="true"
+                        alt="SOrT solid stainless steel metallic trash can lid"
                         width={285}
                         height={392}
                         className="h-full w-full object-contain select-none"
