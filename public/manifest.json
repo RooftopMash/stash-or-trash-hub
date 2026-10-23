@@ -6,10 +6,36 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#000000",
-  "categories": ["business", "shopping", "lifestyle", "utilities"],
+  "dir": "ltr",
+  "lang": "en",
+  "prefer_related_applications": false,
+  "handle_links": "preferred",
+  "categories": [
+    "business",
+    "shopping",
+    "lifestyle",
+    "utilities"
+  ],
+  "launch_handler": {
+    "client_mode": "auto"
+  },
+  "share_target": {
+    "action": "/feed",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "/favicon-96x96.png",
@@ -47,19 +73,50 @@
       "name": "Live Feed",
       "short_name": "Feed",
       "url": "/feed",
-      "icons": [{ "src": "/favicon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/favicon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Scan Authenticity",
       "short_name": "Scan",
       "url": "/scan",
-      "icons": [{ "src": "/favicon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/favicon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Brand Directory",
       "short_name": "Brands",
       "url": "/brands",
-      "icons": [{ "src": "/favicon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/favicon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "SOrT Brand Barometer Mobile"
+    },
+    {
+      "src": "/icons/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "SOrT Brand Barometer Desktop"
     }
   ]
 }

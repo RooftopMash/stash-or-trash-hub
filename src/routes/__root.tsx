@@ -179,6 +179,22 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                function registerSW() {
+                  navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
+                }
+                if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                  registerSW();
+                } else {
+                  window.addEventListener('load', registerSW);
+                }
+              }
+            `,
+          }}
+        />
       </head>
       <body suppressHydrationWarning>
         {children}
@@ -197,11 +213,14 @@ function RootComponent() {
 
     // Register PWA Service Worker for store package & offline caching
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").catch(() => {
-          // Service worker registration failure caught safely
-        });
-      });
+      const runRegister = () => {
+        navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+      };
+      if (document.readyState === "complete" || document.readyState === "interactive") {
+        runRegister();
+      } else {
+        window.addEventListener("load", runRegister);
+      }
     }
   }, []);
 
