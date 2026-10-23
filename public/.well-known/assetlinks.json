@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.vercel.stash_or_trash_hub.twa",
+      "sha256_cert_fingerprints": [
+        "14:6D:E9:7D:0F:52:AB:6B:85:4B:0F:73:9F:5E:9A:60:0B:E5:2A:70:52:75:4E:5E:24:2C:9A:8B:4E:9F:04:88"
+      ]
+    }
+  }
+]

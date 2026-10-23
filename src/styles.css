@@ -977,4 +977,33 @@ body.sot-privacy-blur #root {
   pointer-events: none;
 }
 
+/* =========================================================================
+   PWA & TWA MOBILE SAFE AREA & TOUCH COMPLIANCE
+   - Safe area padding for notches and gesture indicator bars
+   - Minimum comfortable touch targets for Android / iOS app stores
+   ========================================================================= */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+@supports (padding-top: env(safe-area-inset-top)) {
+  body {
+    padding-top: var(--sat);
+    padding-bottom: var(--sab);
+    padding-left: var(--sal);
+    padding-right: var(--sar);
+  }
+}
+
+/* Standalone PWA adjustments when installed on Android / iOS */
+@media all and (display-mode: standalone) {
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+
 

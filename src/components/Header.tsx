@@ -15,6 +15,7 @@ import {
 } from "@/components/MessengerPrivateCallModal";
 import { LanguageSwitcher, TopLanguageStrip } from "@/components/LanguageSwitcher";
 import { UserProfile, getAccountPreferences } from "@/components/UserProfile";
+import { PWAInstallButton } from "@/components/PWAInstallButton";
 import { Bell, Building2, Coins, LayoutDashboard, MessageCircle, Shield, Scan, PhoneIncoming, PhoneOff } from "lucide-react";
 import { SotWordmark } from "@/components/SotWordmark";
 import { getRegisteredBrandIdentity } from "@/lib/brand-operators";
@@ -239,6 +240,8 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
           >
             <Shield className="h-4 w-4 text-[#d6a928]" />
           </Button>
+
+          <PWAInstallButton />
 
           {loading ? null : user ? (
             <div className="flex shrink-0 items-center gap-1.5">
