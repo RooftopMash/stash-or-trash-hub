@@ -3,7 +3,6 @@ import { Header } from "@/components/Header";
 import { SotHomeHero } from "@/components/SotHomeHero";
 
 export const Route = createFileRoute("/")({
-  ssr: false,
   component: Index,
 });
 
