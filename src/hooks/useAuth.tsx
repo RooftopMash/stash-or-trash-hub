@@ -66,7 +66,7 @@ function mapFirebaseUser(user: FirebaseUser): AuthUser {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [user, setUser] = useState<AuthUser | null>(() => readLocalFallbackUser());
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

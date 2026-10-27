@@ -711,3 +711,45 @@ export async function removeBrandVote(brandId: string, userId: string) {
     // legacy store unavailable
   }
 }
+
+export async function fetchUserBrandClaims(userId: string): Promise<PendingVerification[]> {
+  const allBrands = await fetchBrands();
+  const brandMap = new Map(allBrands.map((b) => [b.id, b]));
+
+  // Local claims
+  const local = readLocalVerificationRequests().filter((r) => r.requested_by === userId);
+
+  // Supabase claims
+  try {
+    const { data, error } = await supabase
+      .from("brand_verification_requests")
+      .select("*")
+      .eq("requested_by", userId)
+      .order("created_at", { ascending: false });
+
+    if (!error && Array.isArray(data)) {
+      const merged = new Map<string, PendingVerification>();
+      for (const item of local) {
+        merged.set(item.brand_id, item);
+      }
+      for (const row of data) {
+        const b = brandMap.get(row.brand_id);
+        merged.set(row.brand_id, {
+          id: row.id,
+          brand_id: row.brand_id,
+          requested_by: row.requested_by,
+          status: row.status || "pending",
+          message: row.message,
+          created_at: row.created_at,
+          brandName: b?.name ?? row.brand_id,
+          brandSlug: b?.slug ?? row.brand_id,
+        });
+      }
+      return Array.from(merged.values());
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return local;
+}

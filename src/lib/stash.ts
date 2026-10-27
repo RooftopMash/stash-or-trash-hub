@@ -405,3 +405,67 @@ export async function fetchUserItems(
   const all = await fetchFeed(currentUserId);
   return all.filter((i) => i.user_id === userId);
 }
+
+export type UserVoteHistoryItem = {
+  itemId: string;
+  verdict: "stash" | "trash";
+  votedAt: string;
+  title: string;
+  description: string;
+  brand: string;
+  category: string;
+  imageUrl: string | null;
+  upvotesCount: number;
+  downvotesCount: number;
+};
+
+export async function fetchUserVoteHistory(userId: string): Promise<UserVoteHistoryItem[]> {
+  try {
+    const { data: votesData, error: votesErr } = await supabase
+      .from("votes")
+      .select("item_id, verdict, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (votesErr || !votesData || votesData.length === 0) {
+      return [];
+    }
+
+    const itemIds = votesData.map((v) => v.item_id);
+
+    const { data: itemsData } = await supabase
+      .from("items")
+      .select("id, title, description, brand, category, image_url, created_at")
+      .in("id", itemIds);
+
+    const { data: allVotes } = await supabase
+      .from("votes")
+      .select("item_id, verdict")
+      .in("item_id", itemIds);
+
+    const itemsMap = new Map((itemsData ?? []).map((it) => [it.id, it]));
+
+    return votesData.map((vote) => {
+      const it = itemsMap.get(vote.item_id);
+      const itemVotes = (allVotes ?? []).filter((v) => v.item_id === vote.item_id);
+      const stashes = itemVotes.filter((v) => v.verdict === "stash").length;
+      const trashes = itemVotes.filter((v) => v.verdict === "trash").length;
+
+      return {
+        itemId: vote.item_id,
+        verdict: vote.verdict as "stash" | "trash",
+        votedAt: vote.created_at || new Date().toISOString(),
+        title: it?.title || "Community Brand Verdict",
+        description: it?.description || "User-submitted consumer verdict on SOT.",
+        brand: it?.brand || "Verified Brand",
+        category: it?.category || "Consumer Experience",
+        imageUrl: it?.image_url || null,
+        upvotesCount: stashes,
+        downvotesCount: trashes,
+      };
+    });
+  } catch (err) {
+    console.warn("fetchUserVoteHistory note:", err);
+    return [];
+  }
+}

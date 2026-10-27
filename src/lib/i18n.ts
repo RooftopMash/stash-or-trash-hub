@@ -177,20 +177,15 @@ resources["zh-TW"] = resources["zh-TW"] ?? resources.zh ?? { translation: en };
 
 if (!i18n.isInitialized) {
   i18n
-    .use(LanguageDetector)
     .use(initReactI18next)
     .init({
       resources,
+      lng: "en",
       fallbackLng: "en",
       supportedLngs: LANGUAGES.map((l) => l.code),
       nonExplicitSupportedLngs: true,
       interpolation: { escapeValue: false },
       initImmediate: false,
-      detection: {
-        order: ["localStorage", "navigator"],
-        caches: ["localStorage"],
-        lookupLocalStorage: "sot-lang",
-      },
     } as any);
 }
 

@@ -74,6 +74,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { SecureConnectionsPanel } from "@/components/SecureConnectionsPanel";
 import { BrandAICopilot } from "@/components/BrandAICopilot";
 import { ContentSafetyGate } from "@/components/ContentSafetyGate";
@@ -143,6 +150,7 @@ function DashboardPage() {
   // Brand Launch Studio Quick-Launcher state
   const [studioModalOpen, setStudioModalOpen] = useState(false);
   const [studioCategory, setStudioCategory] = useState<BrandBroadcastCategory>("product_launch");
+  const [billingModalOpen, setBillingModalOpen] = useState(false);
   const [callClientTarget, setCallClientTarget] = useState<{
     id: string;
     name: string;
@@ -657,7 +665,14 @@ function DashboardPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => setActiveTab("b2b_pricing")}
+                    onClick={() => {
+                      setActiveTab("b2b_pricing");
+                      setBillingModalOpen(true);
+                      toast.info(`Managing ${activeBrand.name} subscription tiers & billing.`);
+                      setTimeout(() => {
+                        document.getElementById("b2b-pricing-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }, 150);
+                    }}
                     className="gap-1.5 border-[#d6a928]/60 bg-slate-900 font-bold text-[#f5d061] hover:bg-slate-800"
                   >
                     <CreditCard className="h-4 w-4 text-[#d6a928]" /> Manage Tier / Billing
@@ -1119,7 +1134,7 @@ function DashboardPage() {
                 TAB 5: B2B DATA & BROADCAST PRICING + MULTI-GATEWAY CHECKOUT
                ===================================================================== */}
             {activeTab === "b2b_pricing" && (
-              <div className="mt-6">
+              <div className="mt-6" id="b2b-pricing-section">
                 <BrandB2BPricingAndCheckoutPanel brandName={activeBrand.name} />
               </div>
             )}
@@ -1384,6 +1399,24 @@ function DashboardPage() {
         session={messengerCallSession}
         onCallEnded={() => setMessengerCallSession(null)}
       />
+
+      {/* Dedicated Manage Tier & Corporate Billing Modal */}
+      <Dialog open={billingModalOpen} onOpenChange={setBillingModalOpen}>
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl font-black text-slate-950 flex items-center gap-2 dark:text-white">
+              <CreditCard className="h-6 w-6 text-[#d6a928]" />
+              Manage Subscription Tier & Corporate Billing
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-600 dark:text-slate-300">
+              Upgrade or modify your verified brand custody plan for {activeBrand.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2">
+            <BrandB2BPricingAndCheckoutPanel brandName={activeBrand.name} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

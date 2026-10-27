@@ -1,14 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Download, Smartphone, X } from "lucide-react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { Button } from "@/components/ui/button";
 
 export function PWAInstallButton() {
+  const [mounted, setMounted] = useState(false);
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showIOSGuide, setShowIOSGuide] = useState(false);
 
-  // If already installed, hide the button
-  if (isInstalled) {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Return null during SSR and initial hydration so server and client match
+  if (!mounted || isInstalled) {
     return null;
   }
 

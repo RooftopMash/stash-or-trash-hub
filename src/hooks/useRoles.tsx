@@ -98,11 +98,10 @@ export function useRoles() {
   const isDeveloper = isOwnerEmail || isAdmin;
   const hasBrandRole = roles.includes("brand") || isAdmin;
 
-  const [persona, setPersonaState] = useState<ActiveAccountPersona>(() =>
-    getStoredAccountPersona(roles.includes("brand")),
-  );
+  const [persona, setPersonaState] = useState<ActiveAccountPersona>("consumer");
 
   useEffect(() => {
+    setPersonaState(getStoredAccountPersona(roles.includes("brand")));
     const syncPersona = () => {
       setPersonaState(getStoredAccountPersona(roles.includes("brand")));
     };

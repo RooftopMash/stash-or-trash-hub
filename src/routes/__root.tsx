@@ -21,7 +21,7 @@ import { ProductionMonitoring } from "@/components/ProductionMonitoring";
 import { VerdictSuccess } from "@/components/VerdictSuccess";
 import { autoSeedFirestoreIfEmpty } from "@/lib/seedFirestore";
 import { SeoHelmet } from "@/components/SeoHelmet";
-import "@/lib/i18n";
+import i18n, { LANGUAGES } from "@/lib/i18n";
 
 const BRAND_BAROMETER_SCHEMA = {
   "@context": "https://schema.org",
@@ -220,6 +220,20 @@ function RootComponent() {
         runRegister();
       } else {
         window.addEventListener("load", runRegister);
+      }
+    }
+
+    // Sync preferred language post-hydration to eliminate SSR text mismatch
+    if (typeof window !== "undefined") {
+      try {
+        const savedLang = window.localStorage.getItem("sot-lang");
+        const browserLang = (navigator.language || "").split("-")[0];
+        const target = savedLang || browserLang;
+        if (target && target !== "en" && LANGUAGES.some((l) => l.code === target)) {
+          void i18n.changeLanguage(target);
+        }
+      } catch {
+        // ignore
       }
     }
   }, []);

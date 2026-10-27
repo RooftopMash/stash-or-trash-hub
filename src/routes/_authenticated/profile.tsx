@@ -54,6 +54,7 @@ import { SocialConnectionsPanel } from "@/components/SocialConnectionsPanel";
 import { CommunicationFreedomCard } from "@/components/CommunicationFreedomCard";
 import { ProfileWall } from "@/components/ProfileWall";
 import { ReleaseSafetyControls } from "@/components/ReleaseSafetyControls";
+import { UserProfileActivityHistory } from "@/components/UserProfileActivityHistory";
 import {
   BrandOperatorHandoverBar,
   BrandCxDataAndAwardsMatrix,
@@ -864,6 +865,12 @@ function ProfilePage() {
             <SocialConnectionsPanel userId={user.id} />
 
             <ProfileWall profileId={user.id} isOwner />
+
+            <UserProfileActivityHistory
+              userId={user.id}
+              userName={profile?.display_name || user.email || "Member"}
+            />
+
             <ReleaseSafetyControls userId={user.id} />
 
             <h2 className="mb-3 mt-8 font-display text-lg font-bold">{t("profile.activity")}</h2>

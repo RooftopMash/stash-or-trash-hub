@@ -159,23 +159,5 @@ export function installProductionSecurityShield(): void {
   };
   window.addEventListener("dragstart", handleDragStart, { capture: true });
 
-  // 4. Privacy Shield on Mobile Screen Capture / App Switcher
-  // When mobile OS captures snapshot for app switcher or screen-recording is active,
-  // apply a blur veil to protect personal conversations and proprietary brand analytics
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === "hidden") {
-      document.body?.classList.add("sot-privacy-blur");
-    } else {
-      document.body?.classList.remove("sot-privacy-blur");
-    }
-  };
-  document.addEventListener("visibilitychange", handleVisibilityChange);
-
-  window.addEventListener("blur", () => {
-    document.body?.classList.add("sot-privacy-blur");
-  });
-
-  window.addEventListener("focus", () => {
-    document.body?.classList.remove("sot-privacy-blur");
-  });
+  // Privacy blur removed to ensure preview iframe remains permanently visible and interactive
 }

@@ -970,13 +970,6 @@
   user-select: text !important;
 }
 
-/* Privacy veil when app switcher or screen-recording is detected */
-body.sot-privacy-blur #root {
-  filter: blur(14px) grayscale(60%) !important;
-  transition: filter 0.15s ease-out;
-  pointer-events: none;
-}
-
 /* =========================================================================
    PWA & TWA MOBILE SAFE AREA & TOUCH COMPLIANCE
    - Safe area padding for notches and gesture indicator bars
