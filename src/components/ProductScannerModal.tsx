@@ -16,6 +16,7 @@ interface ProductScannerModalProps {
     matchedBrandId?: string;
     file?: File | null;
     scanResult: AiScanResult;
+    initialVerdict?: "stash" | "trash";
   }) => void;
 }
 

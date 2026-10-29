@@ -41,6 +41,7 @@ function ScanPage() {
     matchedBrandId?: string;
     file?: File | null;
     scanResult: AiScanResult;
+    initialVerdict?: "stash" | "trash";
   } | null>(null);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
 
@@ -52,6 +53,7 @@ function ScanPage() {
     matchedBrandId?: string;
     file?: File | null;
     scanResult: AiScanResult;
+    initialVerdict?: "stash" | "trash";
   }) => {
     setPrefilledPost(params);
     setSubmitDialogOpen(true);
@@ -206,6 +208,7 @@ function ScanPage() {
               category: prefilledPost.category,
               file: prefilledPost.file || null,
               aiScanResult: prefilledPost.scanResult,
+              initialVerdict: prefilledPost.initialVerdict || null,
             }}
           />
         )}

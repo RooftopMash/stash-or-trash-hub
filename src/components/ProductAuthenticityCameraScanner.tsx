@@ -28,6 +28,9 @@ import {
   FileCheck,
   Download,
   Printer,
+  Trash2,
+  Coins,
+  Globe,
 } from "lucide-react";
 import {
   detectBarcodeOrQr,
@@ -36,12 +39,16 @@ import {
   fileToOptimizedBase64,
   extractFrameFromVideo,
   runAiScan,
+  parseQrPayload,
+  evaluateQrAuthenticity,
   type AiScanResult,
+  type ParsedQrPayload,
+  type QrAuthenticityVerdict,
 } from "@/lib/ai-scanner";
 import { searchBrands, type Brand } from "@/lib/brands";
 import { toast } from "sonner";
 
-export type InspectionMode = "barcode" | "logo" | "full_product";
+export type InspectionMode = "barcode" | "qr_code" | "logo" | "full_product";
 
 export interface ProductCameraScannerProps {
   onApplyToPost?: (params: {
@@ -52,6 +59,7 @@ export interface ProductCameraScannerProps {
     matchedBrandId?: string;
     file?: File | null;
     scanResult: AiScanResult;
+    initialVerdict?: "stash" | "trash";
   }) => void;
   onClose?: () => void;
   standalone?: boolean;
@@ -90,6 +98,11 @@ export function ProductAuthenticityCameraScanner({
   const [resultTab, setResultTab] = useState<"authenticity" | "guide" | "brand" | "forensics" | "pr_dossier">("authenticity");
   const [manualBarcode, setManualBarcode] = useState("");
   const [showManualBarcode, setShowManualBarcode] = useState(false);
+  const [parsedQr, setParsedQr] = useState<ParsedQrPayload | null>(null);
+  const [qrVerdict, setQrVerdict] = useState<QrAuthenticityVerdict | null>(null);
+  const [manualQrInput, setManualQrInput] = useState("");
+  const [manualInputTab, setManualInputTab] = useState<"barcode" | "qr_code">("barcode");
+  const [userVerdict, setUserVerdict] = useState<"stash" | "trash" | null>(null);
 
   // Refs
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -231,17 +244,26 @@ export function ProductAuthenticityCameraScanner({
     detectBarcodeOrQr(video)
       .then((detected) => {
         if (detected && detected.rawValue) {
-          const country = getGs1CountryPrefix(detected.rawValue);
+          const isQr = detected.format === "qr_code";
+          let parsed: ParsedQrPayload | null = null;
+          let evalRes: QrAuthenticityVerdict | null = null;
+          if (isQr) {
+            parsed = parseQrPayload(detected.rawValue);
+            evalRes = evaluateQrAuthenticity(parsed);
+            setParsedQr(parsed);
+            setQrVerdict(evalRes);
+          }
+
+          const country = isQr && parsed?.gtin ? getGs1CountryPrefix(parsed.gtin) : getGs1CountryPrefix(detected.rawValue);
           setDetectedCode((prev) => {
             if (prev?.rawValue !== detected.rawValue) {
               playScanChime();
               if (typeof navigator !== "undefined" && navigator.vibrate) {
                 navigator.vibrate([60, 40, 60]);
               }
+              const label = isQr ? (evalRes?.badgeLabel || "QR Code Decoded") : `Captured ${detected.format.toUpperCase()}`;
               toast.info(
-                `Captured ${detected.format.toUpperCase()}: ${detected.rawValue}${
-                  country ? ` (${country})` : ""
-                }`,
+                `${label}: ${detected.rawValue}${country ? ` (${country})` : ""}`,
                 { duration: 2500 }
               );
               return {
@@ -353,7 +375,8 @@ export function ProductAuthenticityCameraScanner({
     previewUrl: string,
     fileObj: File | null,
     barcodeData?: string,
-    mode: InspectionMode = activeMode
+    mode: InspectionMode = activeMode,
+    explicitQrData?: string
   ) => {
     setScanning(true);
     setCapturedImage(previewUrl);
@@ -361,20 +384,29 @@ export function ProductAuthenticityCameraScanner({
     stopCamera();
 
     try {
+      const effectiveQr = explicitQrData || (detectedCode?.format === "qr_code" ? detectedCode.rawValue : undefined);
+      if (effectiveQr) {
+        const parsed = parseQrPayload(effectiveQr);
+        setParsedQr(parsed);
+        setQrVerdict(evaluateQrAuthenticity(parsed));
+      }
+
       setAnalyzingStep("Executing forensic edge & logo geometry inspection...");
       await new Promise((r) => setTimeout(r, 200));
 
       setAnalyzingStep(
         mode === "barcode"
           ? "Validating GS1 barcode checksum & international registry..."
+          : mode === "qr_code"
+          ? "Decoding QR cryptographic certificate & digital passport..."
           : "Analyzing typography, stitching density & micro-embossing..."
       );
 
       const result = await runAiScan({
         image: base64,
         mimeType: mime,
-        barcode: barcodeData || detectedCode?.rawValue || undefined,
-        qrData: detectedCode?.format === "qr_code" ? detectedCode.rawValue : undefined,
+        barcode: barcodeData || (detectedCode?.format !== "qr_code" ? detectedCode?.rawValue : undefined),
+        qrData: effectiveQr,
         inspectionMode: mode,
         mediaType: "image",
       });
@@ -477,6 +509,28 @@ export function ProductAuthenticityCameraScanner({
     await processImageForAuthenticity("", "image/jpeg", "", null, code, "barcode");
   };
 
+  // Manual QR code / Digital Link lookup
+  const handleManualQrSubmit = async (e?: React.FormEvent, customQr?: string) => {
+    if (e) e.preventDefault();
+    const qrText = (customQr || manualQrInput).trim();
+    if (!qrText) {
+      toast.error("Please enter a QR code or verification link");
+      return;
+    }
+    const parsed = parseQrPayload(qrText);
+    const evalRes = evaluateQrAuthenticity(parsed);
+    setParsedQr(parsed);
+    setQrVerdict(evalRes);
+    const country = parsed.gtin ? getGs1CountryPrefix(parsed.gtin) : null;
+    setDetectedCode({
+      format: "qr_code",
+      rawValue: qrText,
+      country,
+    });
+    playScanChime();
+    await processImageForAuthenticity("", "image/jpeg", "", null, undefined, "qr_code", qrText);
+  };
+
   // Reset scan and return to live camera
   const handleReset = () => {
     setCapturedImage(null);
@@ -484,6 +538,9 @@ export function ProductAuthenticityCameraScanner({
     setScanResult(null);
     setMatchedBrand(null);
     setDetectedCode(null);
+    setParsedQr(null);
+    setQrVerdict(null);
+    setUserVerdict(null);
     startCamera();
   };
 
@@ -491,6 +548,11 @@ export function ProductAuthenticityCameraScanner({
   const handleApplyPost = () => {
     if (!scanResult) return;
     if (onApplyToPost) {
+      const defaultVerdict =
+        scanResult.counterfeitAssessment?.verdict === "suspected_counterfeit" ||
+        scanResult.counterfeitAssessment?.verdict === "high_risk_fake"
+          ? "trash"
+          : "stash";
       onApplyToPost({
         brandName: scanResult.brandInfo.brandName,
         brandOwner: scanResult.brandInfo.brandOwner,
@@ -499,6 +561,7 @@ export function ProductAuthenticityCameraScanner({
         matchedBrandId: matchedBrand?.id,
         file: capturedFile,
         scanResult,
+        initialVerdict: userVerdict || defaultVerdict,
       });
     }
     if (onClose) onClose();
@@ -556,7 +619,17 @@ Verified on Stash Or Trash Brand Barometer`;
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <QrCode className="h-3.5 w-3.5" /> {t("scanner.modeBarcode", { defaultValue: "Barcode & QR" })}
+              <Scan className="h-3.5 w-3.5" /> {t("scanner.modeBarcode", { defaultValue: "Barcode (1D)" })}
+            </button>
+            <button
+              onClick={() => setActiveMode("qr_code")}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
+                activeMode === "qr_code"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <QrCode className="h-3.5 w-3.5" /> {t("scanner.modeQr", { defaultValue: "QR Code (GS1)" })}
             </button>
             <button
               onClick={() => setActiveMode("logo")}
@@ -669,7 +742,7 @@ Verified on Stash Or Trash Brand Barometer`;
             {/* Reticle & Targeting HUD Overlay */}
             {streamActive && !scanning && (
               <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-                {/* Mode: Barcode & QR Reticle */}
+                {/* Mode: Barcode Reticle */}
                 {activeMode === "barcode" && (
                   <div className="relative w-72 sm:w-96 h-48 border-2 border-emerald-400/80 rounded-2xl shadow-[0_0_20px_rgba(52,211,153,0.3)] flex items-center justify-center overflow-hidden">
                     {/* Corner accents */}
@@ -682,7 +755,27 @@ Verified on Stash Or Trash Brand Barometer`;
                     <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#34d399] animate-[bounce_2s_infinite]" />
 
                     <div className="text-[11px] font-semibold font-mono tracking-wider text-emerald-300 bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm border border-emerald-500/30">
-                      GS1 BARCODE / UPC / QR RETICLE
+                      1D RETAIL BARCODE (UPC / EAN)
+                    </div>
+                  </div>
+                )}
+
+                {/* Mode: QR Code & Anti-Counterfeit Reticle */}
+                {activeMode === "qr_code" && (
+                  <div className="relative w-64 sm:w-72 h-64 sm:h-72 border-2 border-blue-400/90 rounded-2xl shadow-[0_0_24px_rgba(96,165,250,0.35)] flex items-center justify-center overflow-hidden">
+                    <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-blue-400" />
+                    <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-blue-400" />
+                    <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-blue-400" />
+                    <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-blue-400" />
+
+                    {/* Center cross-alignment guides */}
+                    <div className="w-16 h-16 border border-dashed border-blue-300/40 rounded-lg pointer-events-none" />
+
+                    {/* Animated scanning laser line */}
+                    <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_12px_#60a5fa] animate-[bounce_1.8s_infinite]" />
+
+                    <div className="absolute bottom-3 text-[11px] font-semibold font-mono tracking-wider text-blue-300 bg-black/70 px-3 py-1 rounded-full backdrop-blur-sm border border-blue-500/30">
+                      AUTHENTICITY QR / GS1 DIGITAL LINK
                     </div>
                   </div>
                 )}
@@ -717,7 +810,8 @@ Verified on Stash Or Trash Brand Barometer`;
                 {/* Subtitle helper badge */}
                 <div className="absolute bottom-4 bg-black/75 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 text-xs text-white/90 font-medium shadow-lg flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                  {activeMode === "barcode" && "Point at UPC-A, EAN-13, or QR code on retail box / tag"}
+                  {activeMode === "barcode" && "Point at 1D UPC-A or EAN-13 barcode on retail box / can"}
+                  {activeMode === "qr_code" && "Center QR code or GS1 Digital Link inside the square"}
                   {activeMode === "logo" && "Center the brand logo, metal badge, or neck tag"}
                   {activeMode === "full_product" && "Fit the entire garment, sneaker, bottle or accessory"}
                 </div>
@@ -821,7 +915,7 @@ Verified on Stash Or Trash Brand Barometer`;
                 onClick={() => setShowManualBarcode(!showManualBarcode)}
                 className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
               >
-                <Tag className="h-3.5 w-3.5" /> {t("scanner.enterBarcode", { defaultValue: "Enter Barcode" })}
+                <QrCode className="h-3.5 w-3.5 text-primary" /> {showManualBarcode ? "Hide Code Entry" : "Enter Code or QR"}
               </Button>
               <input
                 ref={fileInputRef}
@@ -846,6 +940,8 @@ Verified on Stash Or Trash Brand Barometer`;
             <div className="text-xs text-muted-foreground text-center sm:text-right">
               {activeMode === "barcode"
                 ? `Mode: ${t("scanner.modeBarcode", { defaultValue: "Barcode Checksum" })}`
+                : activeMode === "qr_code"
+                ? `Mode: ${t("scanner.modeQr", { defaultValue: "QR Code & Digital Link" })}`
                 : activeMode === "logo"
                 ? `Mode: ${t("scanner.modeLogo", { defaultValue: "Luxury Logo Geometry" })}`
                 : `Mode: ${t("scanner.modeFullProduct", { defaultValue: "Full Garment & Package Analysis" })}`}
@@ -853,80 +949,182 @@ Verified on Stash Or Trash Brand Barometer`;
           </div>
         )}
 
-        {/* Manual Barcode Input Bar */}
+        {/* Manual Barcode / QR Input Bar */}
         {!scanResult && !scanning && (showManualBarcode || permissionState === "unsupported" || permissionState === "denied") && (
-          <form
-            onSubmit={handleManualBarcodeSubmit}
-            className="p-3 bg-muted/40 rounded-xl border border-border flex flex-col gap-2 animate-in fade-in"
-          >
-            <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
-              <div className="relative flex-1 w-full">
-                <Tag className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Enter UPC-A, EAN-13, or serial (e.g. 6001087000140 for Coca-Cola 2L)..."
-                  value={manualBarcode}
-                  onChange={(e) => setManualBarcode(e.target.value)}
-                  className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={!manualBarcode.trim()}
-                  className="w-full sm:w-auto text-xs h-8 px-4 font-semibold"
+          <div className="p-4 bg-muted/40 rounded-xl border border-border flex flex-col gap-3 animate-in fade-in">
+            {/* Tab switch between Barcode and QR Code */}
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setManualInputTab("barcode")}
+                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    manualInputTab === "barcode"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
-                  {t("scanner.verifyBarcode", { defaultValue: "Verify Barcode" })}
-                </Button>
+                  <Tag className="h-3.5 w-3.5" /> 1D Barcode (UPC/EAN)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setManualInputTab("qr_code")}
+                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    manualInputTab === "qr_code"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <QrCode className="h-3.5 w-3.5 text-primary" /> 2D QR Code / GS1 Digital Link
+                </button>
               </div>
+              <span className="text-[11px] text-muted-foreground font-mono">
+                {manualInputTab === "qr_code" ? "GS1 Digital Link & Anti-Counterfeit URL" : "GS1 International Registry"}
+              </span>
             </div>
 
-            {/* Quick barcode shortcuts including Coca-Cola 2L */}
-            <div className="w-full flex items-center gap-1.5 flex-wrap pt-1 text-[11px] text-muted-foreground">
-              <span className="font-semibold text-foreground/80">Quick test:</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setManualBarcode("6001087000140");
-                  processImageForAuthenticity("", "image/jpeg", "", null, "6001087000140", "barcode");
-                }}
-                className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
-              >
-                Coca-Cola 2L (SA: 6001087000140)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setManualBarcode("5449000000996");
-                  processImageForAuthenticity("", "image/jpeg", "", null, "5449000000996", "barcode");
-                }}
-                className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
-              >
-                Coca-Cola 2L (Global: 5449000000996)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setManualBarcode("049000050103");
-                  processImageForAuthenticity("", "image/jpeg", "", null, "049000050103", "barcode");
-                }}
-                className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
-              >
-                Coca-Cola 2L (US: 049000050103)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setManualBarcode("6001087000034");
-                  processImageForAuthenticity("", "image/jpeg", "", null, "6001087000034", "barcode");
-                }}
-                className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
-              >
-                Sprite 2L (SA: 6001087000034)
-              </button>
-            </div>
-          </form>
+            {manualInputTab === "barcode" ? (
+              <form onSubmit={handleManualBarcodeSubmit} className="flex flex-col gap-2">
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+                  <div className="relative flex-1 w-full">
+                    <Tag className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Enter UPC-A, EAN-13, or serial (e.g. 6001087000140 for Coca-Cola 2L)..."
+                      value={manualBarcode}
+                      onChange={(e) => setManualBarcode(e.target.value)}
+                      className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={!manualBarcode.trim()}
+                    className="w-full sm:w-auto text-xs h-8 px-4 font-semibold"
+                  >
+                    {t("scanner.verifyBarcode", { defaultValue: "Verify Barcode" })}
+                  </Button>
+                </div>
+
+                {/* Quick barcode shortcuts including Coca-Cola 2L */}
+                <div className="w-full flex items-center gap-1.5 flex-wrap pt-1 text-[11px] text-muted-foreground">
+                  <span className="font-semibold text-foreground/80">Quick test:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualBarcode("6001087000140");
+                      processImageForAuthenticity("", "image/jpeg", "", null, "6001087000140", "barcode");
+                    }}
+                    className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
+                  >
+                    Coca-Cola 2L (SA: 6001087000140)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualBarcode("5449000000996");
+                      processImageForAuthenticity("", "image/jpeg", "", null, "5449000000996", "barcode");
+                    }}
+                    className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
+                  >
+                    Coca-Cola 2L (Global: 5449000000996)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualBarcode("049000050103");
+                      processImageForAuthenticity("", "image/jpeg", "", null, "049000050103", "barcode");
+                    }}
+                    className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
+                  >
+                    Coca-Cola 2L (US: 049000050103)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualBarcode("6001087000034");
+                      processImageForAuthenticity("", "image/jpeg", "", null, "6001087000034", "barcode");
+                    }}
+                    className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
+                  >
+                    Sprite 2L (SA: 6001087000034)
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleManualQrSubmit} className="flex flex-col gap-2">
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+                  <div className="relative flex-1 w-full">
+                    <QrCode className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-primary" />
+                    <input
+                      type="text"
+                      placeholder="Paste GS1 Digital Link, Certilogo URL, or QR payload (e.g. https://id.gs1.org/01/...)..."
+                      value={manualQrInput}
+                      onChange={(e) => setManualQrInput(e.target.value)}
+                      className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={!manualQrInput.trim()}
+                    className="w-full sm:w-auto text-xs h-8 px-4 font-semibold bg-primary text-primary-foreground"
+                  >
+                    Verify QR Code
+                  </Button>
+                </div>
+
+                {/* Quick QR code test shortcuts */}
+                <div className="w-full flex items-center gap-1.5 flex-wrap pt-1 text-[11px] text-muted-foreground">
+                  <span className="font-semibold text-foreground/80">Test QR Scenarios:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const qr = "https://id.gs1.org/01/09506000134352/10/LOT2026/21/SER8901";
+                      setManualQrInput(qr);
+                      handleManualQrSubmit(undefined, qr);
+                    }}
+                    className="px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 transition-colors font-mono text-[10px] flex items-center gap-1"
+                  >
+                    <CheckCircle2 className="h-3 w-3" /> GS1 Digital Link (Original)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const qr = "https://certilogo.com/code/982347192837";
+                      setManualQrInput(qr);
+                      handleManualQrSubmit(undefined, qr);
+                    }}
+                    className="px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 transition-colors font-mono text-[10px] flex items-center gap-1"
+                  >
+                    <ShieldCheck className="h-3 w-3" /> Certilogo (Verified Genuine)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const qr = "https://nike.com/product/air-jordan-1-retro";
+                      setManualQrInput(qr);
+                      handleManualQrSubmit(undefined, qr);
+                    }}
+                    className="px-2 py-0.5 rounded bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-700 dark:text-blue-300 transition-colors font-mono text-[10px] flex items-center gap-1"
+                  >
+                    <Tag className="h-3 w-3" /> Nike Official Digital Passport
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const qr = "http://gucci-auth-check.xyz/verify?token=fake123";
+                      setManualQrInput(qr);
+                      handleManualQrSubmit(undefined, qr);
+                    }}
+                    className="px-2 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-700 dark:text-rose-300 transition-colors font-mono text-[10px] flex items-center gap-1"
+                  >
+                    <AlertTriangle className="h-3 w-3" /> Counterfeit Replica QR (Phishing Tag)
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         )}
 
         {/* ========================================================= */}
@@ -1021,6 +1219,208 @@ Verified on Stash Or Trash Brand Barometer`;
                       Replica Risk: {scanResult.counterfeitAssessment.counterfeitRiskScore}%
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+
+            {/* ======================================================== */}
+            {/* ORIGINAL VS COUNTERFEIT FORENSIC COMPARISON MATRIX       */}
+            {/* ======================================================== */}
+            <div className="rounded-2xl border border-border bg-card/80 p-5 space-y-4 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3.5">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                      Forensic Authentication Engine
+                    </span>
+                    {scanResult.counterfeitAssessment?.isOriginal ? (
+                      <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white font-bold text-xs gap-1">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> VERIFIED ORIGINAL
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-rose-600 hover:bg-rose-600 text-white font-bold text-xs gap-1">
+                        <AlertTriangle className="h-3.5 w-3.5" /> COUNTERFEIT REPLICA RISK
+                      </Badge>
+                    )}
+                  </div>
+                  <h4 className="text-base font-bold text-foreground mt-1">
+                    Authenticity vs Counterfeit Differentiation Matrix
+                  </h4>
+                </div>
+
+                {/* Instant Consumer Verdict Action: Stash as Original vs Trash as Counterfeit */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant={userVerdict === "stash" ? "default" : "outline"}
+                    onClick={() => {
+                      setUserVerdict("stash");
+                      playScanChime();
+                      toast.success(`You verified this as ORIGINAL! "Stash" verdict recorded.`);
+                    }}
+                    className={`gap-1.5 text-xs font-semibold ${
+                      userVerdict === "stash"
+                        ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20"
+                        : "hover:border-emerald-500/50 hover:text-emerald-600"
+                    }`}
+                  >
+                    <Coins className="h-3.5 w-3.5 text-amber-400" />
+                    Stash as Original
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={userVerdict === "trash" ? "destructive" : "outline"}
+                    onClick={() => {
+                      setUserVerdict("trash");
+                      playScanChime();
+                      toast.error(`Counterfeit warning noted! "Trash" verdict recorded.`);
+                    }}
+                    className={`gap-1.5 text-xs font-semibold ${
+                      userVerdict === "trash"
+                        ? "bg-rose-600 text-white hover:bg-rose-700 shadow-md shadow-rose-500/20"
+                        : "hover:border-rose-500/50 hover:text-rose-600"
+                    }`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Trash as Counterfeit
+                  </Button>
+                </div>
+              </div>
+
+              {/* Decoded QR / Digital Link Inspection Pill (if scanned or manual QR) */}
+              {(parsedQr || qrVerdict || scanResult.brandInfo.qrOrBarcodeDecoded) && (
+                <div className="p-3.5 rounded-xl border border-border/80 bg-muted/30 text-xs space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <QrCode className="h-4 w-4 text-primary" />
+                      <span className="font-bold text-foreground">
+                        {parsedQr?.isGs1DigitalLink
+                          ? "GS1 Digital Link URI Standard"
+                          : parsedQr?.isAuthPortal
+                          ? "Cryptographic Brand Auth Portal"
+                          : "Decoded 2D QR / Digital Tag"}
+                      </span>
+                    </div>
+                    {qrVerdict && (
+                      <Badge
+                        variant="outline"
+                        className={`text-[11px] font-mono ${
+                          qrVerdict.isOriginal
+                            ? "border-emerald-500 text-emerald-600 bg-emerald-500/10"
+                            : "border-rose-500 text-rose-600 bg-rose-500/10"
+                        }`}
+                      >
+                        {qrVerdict.badgeLabel}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
+                    <div className="p-2 rounded bg-background/80 border border-border">
+                      <span className="text-muted-foreground block text-[10px]">PAYLOAD / DOMAIN</span>
+                      <span className="text-foreground font-semibold truncate block" title={parsedQr?.hostname || scanResult.brandInfo.qrOrBarcodeDecoded || ""}>
+                        {parsedQr?.hostname || "Direct Product Registry"}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded bg-background/80 border border-border">
+                      <span className="text-muted-foreground block text-[10px]">GTIN / PRODUCT CODE</span>
+                      <span className="text-foreground font-semibold truncate block">
+                        {parsedQr?.gtin || scanResult.brandInfo.qrOrBarcodeDecoded || "Standard GTIN-13"}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded bg-background/80 border border-border">
+                      <span className="text-muted-foreground block text-[10px]">SERIAL / PASS-KEY</span>
+                      <span className="text-foreground font-semibold truncate block">
+                        {parsedQr?.serialNumber || parsedQr?.batchLot || "Verified Registry Checksum"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {qrVerdict?.analysisNotes && (
+                    <p className="text-[11px] text-muted-foreground pt-1 leading-relaxed">
+                      <strong>Security Analysis:</strong> {qrVerdict.analysisNotes}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Side-by-Side Comparison: Genuine Spec vs Counterfeit Marker */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {/* Authentic Column */}
+                <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span>Original Genuine Specifications</span>
+                  </div>
+                  <ul className="space-y-1.5 text-xs text-foreground/90 leading-relaxed">
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 font-bold">✓</span>
+                      <span>
+                        <strong>Barcode/QR Legitimacy:</strong>{" "}
+                        {parsedQr?.isGs1DigitalLink || parsedQr?.isAuthPortal
+                          ? "Authorized HTTPS digital certificate mapped to verified manufacturer DNS."
+                          : "Checksum and manufacturer prefix valid in global GS1 registry."}
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 font-bold">✓</span>
+                      <span>
+                        <strong>Logo Geometry & Deboss:</strong>{" "}
+                        {scanResult.counterfeitAssessment?.logoInspection ||
+                          "Accurate kerning, vector-smooth curves, and uniform embossing depth."}
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 font-bold">✓</span>
+                      <span>
+                        <strong>Materials & Hardware:</strong>{" "}
+                        {scanResult.counterfeitAssessment?.materialAndCraftsmanship ||
+                          "Consistent stitch count per inch, premium alloy hardware with crisp micro-engravings."}
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 font-bold">✓</span>
+                      <span>
+                        <strong>Distribution Provenance:</strong>{" "}
+                        {scanResult.counterfeitAssessment?.brandProtectionTracking?.authorizedChannels ||
+                          "Official brand flagship stores, certified department stockists, authorized distributors."}
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Counterfeit / Replica Indicator Column */}
+                <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/5 space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300">
+                    <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+                    <span>Counterfeit / Replica Vulnerabilities</span>
+                  </div>
+                  <ul className="space-y-1.5 text-xs text-foreground/90 leading-relaxed">
+                    <li className="flex items-start gap-2">
+                      <span className="text-rose-600 font-bold">✗</span>
+                      <span>
+                        <strong>Fake QR / Phishing Tags:</strong> Lookalike hostnames (e.g. .xyz, .top, typo URLs) and static non-dynamic serial numbers cloned across multiple fake batches.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-rose-600 font-bold">✗</span>
+                      <span>
+                        <strong>Font & Stitching Flaws:</strong> Fuzzy thermal printing, uneven stitch tension, loose thread ends, and distorted font serifs.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-rose-600 font-bold">✗</span>
+                      <span>
+                        <strong>Chemical / Material Compromise:</strong> Cheap petroleum-based polyurethane substitute, zinc-pot hardware, and missing security RFID/NFC layers.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-rose-600 font-bold">✗</span>
+                      <span>
+                        <strong>Market Distribution:</strong> Gray market drop-shipping, liquidation flea markets, and unverified social media marketplace listings.
+                      </span>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>

@@ -52,6 +52,7 @@ export interface SubmitDialogProps {
     category?: string;
     file?: File | null;
     aiScanResult?: AiScanResult | null;
+    initialVerdict?: Verdict | null;
   };
 }
 
@@ -79,7 +80,7 @@ export function SubmitDialog({
   const [aiScanResult, setAiScanResult] = useState<AiScanResult | null>(
     initialValues?.aiScanResult ?? null
   );
-  const [verdict, setVerdict] = useState<Verdict | null>(null);
+  const [verdict, setVerdict] = useState<Verdict | null>(initialValues?.initialVerdict ?? null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -89,6 +90,7 @@ export function SubmitDialog({
       if (initialValues.category !== undefined) setCategory(initialValues.category);
       if (initialValues.file !== undefined) setFile(initialValues.file);
       if (initialValues.aiScanResult !== undefined) setAiScanResult(initialValues.aiScanResult);
+      if (initialValues.initialVerdict !== undefined) setVerdict(initialValues.initialVerdict);
     }
   }, [initialValues]);
 
@@ -110,6 +112,7 @@ export function SubmitDialog({
     matchedBrandId?: string;
     file?: File | null;
     scanResult: AiScanResult;
+    initialVerdict?: "stash" | "trash";
   }) => {
     if (data.matchedBrandId) {
       setBrandId(data.matchedBrandId);
@@ -129,6 +132,9 @@ export function SubmitDialog({
       setFile(data.file);
     }
     setAiScanResult(data.scanResult);
+    if (data.initialVerdict) {
+      setVerdict(data.initialVerdict);
+    }
     toast.success(
       `Auto-filled: ${data.brandName} (Corporate Owner: ${data.brandOwner})`
     );

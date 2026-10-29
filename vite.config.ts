@@ -130,6 +130,19 @@ export default defineConfig({
   vite: {
     envPrefix: ["VITE_"],
     plugins: [sotProductionShieldPlugin()],
+    resolve: {
+      dedupe: ["react", "react-dom"],
+    },
+    optimizeDeps: {
+      include: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "@tanstack/react-router",
+        "@tanstack/react-start",
+        "@tanstack/react-query",
+      ],
+    },
     server: {
       host: "0.0.0.0",
       port: 3000,
