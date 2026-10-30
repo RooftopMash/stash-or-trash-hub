@@ -488,9 +488,8 @@ Perform a comprehensive multi-tier forensic evaluation:
 
           if (ai) {
             for (const modelName of CANDIDATE_MODELS) {
-            for (let attempt = 0; attempt < 2; attempt++) {
               try {
-                const response = await ai.models.generateContent({
+                const generatePromise = ai.models.generateContent({
                   model: modelName,
                   contents: { parts },
                   config: {
@@ -501,21 +500,18 @@ Perform a comprehensive multi-tier forensic evaluation:
                   },
                 });
 
+                const timeoutPromise = new Promise<never>((_, reject) =>
+                  setTimeout(() => reject(new Error("Model timeout")), 4500)
+                );
+
+                const response = await Promise.race([generatePromise, timeoutPromise]);
                 const rawText = response.text?.trim() || "{}";
                 parsed = JSON.parse(rawText);
-                break;
+                if (parsed) break;
               } catch (err: any) {
                 lastModelError = err;
-                console.warn(`Model ${modelName} attempt ${attempt + 1} failed:`, err?.status || err?.message);
-                // If 503 high demand or 429 rate limit, short wait before next attempt
-                if (err?.status === 503 || err?.status === 429) {
-                  await new Promise((r) => setTimeout(r, 600));
-                } else {
-                  break;
-                }
+                console.warn(`Model ${modelName} failed or timed out:`, err?.status || err?.message);
               }
-            }
-              if (parsed) break;
             }
           }
 

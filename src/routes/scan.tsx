@@ -72,13 +72,13 @@ function ScanPage() {
         {/* Hero Section */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
-            <Sparkles className="h-3.5 w-3.5" /> {t("scanner.badge", { defaultValue: "AI Product & Authenticity Barometer" })}
+            <QrCode className="h-3.5 w-3.5" /> {t("scanner.badge", { defaultValue: "AI QR & Product Authenticity Scanner" })}
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold font-display tracking-tight">
-            {t("scanner.title", { defaultValue: "Scan Product Barcodes & Logos to Verify Authenticity" })}
+            {t("scanner.title", { defaultValue: "Scan QR Codes & Barcodes to Identify Products & Brand Dossiers" })}
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base max-w-2xl mx-auto">
-            {t("scanner.subtitle", { defaultValue: "Point your camera at any product packaging, barcode, luxury logo, or care tag. Instantly trace corporate brand owner and verify whether the product is genuine or a fake replica." })}
+            {t("scanner.subtitle", { defaultValue: "Scan any product QR code, GS1 Digital Link, barcode, or luxury hallmark. Instantly identify corporate ownership, verify authentic origins, and inspect complete brand dossiers." })}
           </p>
         </div>
 

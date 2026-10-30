@@ -31,6 +31,7 @@ import {
   Trash2,
   Coins,
   Globe,
+  FileText,
 } from "lucide-react";
 import {
   detectBarcodeOrQr,
@@ -46,11 +47,13 @@ import {
   type QrAuthenticityVerdict,
 } from "@/lib/ai-scanner";
 import { searchBrands, type Brand } from "@/lib/brands";
+import { BrandDossierModal } from "@/components/BrandDossierModal";
 import { toast } from "sonner";
 
 export type InspectionMode = "barcode" | "qr_code" | "logo" | "full_product";
 
 export interface ProductCameraScannerProps {
+  initialMode?: InspectionMode;
   onApplyToPost?: (params: {
     brandName: string;
     brandOwner: string;
@@ -66,6 +69,7 @@ export interface ProductCameraScannerProps {
 }
 
 export function ProductAuthenticityCameraScanner({
+  initialMode = "barcode",
   onApplyToPost,
   onClose,
   standalone = false,
@@ -79,7 +83,7 @@ export function ProductAuthenticityCameraScanner({
   const [cameraFacing, setCameraFacing] = useState<"environment" | "user">("environment");
   const [hasTorch, setHasTorch] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
-  const [activeMode, setActiveMode] = useState<InspectionMode>("barcode");
+  const [activeMode, setActiveMode] = useState<InspectionMode>(initialMode);
 
   // Analysis & Result State
   const [scanning, setScanning] = useState(false);
@@ -103,6 +107,7 @@ export function ProductAuthenticityCameraScanner({
   const [manualQrInput, setManualQrInput] = useState("");
   const [manualInputTab, setManualInputTab] = useState<"barcode" | "qr_code">("barcode");
   const [userVerdict, setUserVerdict] = useState<"stash" | "trash" | null>(null);
+  const [showBrandDossierModal, setShowBrandDossierModal] = useState(false);
 
   // Refs
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -416,14 +421,41 @@ export function ProductAuthenticityCameraScanner({
 
       // Check if this brand exists in Stash or Trash database
       if (result.brandInfo?.brandName) {
+        let found: Brand | null = null;
         try {
           const matches = await searchBrands(result.brandInfo.brandName);
           if (matches && matches.length > 0) {
-            setMatchedBrand(matches[0]);
+            found = matches[0];
+            setMatchedBrand(found);
           }
         } catch {
           // ignore
         }
+
+        if (!found) {
+          const synthetic: Brand = {
+            id: `brand-${Date.now()}`,
+            owner_id: "system",
+            name: result.brandInfo.brandName,
+            slug: result.brandInfo.brandName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+            description: result.brandInfo.parentCompanyContext || null,
+            logo_url: null,
+            website: null,
+            category: result.brandInfo.category || null,
+            country: result.brandInfo.countryOfOrigin || null,
+            verified: result.counterfeitAssessment?.isOriginal ?? true,
+            trust_score: result.counterfeitAssessment?.authenticityScore ?? 85,
+            created_at: new Date().toISOString(),
+            signedLogoUrl: null,
+            ownerName: result.brandInfo.brandOwner,
+          };
+          setMatchedBrand(synthetic);
+        }
+      }
+
+      // If scanned via QR Code mode, prepare the Brand PR & Client Dossier
+      if (mode === "qr_code" || effectiveQr) {
+        setResultTab("pr_dossier");
       }
 
       playScanChime();
@@ -818,32 +850,65 @@ Verified on Stash Or Trash Brand Barometer`;
               </div>
             )}
 
-            {/* Detected Barcode Toast Strip */}
+            {/* Detected Barcode or QR Code Strip */}
             {detectedCode && streamActive && !scanning && (
-              <div className="absolute top-4 inset-x-4 flex items-center justify-between bg-emerald-950/90 border border-emerald-500/50 backdrop-blur-md px-4 py-2 rounded-xl text-white shadow-xl z-20 animate-in fade-in">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-7 w-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                    <CheckCircle2 className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold font-mono tracking-wide">
-                      {detectedCode.format.toUpperCase()}: {detectedCode.rawValue}
-                    </div>
-                    {detectedCode.country && (
-                      <div className="text-[10px] text-emerald-300">
-                        GS1 Origin: {detectedCode.country}
-                      </div>
+              <div
+                className={`absolute top-4 inset-x-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 backdrop-blur-md px-4 py-2.5 rounded-xl text-white shadow-xl z-20 animate-in fade-in ${
+                  detectedCode.format === "qr_code"
+                    ? "bg-blue-950/90 border border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+                    : "bg-emerald-950/90 border border-emerald-500/50"
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      detectedCode.format === "qr_code"
+                        ? "bg-blue-500/20 text-blue-400"
+                        : "bg-emerald-500/20 text-emerald-400"
+                    }`}
+                  >
+                    {detectedCode.format === "qr_code" ? (
+                      <QrCode className="h-4 w-4" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4" />
                     )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold font-mono tracking-wide truncate">
+                      {detectedCode.format === "qr_code" ? "QR CODE DETECTED: " : "1D BARCODE: "}
+                      <span className="opacity-90">{detectedCode.rawValue}</span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                      <span className={detectedCode.format === "qr_code" ? "text-blue-300 font-semibold" : "text-emerald-300"}>
+                        {detectedCode.format === "qr_code"
+                          ? "Cryptographic Digital Passport Ready"
+                          : `GS1 Origin: ${detectedCode.country || "International"}`}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <Button
-                  size="sm"
-                  onClick={captureFromCamera}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-8 px-3"
-                >
-                  Verify Now <ArrowRight className="h-3 w-3 ml-1" />
-                </Button>
+                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                  {detectedCode.format === "qr_code" ? (
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        processImageForAuthenticity("", "image/jpeg", "", null, undefined, "qr_code", detectedCode.rawValue)
+                      }
+                      className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-8 px-3.5 gap-1.5 shadow-md"
+                    >
+                      <FileText className="h-3.5 w-3.5" /> View Brand Dossier
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={captureFromCamera}
+                      className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-8 px-3.5"
+                    >
+                      Verify Now <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -1219,6 +1284,13 @@ Verified on Stash Or Trash Brand Barometer`;
                       Replica Risk: {scanResult.counterfeitAssessment.counterfeitRiskScore}%
                     </div>
                   )}
+                  <Button
+                    size="sm"
+                    onClick={() => setShowBrandDossierModal(true)}
+                    className="mt-2 gap-1.5 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm h-8 px-3"
+                  >
+                    <FileText className="h-3.5 w-3.5" /> View Brand Dossier
+                  </Button>
                 </div>
               </div>
             </div>
@@ -1283,6 +1355,15 @@ Verified on Stash Or Trash Brand Barometer`;
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     Trash as Counterfeit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowBrandDossierModal(true)}
+                    className="gap-1.5 text-xs font-semibold text-primary border-primary/30 hover:bg-primary/5"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Full Dossier
                   </Button>
                 </div>
               </div>
@@ -1791,6 +1872,13 @@ Verified on Stash Or Trash Brand Barometer`;
               <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
                 <Button
                   variant="outline"
+                  onClick={() => setShowBrandDossierModal(true)}
+                  className="flex-1 sm:flex-none gap-2 text-xs font-semibold text-primary border-primary/30 hover:bg-primary/5 shadow-sm"
+                >
+                  <FileText className="h-3.5 w-3.5" /> View Brand Dossier
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={handlePrintCertificate}
                   className="flex-1 sm:flex-none gap-2 text-xs font-medium"
                   title={t("scanner.printCertTitle", { defaultValue: "Print Brand PR & Client Verification Certificate" })}
@@ -1816,6 +1904,17 @@ Verified on Stash Or Trash Brand Barometer`;
             </div>
           </div>
         )}
+
+        {/* Dedicated Interactive Brand Dossier Dialog */}
+        <BrandDossierModal
+          open={showBrandDossierModal}
+          onOpenChange={setShowBrandDossierModal}
+          brand={matchedBrand}
+          scanResult={scanResult}
+          parsedQr={parsedQr}
+          qrVerdict={qrVerdict}
+          onApplyToPost={handleApplyPost}
+        />
       </div>
     </div>
   );

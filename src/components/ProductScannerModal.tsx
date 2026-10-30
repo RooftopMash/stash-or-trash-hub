@@ -8,6 +8,7 @@ import type { AiScanResult } from "@/lib/ai-scanner";
 interface ProductScannerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialMode?: "barcode" | "qr_code" | "logo" | "full_product";
   onApplyToPost?: (params: {
     brandName: string;
     brandOwner: string;
@@ -23,6 +24,7 @@ interface ProductScannerModalProps {
 export function ProductScannerModal({
   open,
   onOpenChange,
+  initialMode,
   onApplyToPost,
 }: ProductScannerModalProps) {
   return (
@@ -30,6 +32,7 @@ export function ProductScannerModal({
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 gap-0 border-border/80 bg-card">
         {open && (
           <ProductAuthenticityCameraScanner
+            initialMode={initialMode}
             onApplyToPost={onApplyToPost}
             onClose={() => onOpenChange(false)}
           />

@@ -227,27 +227,56 @@ export async function searchBrands(query: string, limit = 8): Promise<Brand[]> {
   const q = sanitizeQuery(query);
   if (!q) return [];
 
-  const { data: byName, error: nameErr } = await supabase
-    .from("brands")
-    .select("*")
-    .ilike("name", `%${q}%`)
-    .order("trust_score", { ascending: false })
-    .limit(limit);
-  if (nameErr) throw nameErr;
+  let merged: any[] = [];
 
-  const { data: bySlug, error: slugErr } = await supabase
-    .from("brands")
-    .select("*")
-    .ilike("slug", `%${q}%`)
-    .order("trust_score", { ascending: false })
-    .limit(limit);
-  if (slugErr) throw slugErr;
+  try {
+    const { data: byName } = await supabase
+      .from("brands")
+      .select("*")
+      .ilike("name", `%${q}%`)
+      .order("trust_score", { ascending: false })
+      .limit(limit);
 
-  const seen = new Map<string, any>();
-  for (const row of [...(byName ?? []), ...(bySlug ?? [])]) {
-    if (!seen.has(row.id)) seen.set(row.id, row);
+    const { data: bySlug } = await supabase
+      .from("brands")
+      .select("*")
+      .ilike("slug", `%${q}%`)
+      .order("trust_score", { ascending: false })
+      .limit(limit);
+
+    const seen = new Map<string, any>();
+    for (const row of [...(byName ?? []), ...(bySlug ?? [])]) {
+      if (!seen.has(row.id)) seen.set(row.id, row);
+    }
+    merged = [...seen.values()];
+  } catch {
+    // Supabase optional fallback
   }
-  const merged = [...seen.values()].sort((a, b) => {
+
+  // If no Supabase matches or running in Firestore mode, search unified catalog (Firestore + seed + local)
+  if (merged.length === 0) {
+    try {
+      const allBrands = await fetchBrands();
+      const lowerQ = q.toLowerCase();
+      const matched = allBrands.filter(
+        (b) =>
+          b.name.toLowerCase().includes(lowerQ) ||
+          b.slug.toLowerCase().includes(lowerQ) ||
+          (b.category && b.category.toLowerCase().includes(lowerQ))
+      );
+      matched.sort((a, b) => {
+        const aPre = a.name.toLowerCase().startsWith(lowerQ) ? 0 : 1;
+        const bPre = b.name.toLowerCase().startsWith(lowerQ) ? 0 : 1;
+        if (aPre !== bPre) return aPre - bPre;
+        return (Number(b.trust_score) || 0) - (Number(a.trust_score) || 0);
+      });
+      return matched.slice(0, limit);
+    } catch {
+      return [];
+    }
+  }
+
+  merged.sort((a, b) => {
     const aPre = String(a.name).toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1;
     const bPre = String(b.name).toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1;
     if (aPre !== bPre) return aPre - bPre;
