@@ -139,7 +139,6 @@ export default defineConfig({
         "react/jsx-dev-runtime",
         "@tanstack/react-router",
         "@tanstack/react-query",
-        "@tanstack/start-client-core",
         "@tanstack/react-store",
       ],
       alias: {
@@ -157,7 +156,6 @@ export default defineConfig({
         "react/jsx-dev-runtime",
         "@tanstack/react-router",
         "@tanstack/react-query",
-        "@tanstack/start-client-core",
         "@tanstack/react-store",
         "lucide-react",
         "clsx",

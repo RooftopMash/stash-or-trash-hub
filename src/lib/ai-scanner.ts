@@ -71,6 +71,7 @@ export interface MediaAuthenticityReport {
 }
 
 export interface CounterfeitAssessment {
+  isOriginal?: boolean;
   verdict: "legit" | "likely_legit" | "suspected_counterfeit" | "high_risk_fake" | "inconclusive";
   authenticityScore: number; // 0 - 100 (high = authentic)
   counterfeitRiskScore: number; // 0 - 100 (high = replica/fake risk)
@@ -540,11 +541,16 @@ export interface ParsedQrPayload {
   raw: string;
   url?: string;
   domain?: string;
+  hostname?: string;
   gtin?: string;
   batchOrLot?: string;
+  batchLot?: string;
   serial?: string;
+  serialNumber?: string;
   brandHint?: string;
   isOfficialVerificationPortal?: boolean;
+  isGs1DigitalLink?: boolean;
+  isAuthPortal?: boolean;
   suspiciousIndicators: string[];
 }
 
@@ -557,6 +563,7 @@ export interface QrAuthenticityVerdict {
   confidence: "high" | "medium" | "low";
   summary: string;
   forensicCues: string[];
+  analysisNotes?: string[];
   keyDifferencesToLookFor: {
     feature: string;
     genuineSpec: string;
@@ -614,10 +621,15 @@ export function parseQrPayload(raw: string): ParsedQrPayload {
           raw: clean,
           url: clean,
           domain: host,
+          hostname: host,
           gtin: gtinMatch[1],
           batchOrLot: batchMatch ? batchMatch[1] : undefined,
+          batchLot: batchMatch ? batchMatch[1] : undefined,
           serial: serialMatch ? serialMatch[1] : undefined,
+          serialNumber: serialMatch ? serialMatch[1] : undefined,
           isOfficialVerificationPortal: true,
+          isGs1DigitalLink: true,
+          isAuthPortal: true,
           suspiciousIndicators,
         };
       }
@@ -653,7 +665,10 @@ export function parseQrPayload(raw: string): ParsedQrPayload {
         raw: clean,
         url: clean,
         domain: host,
+        hostname: host,
         isOfficialVerificationPortal: isOfficial,
+        isGs1DigitalLink: false,
+        isAuthPortal: isOfficial,
         suspiciousIndicators,
       };
     } catch {
@@ -693,6 +708,7 @@ export function evaluateQrAuthenticity(parsed: ParsedQrPayload): QrAuthenticityV
       confidence: "high",
       summary: "This QR code points to an unverified or lookalike domain attempting to mimic legitimate brand authentication portals.",
       forensicCues: parsed.suspiciousIndicators,
+      analysisNotes: parsed.suspiciousIndicators,
       keyDifferencesToLookFor: [
         {
           feature: "Verification Domain",
@@ -716,6 +732,12 @@ export function evaluateQrAuthenticity(parsed: ParsedQrPayload): QrAuthenticityV
   // Case 2: GS1 Digital Link Standard -> Genuine Original
   if (parsed.type === "gs1_digital_link") {
     const country = parsed.gtin ? getGs1CountryPrefix(parsed.gtin) : null;
+    const cues = [
+      `Valid Global Trade Item Number (GTIN): ${parsed.gtin}`,
+      parsed.batchOrLot ? `Authorized Batch/Lot identifier: ${parsed.batchOrLot}` : "Standard packaging syntax verified",
+      parsed.serial ? `Unit Serial: ${parsed.serial}` : "GS1 compliant architecture",
+      `GS1 Country Jurisdiction: ${country || "International Trade Register"}`,
+    ];
     return {
       isOriginal: true,
       verdict: "legit",
@@ -724,12 +746,8 @@ export function evaluateQrAuthenticity(parsed: ParsedQrPayload): QrAuthenticityV
       counterfeitRiskScore: 3,
       confidence: "high",
       summary: `Standard GS1 Digital Link detected. Registered GTIN (${parsed.gtin}) matches legitimate manufacturer origin${country ? ` in ${country}` : ""}.`,
-      forensicCues: [
-        `Valid Global Trade Item Number (GTIN): ${parsed.gtin}`,
-        parsed.batchOrLot ? `Authorized Batch/Lot identifier: ${parsed.batchOrLot}` : "Standard packaging syntax verified",
-        parsed.serial ? `Unit Serial: ${parsed.serial}` : "GS1 compliant architecture",
-        `GS1 Country Jurisdiction: ${country || "International Trade Register"}`,
-      ],
+      forensicCues: cues,
+      analysisNotes: cues,
       keyDifferencesToLookFor: [
         {
           feature: "GS1 Global Compliance",
@@ -747,6 +765,11 @@ export function evaluateQrAuthenticity(parsed: ParsedQrPayload): QrAuthenticityV
 
   // Case 3: Official Brand Authentication Portal (e.g. Certilogo, Apple, Nike)
   if (parsed.type === "brand_verification") {
+    const cues = [
+      `Official Brand Security Host: ${parsed.domain}`,
+      "SSL TLS encryption and secure certificate chain validated",
+      "Direct manufacturer anti-counterfeit program integration",
+    ];
     return {
       isOriginal: true,
       verdict: "legit",
@@ -755,11 +778,8 @@ export function evaluateQrAuthenticity(parsed: ParsedQrPayload): QrAuthenticityV
       counterfeitRiskScore: 5,
       confidence: "high",
       summary: `Resolves to authorized corporate brand authentication infrastructure (${parsed.domain}).`,
-      forensicCues: [
-        `Official Brand Security Host: ${parsed.domain}`,
-        "SSL TLS encryption and secure certificate chain validated",
-        "Direct manufacturer anti-counterfeit program integration",
-      ],
+      forensicCues: cues,
+      analysisNotes: cues,
       keyDifferencesToLookFor: [
         {
           feature: "Security Seal & NFC",
@@ -777,6 +797,11 @@ export function evaluateQrAuthenticity(parsed: ParsedQrPayload): QrAuthenticityV
 
   // Case 4: Standard URL / Product Link
   if (parsed.type === "url") {
+    const cues = [
+      `Destination Host: ${parsed.domain}`,
+      "Valid web landing URL format",
+      "No overt counterfeit redirection triggers detected",
+    ];
     return {
       isOriginal: true,
       verdict: "likely_legit",
@@ -785,11 +810,8 @@ export function evaluateQrAuthenticity(parsed: ParsedQrPayload): QrAuthenticityV
       counterfeitRiskScore: 18,
       confidence: "medium",
       summary: `QR code resolves to standard product web address (${parsed.domain}). Further visual inspection recommended.`,
-      forensicCues: [
-        `Destination Host: ${parsed.domain}`,
-        "Valid web landing URL format",
-        "No overt counterfeit redirection triggers detected",
-      ],
+      forensicCues: cues,
+      analysisNotes: cues,
       keyDifferencesToLookFor: [
         {
           feature: "Packaging Quality",
@@ -806,6 +828,7 @@ export function evaluateQrAuthenticity(parsed: ParsedQrPayload): QrAuthenticityV
   }
 
   // Default / Inconclusive
+  const defaultCues = ["Custom proprietary QR string", "Requires manufacturer terminal lookup"];
   return {
     isOriginal: true,
     verdict: "inconclusive",
@@ -814,7 +837,8 @@ export function evaluateQrAuthenticity(parsed: ParsedQrPayload): QrAuthenticityV
     counterfeitRiskScore: 35,
     confidence: "low",
     summary: "QR payload contains proprietary serial or alphanumeric data. Confirm with physical brand hallmarks.",
-    forensicCues: ["Custom proprietary QR string", "Requires manufacturer terminal lookup"],
+    forensicCues: defaultCues,
+    analysisNotes: defaultCues,
     keyDifferencesToLookFor: [
       {
         feature: "Serial Tag Format",

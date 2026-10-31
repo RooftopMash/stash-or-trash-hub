@@ -435,7 +435,7 @@ export async function fetchUserVoteHistory(userId: string): Promise<UserVoteHist
 
     const { data: itemsData } = await supabase
       .from("items")
-      .select("id, title, description, brand, category, image_url, created_at")
+      .select("id, title, description, brand_id, category, image_url, created_at")
       .in("id", itemIds);
 
     const { data: allVotes } = await supabase
@@ -457,7 +457,7 @@ export async function fetchUserVoteHistory(userId: string): Promise<UserVoteHist
         votedAt: vote.created_at || new Date().toISOString(),
         title: it?.title || "Community Brand Verdict",
         description: it?.description || "User-submitted consumer verdict on SOT.",
-        brand: it?.brand || "Verified Brand",
+        brand: (it as any)?.brand || (it as any)?.brand_id || "Verified Brand",
         category: it?.category || "Consumer Experience",
         imageUrl: it?.image_url || null,
         upvotesCount: stashes,
