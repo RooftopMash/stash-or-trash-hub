@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -55,12 +55,23 @@ export const Route = createFileRoute("/feed")({
 function Feed() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const search = Route.useSearch();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [verdictFilter, setVerdictFilter] = useState<"all" | "stash" | "trash">(
     search.filter ?? "all",
   );
+
+  const handleFilterChange = (nextFilter: "all" | "stash" | "trash") => {
+    setVerdictFilter(nextFilter);
+    void navigate({
+      search: (prev: any) => ({
+        ...prev,
+        filter: nextFilter === "all" ? undefined : nextFilter,
+      }),
+    });
+  };
   const [query, setQuery] = useState(search.q ?? "");
   const [selectedBrandSlug, setSelectedBrandSlug] = useState<string | null>(search.brand ?? null);
   const [selectedCountry, setSelectedCountry] = useState("ZA");
@@ -322,29 +333,84 @@ function Feed() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className={cn(
+        "min-h-screen transition-colors duration-300",
+        verdictFilter === "stash"
+          ? "bg-gradient-to-b from-[#fefce8] via-white to-[#fffbeb] text-slate-900"
+          : verdictFilter === "trash"
+            ? "bg-gradient-to-b from-[#fff1f2] via-white to-[#fef2f2] text-slate-900"
+            : "bg-gradient-to-b from-slate-50 via-white to-amber-50/20 text-slate-900",
+      )}
+    >
       <Header onPosted={() => void refetch()} />
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-stash">
-              {t("feed.pulse", { defaultValue: "Community pulse" })}
-            </p>
-            <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight">
-              {t("feed.title", { defaultValue: "Stash Or Trash" })}
-            </h1>
-            <p className="mt-2 max-w-3xl text-lg font-semibold leading-7 text-foreground">
-              {t("feed.subtitle", {
-                defaultValue:
-                  "The Brand Barometer. Post anything about a brand and let the community deliver its verdict in real time — the CX & PR signal that matters.",
-              })}
-            </p>
-            <p className="mt-1.5 max-w-2xl text-muted-foreground">
-              {t("feed.hook", {
-                defaultValue:
-                  "Every verdict brings brands closer to the people they serve. Cast yours.",
-              })}
-            </p>
+        {/* Dynamic Page Header & Banner Uniform to Logo Color Codes */}
+        {verdictFilter === "stash" ? (
+          <div className="mb-6 rounded-3xl border-2 border-amber-300/80 bg-gradient-to-r from-amber-100/90 via-yellow-50/80 to-white p-6 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#d6a928] px-3.5 py-1 text-xs font-black uppercase tracking-wider text-slate-950 shadow-xs">
+                    <Coins className="h-3.5 w-3.5" />
+                    Stashes of the Day · Gold Standard Ratings
+                  </span>
+                </div>
+                <h1 className="font-display text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+                  What's Getting Stashed — Loved &amp; Recommended Brands
+                </h1>
+                <p className="mt-1.5 max-w-3xl text-sm font-semibold leading-relaxed text-amber-950/80 sm:text-base">
+                  Authentic positive community verdicts. Products, services, and local businesses that consumers endorse and recommend.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : verdictFilter === "trash" ? (
+          <div className="mb-6 rounded-3xl border-2 border-red-300/80 bg-gradient-to-r from-rose-100/90 via-red-50/80 to-white p-6 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e34b4b] px-3.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-xs">
+                    <Recycle className="h-3.5 w-3.5" />
+                    Trashes of the Day · Public Callouts &amp; Boycotts
+                  </span>
+                </div>
+                <h1 className="font-display text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+                  What's Getting Trashed — Consumer Gripes &amp; Demands for Better
+                </h1>
+                <p className="mt-1.5 max-w-3xl text-sm font-semibold leading-relaxed text-red-950/80 sm:text-base">
+                  Public brand accountability with real-world proof. Real experiences helping brands rectify failures and consumers stay protected.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6 rounded-3xl border border-slate-200 bg-gradient-to-r from-amber-50/70 via-white to-red-50/50 p-6 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-3.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-xs">
+                    <Coins className="h-3.5 w-3.5 text-[#d6a928]" />
+                    The Brand Barometer · Community Pulse
+                  </span>
+                </div>
+                <h1 className="font-display text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+                  Live Brand Barometer &amp; Public Verdicts
+                </h1>
+                <p className="mt-1.5 max-w-3xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
+                  {t("feed.subtitle", {
+                    defaultValue:
+                      "The Brand Barometer. Post anything about a brand and let the community deliver its verdict in real time — the CX & PR signal that matters.",
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            {verdictFilter === "stash" ? "Showing Verified Stashes" : verdictFilter === "trash" ? "Showing Public Trashes" : "Showing All Live Verdicts"}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -601,7 +667,7 @@ function Feed() {
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
                   <button
                     type="button"
-                    onClick={() => setVerdictFilter("all")}
+                    onClick={() => handleFilterChange("all")}
                     className={cn(
                       "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all",
                       verdictFilter === "all"
@@ -614,12 +680,12 @@ function Feed() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setVerdictFilter("stash")}
+                    onClick={() => handleFilterChange("stash")}
                     className={cn(
                       "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all",
                       verdictFilter === "stash"
-                        ? "bg-stash text-black shadow-xs ring-2 ring-stash/40"
-                        : "bg-stash/10 text-stash hover:bg-stash/20",
+                        ? "bg-[#d6a928] text-slate-950 font-black shadow-xs ring-2 ring-[#d6a928]/40"
+                        : "bg-amber-100/60 text-amber-900 hover:bg-amber-100",
                     )}
                   >
                     <Coins className="h-3.5 w-3.5" />
@@ -628,12 +694,12 @@ function Feed() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setVerdictFilter("trash")}
+                    onClick={() => handleFilterChange("trash")}
                     className={cn(
                       "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all",
                       verdictFilter === "trash"
-                        ? "bg-trash text-white shadow-xs ring-2 ring-trash/40"
-                        : "bg-trash/10 text-trash hover:bg-trash/20",
+                        ? "bg-[#e34b4b] text-white font-black shadow-xs ring-2 ring-[#e34b4b]/40"
+                        : "bg-red-100/60 text-red-900 hover:bg-red-100",
                     )}
                   >
                     <Recycle className="h-3.5 w-3.5" />
@@ -644,7 +710,7 @@ function Feed() {
                 {verdictFilter !== "all" && (
                   <button
                     type="button"
-                    onClick={() => setVerdictFilter("all")}
+                    onClick={() => handleFilterChange("all")}
                     className="text-xs font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
                   >
                     {t("feed.resetFilter", { defaultValue: "Reset filter" })}

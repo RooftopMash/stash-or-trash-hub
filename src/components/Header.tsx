@@ -20,11 +20,13 @@ import { Bell, Building2, Coins, LayoutDashboard, MessageCircle, Shield, Scan, P
 import { SotWordmark } from "@/components/SotWordmark";
 import { getRegisteredBrandIdentity } from "@/lib/brand-operators";
 import { supabase } from "@/integrations/supabase/client";
+import { usePageTheme } from "@/lib/page-theme";
 import type { AiScanResult } from "@/lib/ai-scanner";
 import { cn } from "@/lib/utils";
 
 export function Header({ onPosted }: { onPosted?: () => void }) {
   const { user, loading } = useAuth();
+  const theme = usePageTheme();
   const { isAdmin, isDeveloper, isBrand, persona, setPersona } = useRoles();
   const [registeredBrandName, setRegisteredBrandName] = useState("Nando's South Africa");
   const { t } = useTranslation();
@@ -112,8 +114,20 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
   return (
     <header
       suppressHydrationWarning
-      className="sticky top-0 z-40 w-full border-b border-border/70 bg-background/95 backdrop-blur-xl"
+      className={cn(
+        "sticky top-0 z-40 w-full border-b backdrop-blur-xl transition-colors duration-300",
+        theme.headerBorderClass,
+        theme.headerBgClass,
+      )}
     >
+      {/* Dynamic Page Theme Top Accent Strip (Uniform with Logo & Page Purpose) */}
+      <div
+        className={cn(
+          "h-[2.5px] w-full transition-all duration-300",
+          theme.topBarGlow,
+        )}
+      />
+
       {/* Top Language Switcher Strip for supported locales in src/lib/locale-app.ts */}
       <TopLanguageStrip />
 
@@ -136,41 +150,46 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
           <nav className="flex min-w-0 items-center gap-0.5 overflow-x-auto text-xs font-semibold no-scrollbar sm:gap-1">
             <Link
               to="/"
-              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-slate-900 [&.active]:text-white font-bold"
             >
               {t("nav.home", { defaultValue: "Home" })}
             </Link>
             <Link
               to="/feed"
-              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              className={cn(
+                "shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground font-bold",
+                theme.key === "feed-trash"
+                  ? "[&.active]:bg-red-600 [&.active]:text-white"
+                  : "[&.active]:bg-[#d6a928] [&.active]:text-slate-950",
+              )}
             >
               {t("nav.feed", { defaultValue: "Feed" })}
             </Link>
             {persona !== "brand_owner" && (
               <Link
                 to="/scan"
-                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-emerald-600 [&.active]:text-white font-bold"
               >
-                <Scan className="h-3 w-3 shrink-0 text-[#d6a928]" />
+                <Scan className="h-3 w-3 shrink-0 text-emerald-500" />
                 <span>{t("nav.scan", { defaultValue: "Scan" })}</span>
               </Link>
             )}
             <Link
               to="/brands"
-              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-[#2563eb] [&.active]:text-white font-bold"
             >
               {t("nav.brands", { defaultValue: "Brands" })}
             </Link>
             <Link
               to="/awards"
-              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-amber-500 [&.active]:text-slate-950 font-bold"
             >
               {t("nav.awards", { defaultValue: "Awards" })}
             </Link>
             {user && (
               <Link
                 to="/dashboard"
-                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-slate-900 [&.active]:text-[#f5d061] font-bold"
               >
                 <LayoutDashboard className="h-3 w-3 shrink-0 text-[#d6a928]" />
                 <span>

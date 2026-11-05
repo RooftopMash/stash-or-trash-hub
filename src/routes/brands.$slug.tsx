@@ -291,7 +291,7 @@ function BrandPage() {
   };
 
   return (
-    <div className="min-h-screen pb-16">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50/70 via-white to-slate-50 text-slate-900 pb-16">
       <Header onPosted={() => refetch()} />
       <main className="mx-auto max-w-3xl px-4 py-8">
         {isLoading ? (

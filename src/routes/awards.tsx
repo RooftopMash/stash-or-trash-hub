@@ -363,14 +363,14 @@ export function AwardsPage() {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50/80 via-yellow-50/30 to-white text-slate-900">
       <Header />
       <main className="mx-auto max-w-5xl px-4 py-8">
         {/* Hero */}
-        <section className="rounded-3xl border border-border bg-gradient-to-b from-secondary/60 to-card p-8 text-center shadow-sm">
-          <Trophy className="mx-auto h-12 w-12 text-primary" />
-          <h1 className="mt-4 font-display text-4xl font-extrabold sm:text-5xl">{t("awards.title") || "The SOT Awards"}</h1>
-          <p className="mt-2 font-display text-lg font-semibold text-primary">
+        <section className="rounded-3xl border-2 border-amber-300/80 bg-gradient-to-r from-amber-100/90 via-yellow-50/90 to-white p-8 text-center shadow-sm">
+          <Trophy className="mx-auto h-12 w-12 text-[#d6a928] drop-shadow-sm" />
+          <h1 className="mt-4 font-display text-4xl font-extrabold sm:text-5xl text-slate-950">{t("awards.title") || "The SOT Awards"}</h1>
+          <p className="mt-2 font-display text-lg font-bold text-amber-800">
             {t("awards.tagline") || "The Brand Barometer — The People's Verdict, Made Official"}
           </p>
           <div className="mt-3 flex justify-center">

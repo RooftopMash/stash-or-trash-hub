@@ -42,12 +42,20 @@ function PostDetail() {
   });
 
   return (
-    <div className="min-h-screen">
+    <div
+      className={
+        data?.verdict === "stash"
+          ? "min-h-screen bg-gradient-to-b from-amber-50/70 via-white to-slate-50 text-slate-900"
+          : data?.verdict === "trash"
+            ? "min-h-screen bg-gradient-to-b from-rose-50/70 via-white to-slate-50 text-slate-900"
+            : "min-h-screen bg-slate-50 text-slate-900"
+      }
+    >
       <Header onPosted={() => refetch()} />
       <main className="mx-auto max-w-2xl px-4 py-8">
         <Link
           to="/"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-slate-600 hover:text-slate-900"
         >
           <ArrowLeft className="h-4 w-4" /> {t("social.backToFeed")}
         </Link>

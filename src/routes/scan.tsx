@@ -60,7 +60,7 @@ function ScanPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50/70 via-white to-teal-50/30 text-slate-900 flex flex-col">
       <SeoHelmet
         title="AI Product & Counterfeit Verifier — SOT Brand Barometer"
         description="Scan product packaging, barcodes, luxury logos, and care tags to verify genuine origin, detect counterfeits, and check brand trust ratings."
@@ -71,13 +71,13 @@ function ScanPage() {
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-8 space-y-8">
         {/* Hero Section */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
-            <QrCode className="h-3.5 w-3.5" /> {t("scanner.badge", { defaultValue: "AI QR & Product Authenticity Scanner" })}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 shadow-xs">
+            <QrCode className="h-3.5 w-3.5 text-emerald-600" /> {t("scanner.badge", { defaultValue: "AI QR & Product Authenticity Scanner" })}
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold font-display tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-extrabold font-display tracking-tight text-slate-950">
             {t("scanner.title", { defaultValue: "Scan QR Codes & Barcodes to Identify Products & Brand Dossiers" })}
           </h1>
-          <p className="text-muted-foreground text-sm sm:text-base max-w-2xl mx-auto">
+          <p className="text-slate-600 font-medium text-sm sm:text-base max-w-2xl mx-auto">
             {t("scanner.subtitle", { defaultValue: "Scan any product QR code, GS1 Digital Link, barcode, or luxury hallmark. Instantly identify corporate ownership, verify authentic origins, and inspect complete brand dossiers." })}
           </p>
         </div>

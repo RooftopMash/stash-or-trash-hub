@@ -157,11 +157,11 @@ export function SotHomeHero() {
 
   return (
     <section className="relative isolate overflow-hidden border-b-2 border-[#d6a928]/30 bg-white text-slate-950">
-      {/* Split-screen brand watermark: falling gold coins on left half, falling silver trash cans on right half */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+      {/* Split-screen brand watermark: visible on desktop, hidden on mobile so mobile text is 100% crisp and readable */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden z-0 hidden sm:block">
         {/* Left Half: Falling Gold Coins Watermark (Continuous Waterfall Rain) */}
         <div
-          className="sot-watermark-rain-coins absolute inset-y-0 left-0 w-1/2 opacity-35"
+          className="sot-watermark-rain-coins absolute inset-y-0 left-0 w-1/2 opacity-20"
           style={{
             backgroundImage: `url(${coinsWatermark})`,
             backgroundSize: "140px 140px",
@@ -172,7 +172,7 @@ export function SotHomeHero() {
         />
         {/* Right Half: Falling Silver Trash Cans Watermark (Continuous Waterfall Rain) */}
         <div
-          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-35"
+          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-20"
           style={{
             backgroundImage: `url(${binsWatermark})`,
             backgroundSize: "140px 140px",
@@ -211,11 +211,11 @@ export function SotHomeHero() {
           </p>
         </div>
 
-        {/* Hero Interactive Objects: South African Spinning Coin (Left) & Randy Hungry Trash Can (Right) */}
-        <div className="flex min-h-[320px] items-center justify-center lg:min-h-[400px]">
-          <div className="mx-auto grid w-full max-w-4xl gap-8 sm:grid-cols-2 lg:max-w-4xl">
-            {/* Left Object: Stash Gold Coin (Frameless & Free-Floating) */}
-            <div className="group relative flex flex-col items-center p-2 sm:p-4 transition">
+        {/* Hero Interactive Objects: Side-by-Side on Mobile AND Desktop (Coin Left & Bin Right) */}
+        <div className="flex min-h-[220px] items-center justify-center sm:min-h-[360px]">
+          <div className="mx-auto grid w-full max-w-4xl grid-cols-2 gap-2.5 sm:gap-8">
+            {/* Left Object: Stash Gold Coin */}
+            <div className="group relative flex flex-col items-center p-1 sm:p-4 transition">
               <VerdictSuccess
                 active={activeObject === "coin"}
                 inline
@@ -232,13 +232,13 @@ export function SotHomeHero() {
                     window.setTimeout(() => setActiveObject(null), 2900);
                   }
                 }}
-                className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6a928] rounded-2xl p-2 cursor-pointer"
+                className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6a928] rounded-2xl p-1 sm:p-2 cursor-pointer"
               >
-                <div className="relative flex h-60 w-full items-center justify-center sm:h-72 [perspective:900px]">
+                <div className="relative flex h-36 w-full items-center justify-center sm:h-72 [perspective:900px]">
                   {/* Tabletop contact surface shadow synchronized with Zwepe spin */}
                   <div
                     className={cn(
-                      "sot-coin-shadow absolute bottom-5 h-8 w-44 rounded-full bg-slate-950/30 blur-md pointer-events-none",
+                      "sot-coin-shadow absolute bottom-2 sm:bottom-5 h-5 sm:h-8 w-28 sm:w-44 rounded-full bg-slate-950/30 blur-sm sm:blur-md pointer-events-none",
                       activeObject === "coin" && "sot-object-active",
                     )}
                   />
@@ -251,7 +251,7 @@ export function SotHomeHero() {
                     height={250}
                     fetchPriority="high"
                     className={cn(
-                      "sot-coin-art relative z-10 w-full max-w-[210px] sm:max-w-[250px] drop-shadow-md transition-transform group-hover:scale-105",
+                      "sot-coin-art relative z-10 w-full max-w-[125px] sm:max-w-[240px] drop-shadow-md transition-transform group-hover:scale-105",
                       activeObject === "coin" && "sot-object-active",
                     )}
                   />
@@ -259,7 +259,7 @@ export function SotHomeHero() {
                 <span className="sr-only">{t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })}</span>
               </button>
 
-              <div className="mt-3 flex flex-col items-center gap-1.5 text-center">
+              <div className="mt-2 sm:mt-3 flex w-full flex-col items-center gap-1 sm:gap-1.5 text-center">
                 <Link
                   to="/feed"
                   search={{ filter: "stash" }}
@@ -269,20 +269,20 @@ export function SotHomeHero() {
                       sublabel: "Keep what serves you · Community Gold Standard",
                     })
                   }
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-slate-950 bg-[#d6a928] px-5 py-2 text-xs font-black uppercase tracking-wider text-slate-950 shadow-[0_4px_18px_rgba(214,169,40,0.28)] transition hover:brightness-105"
+                  className="inline-flex w-full items-center justify-center gap-1 sm:gap-2 rounded-full border-2 border-slate-950 bg-[#d6a928] px-2 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-950 shadow-[0_4px_18px_rgba(214,169,40,0.28)] transition hover:brightness-105"
                 >
-                  <Coins className="h-4 w-4" />
-                  {t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })} ({totalStashes})
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <Coins className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="truncate">{t("feed.stashesOfDay", { defaultValue: "Stashes" })} ({totalStashes})</span>
+                  <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 hidden sm:inline" />
                 </Link>
-                <p className="text-xs font-bold text-slate-700">
-                  {t("hero.tapCoin", { defaultValue: "Tap the Gold Coin to spin & view Stashes" })}
+                <p className="text-[10px] sm:text-xs font-bold text-slate-700 hidden sm:block">
+                  {t("hero.tapCoin", { defaultValue: "Tap coin to spin & view Stashes" })}
                 </p>
               </div>
             </div>
 
-            {/* Right Object: Randy The Trash Can (Frameless & Free-Floating) */}
-            <div className="group relative flex flex-col items-center p-2 sm:p-4 transition">
+            {/* Right Object: Intact 3D Metallic Stainless Steel Trash Can (Lid Securely on Top) */}
+            <div className="group relative flex flex-col items-center p-1 sm:p-4 transition">
               <button
                 type="button"
                 aria-label="Slam trash can for Trashes of the Day"
@@ -293,166 +293,55 @@ export function SotHomeHero() {
                     window.setTimeout(() => setActiveObject(null), 1350);
                   }
                 }}
-                className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 rounded-2xl p-2 cursor-pointer"
+                className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 rounded-2xl p-1 sm:p-2 cursor-pointer"
               >
-                <div className="relative flex h-60 w-full items-center justify-center sm:h-72">
+                <div className="relative flex h-36 w-full items-center justify-center sm:h-72 sot-bin-stage">
                   {/* Grounded floor contact shadow */}
                   <div
                     aria-hidden="true"
                     className={cn(
-                      "sot-bin-shadow pointer-events-none absolute bottom-2 h-7 w-40 rounded-full bg-slate-950/30 blur-md sm:w-44",
+                      "sot-bin-shadow pointer-events-none absolute bottom-1 sm:bottom-2 h-4 sm:h-7 w-28 sm:w-44 rounded-full bg-slate-950/30 blur-sm sm:blur-md",
                       activeObject === "bin" && "sot-object-active",
                     )}
                   />
 
-                  <div className="randy-can-stage relative flex h-56 w-48 items-center justify-center sm:h-64 sm:w-56">
-                    {/* Dark 3D elliptical interior barrel mouth revealed when the loose lid pops up */}
-                    <div
-                      aria-hidden="true"
-                      className={cn(
-                        "randy-mouth-cavity pointer-events-none absolute top-[15.5%] left-[13%] right-[13%] z-5 h-9 rounded-[50%] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 shadow-[inset_0_10px_20px_rgba(0,0,0,0.2)]",
-                        activeObject === "bin" && "randy-active",
-                      )}
-                    />
+                  {/* Shockwave ring on slam impact */}
+                  <div
+                    aria-hidden="true"
+                    className={cn(
+                      "sot-bin-shockwave pointer-events-none absolute bottom-1 sm:bottom-2 h-4 sm:h-7 w-28 sm:w-44 rounded-full border-2 border-slate-400/40 opacity-0",
+                      activeObject === "bin" && "sot-object-active",
+                    )}
+                  />
 
-                    {/* Overflowing Junk inside Randy's barrel mouth */}
-                    <div
-                      className={cn(
-                        "randy-junk-contents pointer-events-none absolute top-[10.5%] left-[14%] right-[14%] z-10 flex items-end justify-center select-none",
-                        activeObject === "bin" && "randy-active",
-                      )}
-                    >
-                      <svg
-                        viewBox="0 0 160 55"
-                        className="h-11 w-full overflow-visible drop-shadow-md"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        {/* Crumpled callout note */}
-                        <g transform="translate(18, 6) rotate(-12)">
-                          <polygon
-                            points="0,0 26,-4 32,22 4,24"
-                            fill="#f8fafc"
-                            stroke="#94a3b8"
-                            strokeWidth="1.4"
-                          />
-                          <line x1="4" y1="5" x2="22" y2="2" stroke="#94a3b8" strokeWidth="1" />
-                          <line x1="5" y1="9" x2="24" y2="7" stroke="#94a3b8" strokeWidth="1" />
-                          <rect
-                            x="4"
-                            y="14"
-                            width="16"
-                            height="5"
-                            rx="1"
-                            fill="#ef4444"
-                            fillOpacity="0.25"
-                            stroke="#ef4444"
-                            strokeWidth="0.9"
-                          />
-                        </g>
-                        {/* Crushed tin can */}
-                        <g transform="translate(56, 9) rotate(10)">
-                          <rect
-                            x="0"
-                            y="0"
-                            width="18"
-                            height="22"
-                            rx="3"
-                            fill="#dc2626"
-                            stroke="#991b1b"
-                            strokeWidth="1.2"
-                          />
-                          <ellipse
-                            cx="9"
-                            cy="0"
-                            rx="7"
-                            ry="2"
-                            fill="#e2e8f0"
-                            stroke="#94a3b8"
-                            strokeWidth="0.8"
-                          />
-                        </g>
-                        {/* Fishbone */}
-                        <g transform="translate(86, 4) rotate(-18)">
-                          <line
-                            x1="0"
-                            y1="12"
-                            x2="32"
-                            y2="12"
-                            stroke="#f1f5f9"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                          <polygon
-                            points="32,12 41,7 41,17"
-                            fill="#f1f5f9"
-                            stroke="#94a3b8"
-                            strokeWidth="1"
-                          />
-                          <line x1="8" y1="6" x2="8" y2="18" stroke="#f1f5f9" strokeWidth="1.8" strokeLinecap="round" />
-                          <line x1="16" y1="5" x2="16" y2="19" stroke="#f1f5f9" strokeWidth="1.8" strokeLinecap="round" />
-                          <line x1="24" y1="6" x2="24" y2="18" stroke="#f1f5f9" strokeWidth="1.8" strokeLinecap="round" />
-                        </g>
-                      </svg>
-                    </div>
-
-                    {/* Randy Trash Can Barrel Body (3D curved elliptical rim cut + weighty squash-and-stretch) */}
-                    <div
-                      className={cn(
-                        "randy-body absolute inset-0 z-15 drop-shadow-md",
-                        activeObject === "bin" && "randy-active",
-                      )}
-                      style={{
-                        clipPath:
-                          "polygon(0% 17%, 12% 19.8%, 26% 21.8%, 42% 23%, 50% 23.3%, 58% 23%, 74% 21.8%, 88% 19.8%, 100% 17%, 100% 100%, 0% 100%)",
-                      }}
-                    >
-                      <img
-                        src={binIcon}
-                        alt="SOrT solid stainless steel metallic trash can"
-                        width={285}
-                        height={392}
-                        fetchPriority="high"
-                        className="h-full w-full object-contain select-none"
-                      />
-                    </div>
-
-                    {/* Randy Free-Floating Disconnected Metal Lid (pops vertically up & down, tilts, and jiggles on rim impact) */}
-                    <div
-                      className={cn(
-                        "randy-lid absolute inset-0 z-20",
-                        activeObject === "bin" && "randy-active",
-                      )}
-                      style={{
-                        clipPath:
-                          "polygon(0% 0%, 100% 0%, 100% 18.2%, 88% 21%, 74% 23%, 58% 24.2%, 50% 24.5%, 42% 24.2%, 26% 23%, 12% 21%, 0% 18.2%)",
-                      }}
-                    >
-                      <img
-                        src={binIcon}
-                        alt="SOrT solid stainless steel metallic trash can lid"
-                        width={285}
-                        height={392}
-                        className="h-full w-full object-contain select-none"
-                      />
-                    </div>
-                  </div>
+                  {/* Solid intact 3D stainless steel trash can: Lid naturally seated firmly on top */}
+                  <img
+                    src={binIcon}
+                    alt="SOrT solid stainless steel metallic trash can"
+                    width={250}
+                    height={250}
+                    fetchPriority="high"
+                    className={cn(
+                      "sot-bin-art relative z-10 w-full max-w-[125px] sm:max-w-[240px] object-contain drop-shadow-md transition-transform group-hover:scale-105 select-none",
+                      activeObject === "bin" && "sot-object-active",
+                    )}
+                  />
                 </div>
                 <span className="sr-only">Slam trash can for Trashes of the Day</span>
               </button>
 
-              <div className="mt-3 flex flex-col items-center gap-1.5 text-center">
+              <div className="mt-2 sm:mt-3 flex w-full flex-col items-center gap-1 sm:gap-1.5 text-center">
                 <Link
                   to="/feed"
                   search={{ filter: "trash" }}
-                  className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-xs font-black uppercase tracking-wider text-white shadow-sm transition hover:bg-slate-800"
+                  className="inline-flex w-full items-center justify-center gap-1 sm:gap-2 rounded-full bg-slate-900 px-2 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider text-white shadow-sm transition hover:bg-slate-800"
                 >
-                  <Recycle className="h-4 w-4" />
-                  {t("feed.trashesOfDay", { defaultValue: "Trashes of the Day" })} ({totalTrashes})
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <Recycle className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="truncate">{t("feed.trashesOfDay", { defaultValue: "Trashes" })} ({totalTrashes})</span>
+                  <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 hidden sm:inline" />
                 </Link>
-                <p className="text-xs font-medium text-slate-500">
-                  {t("hero.tapBin", { defaultValue: "Click the trash can to slam & review public callouts" })}
+                <p className="text-[10px] sm:text-xs font-medium text-slate-500 hidden sm:block">
+                  {t("hero.tapBin", { defaultValue: "Click trash can to slam & review callouts" })}
                 </p>
               </div>
             </div>

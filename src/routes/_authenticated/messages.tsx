@@ -326,7 +326,7 @@ function MessagesPage() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-teal-50/60 via-white to-slate-50 text-slate-900">
       <Header />
       <main className="mx-auto grid max-w-5xl gap-4 px-4 py-8 sm:grid-cols-[310px_1fr]">
         <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-stash/20 bg-stash/5 px-4 py-3 text-sm">

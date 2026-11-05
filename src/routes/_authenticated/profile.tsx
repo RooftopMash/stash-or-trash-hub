@@ -223,7 +223,14 @@ function ProfilePage() {
         : "Rising Arbitrator · Level 2 Voter";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className={cn(
+        "min-h-screen transition-colors duration-300",
+        persona === "brand_owner"
+          ? "bg-gradient-to-b from-slate-950 via-[#0a1128] to-slate-950 text-white"
+          : "bg-gradient-to-b from-amber-50/60 via-white to-slate-50 text-slate-900",
+      )}
+    >
       <Header />
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         {/* DEVELOPER-ONLY INSPECTION TOGGLE (HIDDEN FROM ALL REGULAR PERSONAL USERS & BRAND OWNERS) */}

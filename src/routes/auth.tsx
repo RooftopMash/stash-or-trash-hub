@@ -403,7 +403,14 @@ function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-8">
+    <div
+      className={cn(
+        "flex min-h-screen items-center justify-center px-4 py-8 transition-colors duration-300",
+        accountDoor === "brand_owner"
+          ? "bg-gradient-to-b from-slate-950 via-[#0a1128] to-slate-950 text-white"
+          : "bg-gradient-to-b from-amber-50/60 via-white to-slate-50 text-slate-900",
+      )}
+    >
       <div className="w-full max-w-lg">
         <Link to="/" className="mb-5 flex items-center justify-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">

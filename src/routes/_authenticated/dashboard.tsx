@@ -426,7 +426,14 @@ function DashboardPage() {
   }, [activeBrand.name, recentFeed]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className={cn(
+        "min-h-screen transition-colors duration-300",
+        persona === "brand_owner"
+          ? "bg-gradient-to-b from-slate-950 via-[#0a1128] to-slate-950 text-white"
+          : "bg-gradient-to-b from-amber-50/60 via-white to-slate-50 text-slate-900",
+      )}
+    >
       <Header />
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         {/* =====================================================================
@@ -450,7 +457,7 @@ function DashboardPage() {
                   className={cn(
                     "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition cursor-pointer whitespace-nowrap",
                     persona === "consumer"
-                      ? "bg-emerald-600 text-white shadow-xs"
+                      ? "bg-[#d6a928] text-slate-950 shadow-xs"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
@@ -480,67 +487,67 @@ function DashboardPage() {
            ===================================================================== */}
         {persona === "consumer" ? (
           <div className="space-y-6">
-            <section className="rounded-3xl border-2 border-emerald-600/40 bg-gradient-to-b from-emerald-950 to-slate-950 p-6 text-white shadow-lg sm:p-8">
+            <section className="rounded-3xl border-2 border-amber-300/80 bg-gradient-to-r from-amber-100/90 via-yellow-50/80 to-white p-6 text-slate-950 shadow-sm sm:p-8">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/20 px-3 py-1 text-xs font-black uppercase tracking-wider text-emerald-300">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#d6a928] px-3.5 py-1 text-xs font-black uppercase tracking-wider text-slate-950 shadow-xs">
                     <Coins className="h-3.5 w-3.5" />
-                    Personal Consumer Member Hub · 100% Free Forever
+                    Personal Member Rewards Hub · 100% Free Forever
                   </span>
-                  <h1 className="mt-3 font-display text-3xl font-black text-white sm:text-4xl">
-                    {user?.displayName || user?.email?.split("@")[0] || "Personal Member"} — Personal Dashboard
+                  <h1 className="mt-3 font-display text-3xl font-black text-slate-950 sm:text-4xl">
+                    {user?.displayName || user?.email?.split("@")[0] || "Personal Member"} — Member Hub
                   </h1>
-                  <p className="mt-1 max-w-2xl text-sm text-emerald-100/80">
-                    This is your personal consumer workspace. Track your Stash/Trash verdicts, Mutual Friends, and claimed Launch Vouchers — completely separate from any Corporate Brand Account.
+                  <p className="mt-1 max-w-2xl text-sm font-semibold text-slate-700">
+                    Track your personal Stash/Trash verdicts, connect with mutual Friends, and claim verified launch vouchers — completely distinct from any corporate brand portal.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <Button
                     onClick={() => navigate({ to: "/profile" })}
-                    className="gap-1.5 bg-[#d6a928] font-black text-slate-950 hover:bg-[#e5b935]"
+                    className="gap-1.5 bg-slate-950 font-black text-[#f5d061] hover:bg-slate-900"
                   >
-                    <Users className="h-4 w-4" /> Open Full Personal Profile &amp; Friends
+                    <Users className="h-4 w-4" /> Open Full Profile &amp; Friends
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => navigate({ to: "/scan" })}
-                    className="gap-1.5 border-emerald-500/40 bg-emerald-900/40 text-white hover:bg-emerald-900/60"
+                    className="gap-1.5 border-emerald-500/40 bg-emerald-50 text-emerald-800 font-bold hover:bg-emerald-100"
                   >
-                    <ScanBarcode className="h-4 w-4 text-[#d6a928]" /> Scan Product Barcode
+                    <ScanBarcode className="h-4 w-4 text-emerald-600" /> Scan Product Barcode
                   </Button>
                 </div>
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-2xl border border-emerald-500/30 bg-slate-900/80 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                <div className="rounded-2xl border border-amber-200 bg-white p-4 shadow-xs">
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-800">
                     My Personal Votes
                   </p>
-                  <p className="mt-1 font-display text-2xl font-black text-white tabular-nums">
+                  <p className="mt-1 font-display text-2xl font-black text-slate-950 tabular-nums">
                     {(consumerStats?.stashVotes ?? 12) + (consumerStats?.trashVotes ?? 4)} Verdicts
                   </p>
                 </div>
-                <div className="rounded-2xl border border-emerald-500/30 bg-slate-900/80 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                <div className="rounded-2xl border border-amber-200 bg-white p-4 shadow-xs">
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-800">
                     Mutual Friends
                   </p>
-                  <p className="mt-1 font-display text-2xl font-black text-[#f5d061] tabular-nums">
+                  <p className="mt-1 font-display text-2xl font-black text-[#b88c1b] tabular-nums">
                     {consumerFriends.filter((f) => f.status === "accepted").length} Connected
                   </p>
                 </div>
-                <div className="rounded-2xl border border-emerald-500/30 bg-slate-900/80 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                <div className="rounded-2xl border border-amber-200 bg-white p-4 shadow-xs">
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-800">
                     Pending Friend Requests
                   </p>
-                  <p className="mt-1 font-display text-2xl font-black text-white tabular-nums">
+                  <p className="mt-1 font-display text-2xl font-black text-slate-950 tabular-nums">
                     {consumerFriends.filter((f) => f.status === "pending").length} Pending
                   </p>
                 </div>
-                <div className="rounded-2xl border border-emerald-500/30 bg-slate-900/80 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                <div className="rounded-2xl border border-amber-200 bg-white p-4 shadow-xs">
+                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-800">
                     Claimed Launch Vouchers
                   </p>
-                  <p className="mt-1 font-display text-2xl font-black text-emerald-400 tabular-nums">
+                  <p className="mt-1 font-display text-2xl font-black text-emerald-600 tabular-nums">
                     {claimedPerks.length} Active Perks
                   </p>
                 </div>

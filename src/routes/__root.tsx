@@ -21,6 +21,7 @@ import { ProductionMonitoring } from "@/components/ProductionMonitoring";
 import { VerdictSuccess } from "@/components/VerdictSuccess";
 import { autoSeedFirestoreIfEmpty } from "@/lib/seedFirestore";
 import { SeoHelmet } from "@/components/SeoHelmet";
+import { MobileTaskBar } from "@/components/MobileTaskBar";
 import i18n, { LANGUAGES } from "@/lib/i18n";
 
 const BRAND_BAROMETER_SCHEMA = {
@@ -245,11 +246,14 @@ function RootComponent() {
         <AuthProvider>
           <SeoHelmet structuredData={BRAND_BAROMETER_SCHEMA} />
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
+          <div className="pb-16 md:pb-0">
+            <Outlet />
+          </div>
           <VerdictSuccess listenGlobal />
           <Toaster position="top-center" richColors />
           <OfflineStatus />
           <ProductionMonitoring />
+          <MobileTaskBar />
         </AuthProvider>
       </QueryClientProvider>
     </AppErrorBoundary>
