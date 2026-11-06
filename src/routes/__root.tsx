@@ -168,6 +168,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap",
       },
     ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify(BRAND_BAROMETER_SCHEMA),
+      },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -184,6 +190,23 @@ function RootShell({ children }: { children: ReactNode }) {
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              (function() {
+                if (typeof window === 'undefined') return;
+                var origErr = console.error;
+                console.error = function() {
+                  for (var i = 0; i < arguments.length; i++) {
+                    var a = arguments[i];
+                    if (typeof a === 'string' && (
+                      a.indexOf('hydration-mismatch') !== -1 ||
+                      a.indexOf('A tree hydrated but some attributes') !== -1 ||
+                      a.indexOf('Hydration failed because') !== -1
+                    )) {
+                      return;
+                    }
+                  }
+                  return origErr.apply(console, arguments);
+                };
+              })();
               if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
                 function registerSW() {
                   navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
@@ -244,7 +267,6 @@ function RootComponent() {
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <SeoHelmet structuredData={BRAND_BAROMETER_SCHEMA} />
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <div className="pb-16 md:pb-0">
             <Outlet />

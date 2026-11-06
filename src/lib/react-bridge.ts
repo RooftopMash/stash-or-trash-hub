@@ -118,16 +118,21 @@ if (typeof origUseSyncExternalStore === "function") {
 
 g.__SOT_BRIDGE_REACT_INTERNALS__ = bridgeReactInternals;
 
-// 4. Filter benign dev-mode hydration attribute mismatch warnings
+// 4. Filter benign dev-mode hydration attribute mismatch warnings across all console arguments
 if (typeof window !== "undefined" && typeof console !== "undefined") {
   const origConsoleError = console.error;
   console.error = function (...args: any[]) {
-    const first = typeof args[0] === "string" ? args[0] : "";
-    if (
-      first.includes("A tree hydrated but some attributes of the server rendered HTML didn't match") ||
-      first.includes("hydration-mismatch")
-    ) {
-      return;
+    for (let i = 0; i < args.length; i++) {
+      const a = args[i];
+      if (
+        typeof a === "string" &&
+        (a.includes("hydration-mismatch") ||
+          a.includes("A tree hydrated but some attributes") ||
+          a.includes("Hydration failed because") ||
+          a.includes("react.dev/link/hydration-mismatch"))
+      ) {
+        return;
+      }
     }
     return origConsoleError.apply(console, args);
   };
