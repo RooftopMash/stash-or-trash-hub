@@ -137,12 +137,12 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
           <Link to="/" className="group flex shrink-0 items-center gap-2 whitespace-nowrap">
             <span
               aria-label="SOrT — Stash Or Trash logo"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-extrabold tracking-[-0.12em] text-background shadow-sm transition-transform group-hover:scale-105"
+              className="flex h-8.5 w-8.5 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border-2 border-slate-950 bg-white text-xs sm:text-sm font-black tracking-[-0.08em] shadow-xs transition-transform group-hover:scale-105 select-none"
             >
-              <span className="text-stash">S</span>
-              <span>O</span>
-              <span className="text-trash">r</span>
-              <span>T</span>
+              <span className="text-[#d6a928]">S</span>
+              <span className="text-slate-950">O</span>
+              <span className="text-[#e34b4b]">r</span>
+              <span className="text-[#2563eb]">T</span>
             </span>
             <SotWordmark className="hidden xl:inline-flex text-base whitespace-nowrap" />
           </Link>
