@@ -22,6 +22,7 @@ import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import {
   BRAND_BROADCAST_CATEGORIES,
   CONSUMER_BROADCAST_CATEGORIES,
+  DEFAULT_LIVE_SESSIONS,
   getLiveBroadcastSessions,
   voteOnLiveBroadcast,
   getUserLiveVote,
@@ -45,7 +46,7 @@ export function LiveStageSection({
   brandNameFilter,
 }: LiveStageSectionProps) {
   const { isDeveloper, persona } = useRoles();
-  const [sessions, setSessions] = useState<LiveBroadcastSession[]>(() => getLiveBroadcastSessions());
+  const [sessions, setSessions] = useState<LiveBroadcastSession[]>(DEFAULT_LIVE_SESSIONS);
   const [filter, setFilter] = useState<"all" | "brand_owner" | "consumer">(defaultFilter);
   const [claimedIds, setClaimedIds] = useState<Record<string, boolean>>({});
   const [votedMap, setVotedMap] = useState<Record<string, "stash" | "trash" | null>>({});
@@ -149,6 +150,7 @@ export function LiveStageSection({
   return (
     <section
       aria-label="Live Brand Launches, Relaunches and Consumer Broadcasts"
+      suppressHydrationWarning
       className="rounded-3xl border-2 border-[#d6a928]/50 bg-slate-950 p-5 text-white shadow-lg sm:p-7"
     >
       {/* Top Stage Header */}

@@ -67,6 +67,7 @@ export function TopLanguageStrip() {
     <div
       role="region"
       aria-label="Language switcher"
+      suppressHydrationWarning
       className="w-full border-b border-[#d6a928]/25 bg-slate-950 text-white"
     >
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-2 overflow-x-auto px-4 py-1 sm:px-6 lg:px-8 no-scrollbar">

@@ -130,7 +130,7 @@ export const CONSUMER_BROADCAST_CATEGORIES: Array<{
   },
 ];
 
-const DEFAULT_LIVE_SESSIONS: LiveBroadcastSession[] = [
+export const DEFAULT_LIVE_SESSIONS: LiveBroadcastSession[] = [
   {
     id: "live-nandos-launch",
     roomChannel: "sot-live-nandos-launch",
@@ -149,7 +149,7 @@ const DEFAULT_LIVE_SESSIONS: LiveBroadcastSession[] = [
     viewerCount: 348,
     stashVotes: 289,
     trashVotes: 19,
-    startedAt: new Date(Date.now() - 14 * 60 * 1000).toISOString(),
+    startedAt: "2026-11-05T08:00:00.000Z",
     followersNotified: 4280,
     launchPerk: {
       title: "25% Off New Peri-Honey Launch Meal",
@@ -177,7 +177,7 @@ const DEFAULT_LIVE_SESSIONS: LiveBroadcastSession[] = [
     viewerCount: 215,
     stashVotes: 176,
     trashVotes: 24,
-    startedAt: new Date(Date.now() - 28 * 60 * 1000).toISOString(),
+    startedAt: "2026-11-05T07:45:00.000Z",
     followersNotified: 6150,
     launchPerk: {
       title: "Free Next-Day Express Delivery Pass",
@@ -206,7 +206,7 @@ const DEFAULT_LIVE_SESSIONS: LiveBroadcastSession[] = [
     viewerCount: 184,
     stashVotes: 168,
     trashVotes: 6,
-    startedAt: new Date(Date.now() - 41 * 60 * 1000).toISOString(),
+    startedAt: "2026-11-05T07:30:00.000Z",
     followersNotified: 3190,
     launchPerk: {
       title: "R250 Off Authentic Mesh Sneaker Drop",
@@ -234,7 +234,7 @@ const DEFAULT_LIVE_SESSIONS: LiveBroadcastSession[] = [
     viewerCount: 92,
     stashVotes: 81,
     trashVotes: 11,
-    startedAt: new Date(Date.now() - 9 * 60 * 1000).toISOString(),
+    startedAt: "2026-11-05T08:10:00.000Z",
   },
 ];
 

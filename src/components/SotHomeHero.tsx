@@ -156,7 +156,10 @@ export function SotHomeHero() {
   };
 
   return (
-    <section className="relative isolate overflow-hidden border-b-2 border-[#d6a928]/30 bg-white text-slate-950">
+    <section
+      suppressHydrationWarning
+      className="relative isolate overflow-hidden border-b-2 border-[#d6a928]/30 bg-white text-slate-950"
+    >
       {/* Split-screen brand watermark: visible on desktop, hidden on mobile so mobile text is 100% crisp and readable */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden z-0 hidden sm:block">
         {/* Left Half: Falling Gold Coins Watermark (Continuous Waterfall Rain) */}
@@ -189,7 +192,7 @@ export function SotHomeHero() {
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:py-16">
         {/* Top Header Text: Signature Black & Gold Two-Tone Contrast */}
         <div className="mx-auto max-w-3xl text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#d6a928]/50 bg-slate-950 px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.18em] text-[#f5d061] shadow-[...]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#d6a928]/50 bg-slate-950 px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.18em] text-[#f5d061] shadow-sm">
             <Coins className="h-3.5 w-3.5 text-[#d6a928]" aria-hidden="true" />
             <span>{t("hero.badge", { defaultValue: "The Brand Barometer" })}</span>
           </div>

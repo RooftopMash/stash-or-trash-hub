@@ -8,9 +8,9 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-white">
+    <div className="relative min-h-screen overflow-x-hidden bg-white" suppressHydrationWarning>
       <Header />
-      <main id="main-content">
+      <main id="main-content" suppressHydrationWarning>
         <SotHomeHero />
       </main>
     </div>
