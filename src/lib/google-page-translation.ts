@@ -3,166 +3,152 @@ import i18n from "./i18n";
 const ENDPOINT = "/api/translate-ui";
 const MAX_BATCH_SIZE = 80;
 const MAX_BATCH_CHARACTERS = 18_000;
-const IGNORED_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "CODE", "PRE", "TEXTAREA"]);
+const CACHE_VERSION = "v1";
+const inFlightLanguages = new Set<string>();
 
-type OriginalText = { source: string; rendered: string; language: string };
-const originals = new Map<Text, OriginalText>();
-const inFlight = new Set<Text>();
-let activeLanguage = "";
-let scanTimer: ReturnType<typeof setTimeout> | undefined;
-let scanQueued = false;
-
-function isTranslatable(node: Text): boolean {
-  const text = node.nodeValue;
-  const parent = node.parentElement;
-  if (!text?.trim() || !parent || IGNORED_TAGS.has(parent.tagName)) return false;
-  if (parent.closest("[data-translation-exclude], [contenteditable='true'], .notranslate")) return false;
-  return true;
-}
-
-function collectTextNodes(root: Node): Text[] {
-  const nodes: Text[] = [];
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  let current: Node | null;
-  while ((current = walker.nextNode())) {
-    const node = current as Text;
-    if (!isTranslatable(node)) continue;
-
-    const existing = originals.get(node);
-    if (existing && node.nodeValue !== existing.rendered) {
-      // React may have replaced this node's content. Keep its newest source text.
-      existing.source = node.nodeValue ?? "";
-      existing.rendered = existing.source;
-      existing.language = "";
-    }
-    if (!existing || existing.language !== activeLanguage) nodes.push(node);
+function flattenStrings(value: unknown, prefix = "", output: Array<{ key: string; source: string }> = []) {
+  if (!value || typeof value !== "object") return output;
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (typeof child === "string" && child.trim()) output.push({ key: path, source: child });
+    else if (child && typeof child === "object" && !Array.isArray(child)) flattenStrings(child, path, output);
   }
-  return nodes;
+  return output;
 }
 
-async function translateBatch(nodes: Text[], language: string) {
-  if (!nodes.length || language === "en") return;
-  const texts = nodes.map((node) => originals.get(node)?.source ?? node.nodeValue ?? "");
-  nodes.forEach((node) => inFlight.add(node));
+function assignPath(target: Record<string, any>, path: string, value: string) {
+  const parts = path.split(".");
+  let current = target;
+  for (const part of parts.slice(0, -1)) current = current[part] ??= {};
+  current[parts[parts.length - 1]] = value;
+}
+
+function cacheKey(language: string) {
+  return `sot-google-i18n-${CACHE_VERSION}-${language}`;
+}
+
+function readCache(language: string): Record<string, string> {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(cacheKey(language)) ?? "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeCache(language: string, values: Record<string, string>) {
+  try {
+    window.localStorage.setItem(cacheKey(language), JSON.stringify(values));
+  } catch {
+    // Quota/privacy settings may disable localStorage; translations still work this session.
+  }
+}
+
+function protectPlaceholders(text: string) {
+  const placeholders: string[] = [];
+  const masked = text.replace(/\{\{\s*[^{}]+\s*\}\}/g, (match) => {
+    const token = `SOTPH${placeholders.length}TOKEN`;
+    placeholders.push(match);
+    return token;
+  });
+  return {
+    masked,
+    restore(translated: string) {
+      return translated.replace(/SOTPH(\d+)TOKEN/gi, (token, index: string) =>
+        placeholders[Number(index)] ?? token,
+      );
+    },
+  };
+}
+
+async function requestTranslations(texts: string[], language: string) {
+  const response = await fetch(ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ texts, targetLang: language }),
+  });
+  if (!response.ok) throw new Error(`Google translation failed (${response.status})`);
+  const result = (await response.json()) as { translations?: unknown };
+  if (!Array.isArray(result.translations) || result.translations.length !== texts.length) {
+    throw new Error("Google returned an incomplete translation batch");
+  }
+  return result.translations.map((value) => (typeof value === "string" ? value : ""));
+}
+
+async function translateMissingResources(language: string) {
+  if (typeof window === "undefined" || !language || language === "en" || inFlightLanguages.has(language)) return;
+  inFlightLanguages.add(language);
 
   try {
-    const response = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texts, targetLang: language }),
+    const english = i18n.getResourceBundle("en", "translation");
+    const localized = i18n.getResourceBundle(language, "translation") ?? {};
+    const candidates = flattenStrings(english).filter(({ key, source }) => {
+      const existing = i18n.getResource(language, "translation", key);
+      // Preserve authored translations; Google fills only English fallback entries.
+      return existing === source && !readCache(language)[key];
     });
-    if (!response.ok) return;
-    const result = (await response.json()) as { translations?: string[] };
-    if (language !== activeLanguage || !Array.isArray(result.translations)) return;
 
-    nodes.forEach((node, index) => {
-      const translated = result.translations?.[index];
-      if (!translated || !node.isConnected) return;
-      const entry = originals.get(node) ?? {
-        source: texts[index] ?? "",
-        rendered: texts[index] ?? "",
-        language: "",
-      };
-      // Do not overwrite text that React changed while the request was in flight.
-      if (node.nodeValue !== entry.rendered) return;
-      entry.rendered = translated;
-      entry.language = language;
-      originals.set(node, entry);
-      node.nodeValue = translated;
-    });
-  } catch {
-    // Keep the original text visible when Google or the network is unavailable.
-  } finally {
-    nodes.forEach((node) => inFlight.delete(node));
-  }
-}
+    const cache = readCache(language);
+    const generated: Record<string, string> = {};
+    let batch: Array<{ key: string; source: string; restore: (value: string) => string }> = [];
+    let batchLength = 0;
 
-async function translateNodes(nodes: Text[], language: string) {
-  const pending = nodes.filter((node) => !inFlight.has(node));
-  let batch: Text[] = [];
-  let characters = 0;
-
-  for (const node of pending) {
-    const length = (originals.get(node)?.source ?? node.nodeValue ?? "").length;
-    if (batch.length && (batch.length >= MAX_BATCH_SIZE || characters + length > MAX_BATCH_CHARACTERS)) {
-      await translateBatch(batch, language);
+    const flush = async () => {
+      if (!batch.length) return;
+      try {
+        const translated = await requestTranslations(batch.map((entry) => entry.source), language);
+        translated.forEach((value, index) => {
+          const entry = batch[index];
+          const result = entry?.restore(value);
+          if (entry && result?.trim() && result !== entry.source) {
+            generated[entry.key] = result;
+            cache[entry.key] = result;
+          }
+        });
+      } catch (error) {
+        console.warn("Google UI translation batch failed; retaining existing locale text.", error);
+      }
       batch = [];
-      characters = 0;
-    }
-    batch.push(node);
-    characters += length;
-  }
-  if (batch.length) await translateBatch(batch, language);
-}
+      batchLength = 0;
+    };
 
-function scheduleScan(root: Node = document.body) {
-  if (!root || scanQueued) return;
-  scanQueued = true;
-  scanTimer = setTimeout(() => {
-    scanQueued = false;
-    if (activeLanguage === "en") return;
-    void translateNodes(collectTextNodes(root), activeLanguage);
-  }, 80);
-}
-
-function applyLanguage(language: string) {
-  activeLanguage = language;
-  if (language === "en") {
-    for (const [node, entry] of originals) {
-      if (!node.isConnected) {
-        originals.delete(node);
-        continue;
+    for (const item of candidates) {
+      const protectedText = protectPlaceholders(item.source);
+      if (batch.length && (batch.length >= MAX_BATCH_SIZE || batchLength + protectedText.masked.length > MAX_BATCH_CHARACTERS)) {
+        await flush();
       }
-      if (node.nodeValue === entry.rendered) node.nodeValue = entry.source;
-      entry.rendered = entry.source;
-      entry.language = "en";
+      batch.push({ ...item, source: protectedText.masked, restore: protectedText.restore });
+      batchLength += protectedText.masked.length;
     }
-    return;
-  }
+    await flush();
 
-  // Restore source text before translating again, so changing languages never
-  // translates a previous Google translation into the next language.
-  for (const [node, entry] of originals) {
-    if (!node.isConnected) {
-      originals.delete(node);
-      continue;
-    }
-    if (node.nodeValue === entry.rendered) node.nodeValue = entry.source;
-    entry.rendered = entry.source;
-    entry.language = "";
-  }
-  if (document.body) scheduleScan(document.body);
-}
-
-function start() {
-  if (!document.body) return;
-  activeLanguage = i18n.resolvedLanguage || i18n.language || "en";
-  const observer = new MutationObserver((records) => {
-    for (const record of records) {
-      if (record.type === "characterData" && record.target instanceof Text) {
-        const entry = originals.get(record.target);
-        if (entry && record.target.nodeValue !== entry.rendered) {
-          entry.source = record.target.nodeValue ?? "";
-          entry.rendered = entry.source;
-          entry.language = "";
-        }
-      }
-      for (const added of Array.from(record.addedNodes)) {
-        if (added.nodeType === Node.ELEMENT_NODE || added.nodeType === Node.TEXT_NODE) {
-          scheduleScan(added);
-        }
+    const merged = { ...localized } as Record<string, any>;
+    for (const [key, value] of Object.entries({ ...cache, ...generated })) {
+      // Cached results are applied only where the current catalog still uses its English fallback.
+      if (i18n.getResource(language, "translation", key) === i18n.getResource("en", "translation", key)) {
+        assignPath(merged, key, value);
       }
     }
-  });
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-  scheduleScan(document.body);
-  i18n.on("languageChanged", applyLanguage);
+
+    if (Object.keys(cache).length) writeCache(language, cache);
+    if (Object.keys(generated).length || Object.keys(cache).length) {
+      i18n.addResourceBundle(language, "translation", merged, true, true);
+    }
+  } finally {
+    inFlightLanguages.delete(language);
+  }
+}
+
+function onLanguageChanged(language: string) {
+  if (typeof document !== "undefined") {
+    document.documentElement.lang = language;
+    document.documentElement.dir = ["ar", "he", "fa", "ur"].includes(language.split("-")[0]) ? "rtl" : "ltr";
+  }
+  void translateMissingResources(language);
 }
 
 if (typeof window !== "undefined") {
-  if (document.readyState === "loading") {
-    window.addEventListener("DOMContentLoaded", start, { once: true });
-  } else {
-    start();
-  }
+  i18n.on("languageChanged", onLanguageChanged);
+  const initialLanguage = i18n.resolvedLanguage || i18n.language || "en";
+  onLanguageChanged(initialLanguage);
 }
