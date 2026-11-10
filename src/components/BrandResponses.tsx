@@ -13,12 +13,23 @@ import {
   fetchBrandResponses,
   fetchManagedBrandIds,
 } from "@/lib/brand-platform";
+import { BrandAutoResponder } from "@/components/BrandAutoResponder";
 
 /**
  * Official brand replies on a post: publicly readable, written only by users
  * with an analyst/admin role on that brand.
  */
-export function BrandResponses({ itemId, brandId }: { itemId: string; brandId: string | null }) {
+export function BrandResponses({
+  itemId,
+  brandId,
+  customerReview,
+  brandName,
+}: {
+  itemId: string;
+  brandId: string | null;
+  customerReview?: string;
+  brandName?: string | null;
+}) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [body, setBody] = useState("");
@@ -95,16 +106,23 @@ export function BrandResponses({ itemId, brandId }: { itemId: string; brandId: s
       ))}
 
       {canRespond && (
-        <div className="rounded-xl border border-dashed border-primary/40 p-3">
-          <p className="text-xs font-semibold text-primary">{t("brandTeam.respondAsBrand")}</p>
+        <div className="rounded-xl border border-dashed border-primary/40 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-primary">{t("brandTeam.respondAsBrand")}</p>
+            <BrandAutoResponder
+              brandName={brandName || "Brand"}
+              customerReview={customerReview || body || "Customer product experience"}
+              onApplyDraft={(draft) => setBody(draft)}
+            />
+          </div>
           <Textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder={t("brandTeam.responsePlaceholder")}
-            className="mt-2 text-sm"
+            className="text-sm"
             rows={3}
           />
-          <Button size="sm" className="mt-2" disabled={busy || !body.trim()} onClick={submit}>
+          <Button size="sm" disabled={busy || !body.trim()} onClick={submit}>
             {busy ? t("common.loading") : t("brandTeam.postResponse")}
           </Button>
         </div>

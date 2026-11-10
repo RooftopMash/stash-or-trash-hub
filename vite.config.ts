@@ -137,13 +137,27 @@ export default defineConfig({
         "react-dom/client",
         "react/jsx-runtime",
         "react/jsx-dev-runtime",
+        "use-sync-external-store",
         "@tanstack/react-router",
         "@tanstack/react-query",
         "@tanstack/react-store",
+        "@tanstack/start-client-core",
       ],
       alias: {
         "node:async_hooks": path.resolve(process.cwd(), "src/lib/stubs/async-hooks.ts"),
         "async_hooks": path.resolve(process.cwd(), "src/lib/stubs/async-hooks.ts"),
+        "use-sync-external-store/shim/with-selector": path.resolve(
+          process.cwd(),
+          "src/lib/stubs/use-sync-external-store-with-selector.ts",
+        ),
+        "use-sync-external-store/shim": path.resolve(
+          process.cwd(),
+          "src/lib/stubs/use-sync-external-store-shim.ts",
+        ),
+        "use-sync-external-store": path.resolve(
+          process.cwd(),
+          "src/lib/stubs/use-sync-external-store-shim.ts",
+        ),
       },
     },
     optimizeDeps: {
@@ -157,6 +171,7 @@ export default defineConfig({
         "@tanstack/react-router",
         "@tanstack/react-query",
         "@tanstack/react-store",
+        "@tanstack/start-client-core",
         "lucide-react",
         "clsx",
         "tailwind-merge",

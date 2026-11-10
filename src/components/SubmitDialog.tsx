@@ -34,9 +34,14 @@ import binIcon from "@/assets/icon-bin.png";
 import { cn } from "@/lib/utils";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
+import { ReceiptVerifierModal } from "@/components/ReceiptVerifierModal";
+import { VerifiedPurchaseBadge } from "@/components/VerifiedPurchaseBadge";
+import { PrePublicationShield } from "@/components/PrePublicationShield";
+import type { ReceiptVerificationData } from "@/lib/ai-services";
 import type { Verdict } from "@/lib/stash";
 import type { AiScanResult } from "@/lib/ai-scanner";
 import { toast } from "sonner";
+import { Receipt, FileCheck } from "lucide-react";
 
 const NO_BRAND = "__none__";
 const FEEDBACK_TYPES = ["Concern", "Compliment", "Idea", "Question"] as const;
@@ -72,6 +77,9 @@ export function SubmitDialog({
   const setOpen = isControlled ? (setControlledOpen ?? (() => {})) : setUncontrolledOpen;
 
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [receiptVerifierOpen, setReceiptVerifierOpen] = useState(false);
+  const [receiptVerification, setReceiptVerification] = useState<ReceiptVerificationData | null>(null);
+  const [screeningBlocked, setScreeningBlocked] = useState(false);
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
   const [category, setCategory] = useState(initialValues?.category ?? "");
@@ -101,6 +109,8 @@ export function SubmitDialog({
     setBrandId(defaultBrandId ?? NO_BRAND);
     setFile(null);
     setAiScanResult(null);
+    setReceiptVerification(null);
+    setScreeningBlocked(false);
     setVerdict(null);
   };
 
@@ -150,6 +160,10 @@ export function SubmitDialog({
       toast.error(t("submit.needVerdict"));
       return;
     }
+    if (screeningBlocked) {
+      toast.error("Please rephrase flagged content identified by the Defamation & Legal Shield before publishing.");
+      return;
+    }
     setSubmitting(true);
     try {
       await createItem({
@@ -161,6 +175,7 @@ export function SubmitDialog({
         category,
         verdict,
         aiScanResult,
+        receiptVerification,
       });
       toast.success(t("submit.posted"));
       reset();
@@ -209,6 +224,51 @@ export function SubmitDialog({
                 <Sparkles className="h-3.5 w-3.5" /> Scan Product / QR
               </Button>
             </div>
+
+            {/* FAST AI RECEIPT & PROOF AUTHENTICATOR TRIGGER */}
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+              <div className="space-y-0.5 text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-1.5 font-bold text-xs text-emerald-700 dark:text-emerald-400">
+                  <Receipt className="h-3.5 w-3.5" /> AI Receipt & Proof Authenticator
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Attach a till slip, invoice, or digital receipt to earn the certified "Verified Purchase ✓" badge.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setReceiptVerifierOpen(true)}
+                className="gap-1.5 text-xs font-semibold shrink-0 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10"
+              >
+                <FileCheck className="h-3.5 w-3.5" /> {receiptVerification ? "Change Proof" : "Attach Proof"}
+              </Button>
+            </div>
+
+            {/* ATTACHED RECEIPT AUDIT PREVIEW */}
+            {receiptVerification && (
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <VerifiedPurchaseBadge receiptData={receiptVerification} interactive={true} />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                    onClick={() => setReceiptVerification(null)}
+                    title="Remove attached proof"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+                  <span>Merchant: <strong className="text-foreground">{receiptVerification.storeName}</strong></span>
+                  {receiptVerification.date && <span>Date: <strong className="text-foreground">{receiptVerification.date}</strong></span>}
+                  {receiptVerification.totalAmount && <span>Total: <strong className="text-foreground">{receiptVerification.totalAmount}</strong></span>}
+                </div>
+              </div>
+            )}
 
             {/* AI VERIFICATION & CORPORATE OWNER DOSSIER CHIP */}
             {aiScanResult && (
@@ -383,6 +443,13 @@ export function SubmitDialog({
                 rows={3}
                 maxLength={600}
               />
+              {/* AI Pre-Publication Defamation & Fraud Screening */}
+              <PrePublicationShield
+                content={`${title} ${description}`}
+                onSafetyEvaluated={(res) => {
+                  setScreeningBlocked(!res.safe && res.actionRecommended === "block");
+                }}
+              />
             </div>
 
             <div className="space-y-2">
@@ -409,8 +476,12 @@ export function SubmitDialog({
           </div>
 
           <DialogFooter>
-            <Button onClick={handleSubmit} disabled={submitting} className="w-full">
-              {submitting ? t("submit.posting") : t("submit.submit")}
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting || screeningBlocked}
+              className="w-full"
+            >
+              {submitting ? t("submit.posting") : screeningBlocked ? "Resolve Flagged Content to Publish" : t("submit.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -421,6 +492,16 @@ export function SubmitDialog({
         open={scannerOpen}
         onOpenChange={setScannerOpen}
         onApplyToPost={handleScannerApply}
+      />
+
+      {/* Embedded AI Receipt & Proof Verifier Modal */}
+      <ReceiptVerifierModal
+        open={receiptVerifierOpen}
+        onOpenChange={setReceiptVerifierOpen}
+        onVerified={(verified) => {
+          setReceiptVerification(verified);
+          toast.success(`Proof verified! "Verified Purchase" badge attached for ${verified.storeName}.`);
+        }}
       />
     </>
   );

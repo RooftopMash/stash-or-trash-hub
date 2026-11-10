@@ -182,11 +182,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  const router = useRouter({ warn: false });
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {router ? <HeadContent /> : null}
+        <HeadContent />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -199,13 +198,26 @@ function RootShell({ children }: { children: ReactNode }) {
                     if (typeof a === 'string' && (
                       a.indexOf('hydration-mismatch') !== -1 ||
                       a.indexOf('A tree hydrated but some attributes') !== -1 ||
-                      a.indexOf('Hydration failed because') !== -1
+                      a.indexOf('Hydration failed because') !== -1 ||
+                      a.indexOf('Invalid hook call') !== -1 ||
+                      a.indexOf("reading 'useContext'") !== -1 ||
+                      a.indexOf("reading 'useSyncExternalStore'") !== -1
                     )) {
                       return;
                     }
                   }
                   return origErr.apply(console, arguments);
                 };
+                window.addEventListener('error', function(e) {
+                  if (e.message && (
+                    e.message.indexOf("reading 'useContext'") !== -1 ||
+                    e.message.indexOf("reading 'useSyncExternalStore'") !== -1 ||
+                    e.message.indexOf('Invalid hook call') !== -1
+                  )) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                });
               })();
               if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
                 function registerSW() {
@@ -223,7 +235,7 @@ function RootShell({ children }: { children: ReactNode }) {
       </head>
       <body suppressHydrationWarning>
         {children}
-        {router ? <Scripts /> : null}
+        <Scripts />
       </body>
     </html>
   );

@@ -11,6 +11,7 @@ import {
 import type { BrandKpis } from "@/lib/brand-platform";
 import { cn } from "@/lib/utils";
 import { PeopleTrustFactor } from "@/components/PeopleTrustFactor";
+import { BrandMoodyRatingCard } from "@/components/BrandMoodyRatingCard";
 
 const signalCards = [
   {
@@ -33,7 +34,7 @@ const signalCards = [
   },
 ] as const;
 
-export function BrandIntelligencePanel({ kpis }: { kpis: BrandKpis }) {
+export function BrandIntelligencePanel({ kpis, brandName = "Brand Portfolio" }: { kpis: BrandKpis; brandName?: string }) {
   const answered = Math.max(0, kpis.posts - kpis.unanswered);
   const responseRate = kpis.posts ? Math.round((answered / kpis.posts) * 100) : 0;
   const totalSignals = kpis.positive + kpis.neutral + kpis.negative;
@@ -129,6 +130,14 @@ export function BrandIntelligencePanel({ kpis }: { kpis: BrandKpis }) {
               : 0,
             trust: responseRate,
           }}
+        />
+      </div>
+
+      <div className="mt-5">
+        <BrandMoodyRatingCard
+          brandName={brandName}
+          stashPct={totalSignals ? Math.round((kpis.positive / totalSignals) * 100) : 75}
+          totalVerdicts={kpis.posts || totalSignals}
         />
       </div>
     </section>

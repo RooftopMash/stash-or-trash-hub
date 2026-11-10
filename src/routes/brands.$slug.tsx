@@ -64,6 +64,7 @@ import {
   MessengerPrivateCallModal,
   type MessengerCallSession,
 } from "@/components/MessengerPrivateCallModal";
+import { BrandMoodyRatingCard } from "@/components/BrandMoodyRatingCard";
 
 export const Route = createFileRoute("/brands/$slug")({
   component: BrandPage,
@@ -698,16 +699,25 @@ function BrandPage() {
                     <p className="text-xs text-muted-foreground">The People's Standard of consumer ratings, scaling credibility via decentralized rater feedback.</p>
                   </div>
 
-                  {/* Rating Grade Callout */}
-                  <div className="rounded-xl border border-border bg-secondary/10 p-4 flex flex-col sm:flex-row items-center gap-4">
-                    <div className={`h-16 w-16 rounded-2xl flex items-center justify-center font-display text-2xl font-black shadow-inner shrink-0 ${getPeoplesSotGrade(brand.trust_score).color}`}>
-                      {getPeoplesSotGrade(brand.trust_score).grade}
-                    </div>
-                    <div className="text-center sm:text-left">
-                      <h4 className="font-display font-bold text-base">Current Brand Sovereign Grade: {getPeoplesSotGrade(brand.trust_score).grade}</h4>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{getPeoplesSotGrade(brand.trust_score).description}</p>
-                    </div>
-                  </div>
+                  {/* Moody's Grade AI Barometer Card */}
+                  <BrandMoodyRatingCard
+                    brandName={brand.name}
+                    stashPct={
+                      feed && feed.length > 0
+                        ? Math.round(
+                            ((feed.reduce((acc, it) => acc + it.stashCount, 0)) /
+                              Math.max(1, feed.reduce((acc, it) => acc + it.stashCount + it.trashCount, 0))) *
+                              100
+                          ) || brand.trust_score
+                        : brand.trust_score
+                    }
+                    totalVerdicts={
+                      feed && feed.length > 0
+                        ? feed.reduce((acc, it) => acc + it.stashCount + it.trashCount, 0) || feed.length
+                        : 24
+                    }
+                    sampleVerdicts={feed?.map((f) => f.title) ?? []}
+                  />
 
                   {/* CX/UX Matrix Metrics */}
                   <div className="space-y-3">

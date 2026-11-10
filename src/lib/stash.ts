@@ -28,6 +28,7 @@ export type FeedItem = {
   signedImageUrl: string | null;
   audit?: MediaAuditReport | null;
   phash?: string | null;
+  receiptVerification?: import("@/lib/ai-services").ReceiptVerificationData | null;
   disputeStatus?: DisputeStatus | null;
   disputeResolutionNotes?: string | null;
 };
@@ -154,6 +155,9 @@ export async function fetchFeed(
           : undefined) ?? null,
       signedImageUrl: item.image_url ? (signed.get(item.image_url) ?? null) : null,
       audit: (item.audit as MediaAuditReport | null | undefined) ?? null,
+      receiptVerification:
+        ((item.audit as any)?.receiptVerification as import("@/lib/ai-services").ReceiptVerificationData | null | undefined) ??
+        null,
       phash: (item.phash as string | null | undefined) ?? null,
       disputeStatus:
         (item.dispute_status as DisputeStatus | null | undefined) ??
@@ -188,9 +192,10 @@ export async function createItem(input: {
   category?: string | null;
   verdict?: Verdict | null;
   aiScanResult?: AiScanResult | null;
+  receiptVerification?: import("@/lib/ai-services").ReceiptVerificationData | null;
 }) {
   let imagePath: string | null = null;
-  let audit: MediaAuditReport | null = null;
+  let audit: (MediaAuditReport & { receiptVerification?: import("@/lib/ai-services").ReceiptVerificationData | null }) | null = null;
   let phash: string | null = null;
 
   if (input.file) {
@@ -250,6 +255,25 @@ export async function createItem(input: {
       tier: ai.authenticity.isLegitimate ? "clean" : "flagged",
       aiVerification: ai.authenticity,
       brandInfo: ai.brandInfo,
+    };
+  }
+
+  // Attach verified receipt proof if provided
+  if (input.receiptVerification) {
+    audit = {
+      ...(audit || {
+        tier: "clean",
+        sha256: null,
+        phash: null,
+        width: null,
+        height: null,
+        bytes: 0,
+        mime: "image/jpeg",
+        provenance: { camera_metadata: true, c2pa: false, notes: ["Verified Purchase Audit via SOT AI Vision"] },
+        flags: [],
+        detectors: [],
+      }),
+      receiptVerification: input.receiptVerification,
     };
   }
 

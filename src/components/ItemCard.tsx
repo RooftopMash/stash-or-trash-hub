@@ -25,6 +25,8 @@ import { getBrandContactSettings } from "@/lib/brand-operators";
 import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 import { useRoles } from "@/hooks/useRoles";
+import { VerifiedPurchaseBadge } from "@/components/VerifiedPurchaseBadge";
+import { TranslateButton } from "@/components/TranslateButton";
 
 export function ItemCard({
   item,
@@ -200,6 +202,12 @@ export function ItemCard({
                     <span>Owner: {item.audit.brandInfo.brandOwner}</span>
                   </span>
                 )}
+                {(item.receiptVerification || (item.audit as any)?.receiptVerification) && (
+                  <VerifiedPurchaseBadge
+                    receiptData={item.receiptVerification || (item.audit as any)?.receiptVerification}
+                    interactive={true}
+                  />
+                )}
                 {item.audit && <AuditBadge audit={item.audit} />}
                 <FormalEscalationModal item={item} />
               </div>
@@ -270,9 +278,12 @@ export function ItemCard({
         </div>
 
         {item.description && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            <PostText text={item.description} />
-          </p>
+          <div className="mt-2 space-y-1.5">
+            <p className="text-sm text-muted-foreground">
+              <PostText text={item.description} />
+            </p>
+            <TranslateButton text={item.description} />
+          </div>
         )}
 
         <DisputeResolutionBadge item={item} onChange={onChange} />
@@ -327,7 +338,12 @@ export function ItemCard({
           </Button>
         </div>
 
-        <BrandResponses itemId={item.id} brandId={item.brand_id} />
+        <BrandResponses
+          itemId={item.id}
+          brandId={item.brand_id}
+          brandName={item.brandName}
+          customerReview={item.description ? `${item.title}: ${item.description}` : item.title}
+        />
 
         <div className="mt-3">
           <ItemCardActions

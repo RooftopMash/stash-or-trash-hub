@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { TranslateButton } from "@/components/TranslateButton";
 import {
   createComment,
   getComments,
@@ -151,6 +152,9 @@ export function CommentThread({ itemId, currentUserId }: CommentThreadProps) {
               <p className="mt-2 text-sm">
                 <PostText text={comment.body} />
               </p>
+              <div className="mt-1">
+                <TranslateButton text={comment.body} />
+              </div>
 
               {/* Comment Actions */}
               <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">

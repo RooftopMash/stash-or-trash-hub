@@ -1641,7 +1641,7 @@ function BrandRow({
           </div>
 
           {/* Phase A KPIs — 30-day CX signal for this brand */}
-          {kpis && <BrandIntelligencePanel kpis={kpis} />}
+          {kpis && <BrandIntelligencePanel kpis={kpis} brandName={brand.name} />}
 
           {/* 30-Day Breakdown Grid */}
           <div className="rounded-2xl border border-border bg-secondary/20 p-4">
