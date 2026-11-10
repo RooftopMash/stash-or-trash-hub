@@ -82,13 +82,13 @@ async function translateMissingResources(language: string) {
   try {
     const english = i18n.getResourceBundle("en", "translation");
     const localized = i18n.getResourceBundle(language, "translation") ?? {};
+    const cache = readCache(language);
     const candidates = flattenStrings(english).filter(({ key, source }) => {
       const existing = i18n.getResource(language, "translation", key);
       // Preserve authored translations; Google fills only English fallback entries.
-      return existing === source && !readCache(language)[key];
+      return existing === source && !cache[key];
     });
 
-    const cache = readCache(language);
     const generated: Record<string, string> = {};
     let batch: Array<{ key: string; source: string; restore: (value: string) => string }> = [];
     let batchLength = 0;
@@ -133,6 +133,8 @@ async function translateMissingResources(language: string) {
     if (Object.keys(cache).length) writeCache(language, cache);
     if (Object.keys(generated).length || Object.keys(cache).length) {
       i18n.addResourceBundle(language, "translation", merged, true, true);
+      // Trigger react-i18next subscribers to render the newly added bundle immediately.
+      await i18n.changeLanguage(language);
     }
   } finally {
     inFlightLanguages.delete(language);
