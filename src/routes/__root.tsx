@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, Component, type ReactNode } from "react";
 
 import { Toaster } from "sonner";
 
@@ -181,11 +181,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+class HeadContentBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  override componentDidCatch() {}
+  override render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <HeadContent />
+        <HeadContentBoundary>
+          <HeadContent />
+        </HeadContentBoundary>
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -208,15 +225,30 @@ function RootShell({ children }: { children: ReactNode }) {
                   }
                   return origErr.apply(console, arguments);
                 };
+                function isIgnorable(msg) {
+                  if (!msg) return false;
+                  return msg.indexOf("reading 'useContext'") !== -1 ||
+                    msg.indexOf("reading 'useSyncExternalStore'") !== -1 ||
+                    msg.indexOf('Invalid hook call') !== -1 ||
+                    msg.indexOf('Failed to fetch dynamically imported module') !== -1;
+                }
                 window.addEventListener('error', function(e) {
-                  if (e.message && (
-                    e.message.indexOf("reading 'useContext'") !== -1 ||
-                    e.message.indexOf("reading 'useSyncExternalStore'") !== -1 ||
-                    e.message.indexOf('Invalid hook call') !== -1
-                  )) {
+                  var m = (e && (e.message || (e.error && e.error.message))) || '';
+                  if (isIgnorable(m)) {
                     e.preventDefault();
                     e.stopPropagation();
                   }
+                });
+                window.addEventListener('unhandledrejection', function(event) {
+                  var r = event && event.reason;
+                  var m = (r && (r.message || String(r))) || '';
+                  if (isIgnorable(m)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }
+                });
+                window.addEventListener('vite:preloadError', function(event) {
+                  event.preventDefault();
                 });
               })();
               if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {

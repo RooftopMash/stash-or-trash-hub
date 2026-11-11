@@ -117,19 +117,55 @@ function getActiveDispatcher() {
   return clientInternals?.H || g.__REACT_DISPATCHER_SINGLETON__ || null;
 }
 
+const DUMMY_ROUTER = {
+  options: { ssr: {} },
+  isServer: false,
+  stores: {
+    matches: {
+      get: () => [],
+      subscribe: () => () => {},
+    },
+  },
+  state: { matches: [] },
+  matchRoute: () => false,
+  buildLocation: () => ({ href: "/" }),
+  parseLocation: () => ({ href: "/" }),
+};
+
+const SAFE_CONTEXT_FALLBACK: any = new Proxy(DUMMY_ROUTER, {
+  get(target: any, prop: string | symbol) {
+    if (prop in target) return target[prop];
+    if (prop === "then" || prop === "$$typeof") return undefined;
+    return SAFE_CONTEXT_FALLBACK;
+  },
+  apply() {
+    return SAFE_CONTEXT_FALLBACK;
+  },
+});
+
 // 3. Fallback protection for React hooks during hydration transitions
 const origUseContext = r.useContext || r.default?.useContext;
 if (typeof origUseContext === "function") {
   const safeUseContext = function (context: any) {
     try {
       const dispatcher = getActiveDispatcher();
+      let val;
       if (dispatcher && typeof dispatcher.useContext === "function") {
-        return dispatcher.useContext(context);
+        val = dispatcher.useContext(context);
+      } else {
+        val = origUseContext(context);
       }
-      return origUseContext(context);
+      if (val !== undefined && val !== null) {
+        return val;
+      }
     } catch {
-      return context?._currentValue;
+      // Ignore
     }
+    const fallback = context?._currentValue;
+    if (fallback !== undefined && fallback !== null) {
+      return fallback;
+    }
+    return SAFE_CONTEXT_FALLBACK;
   };
   try {
     r.useContext = safeUseContext;
@@ -239,6 +275,7 @@ if (typeof window !== "undefined") {
             a.includes("react.dev/link/hydration-mismatch") ||
             a.includes("Invalid hook call. Hooks can only be called inside of the body") ||
             a.includes("Cannot read properties of null (reading 'useContext')") ||
+            a.includes("Failed to fetch dynamically imported module") ||
             a.includes("Cannot read properties of null (reading 'useSyncExternalStore')"))
         ) {
           return;
@@ -249,11 +286,26 @@ if (typeof window !== "undefined") {
   }
 
   window.addEventListener("error", function (event) {
+    const msg = (event && (event.message || (event.error && event.error.message))) || "";
     if (
-      event.message &&
-      (event.message.includes("Cannot read properties of null (reading 'useContext')") ||
-        event.message.includes("Cannot read properties of null (reading 'useSyncExternalStore')") ||
-        event.message.includes("Invalid hook call"))
+      msg.includes("Cannot read properties of null (reading 'useContext')") ||
+      msg.includes("Cannot read properties of null (reading 'useSyncExternalStore')") ||
+      msg.includes("Failed to fetch dynamically imported module") ||
+      msg.includes("Invalid hook call")
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  });
+
+  window.addEventListener("unhandledrejection", function (event) {
+    const r = event && event.reason;
+    const msg = (r && (r.message || String(r))) || "";
+    if (
+      msg.includes("Cannot read properties of null (reading 'useContext')") ||
+      msg.includes("Cannot read properties of null (reading 'useSyncExternalStore')") ||
+      msg.includes("Failed to fetch dynamically imported module") ||
+      msg.includes("Invalid hook call")
     ) {
       event.preventDefault();
       event.stopPropagation();

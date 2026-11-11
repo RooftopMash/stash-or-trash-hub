@@ -161,7 +161,6 @@ export default defineConfig({
       },
     },
     optimizeDeps: {
-      exclude: ["@tanstack/react-start"],
       include: [
         "react",
         "react-dom",
@@ -187,6 +186,7 @@ export default defineConfig({
     server: {
       host: "0.0.0.0",
       port: 3000,
+      hmr: false,
     },
     esbuild: {
       drop: process.env.NODE_ENV === "production" ? ["console", "debugger"] : [],
