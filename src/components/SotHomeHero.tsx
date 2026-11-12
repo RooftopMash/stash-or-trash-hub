@@ -727,8 +727,9 @@ export function SotHomeHero() {
 
         {/* Cascading SOrT at the bottom of the home page */}
         <div
+          translate="no"
           aria-hidden="true"
-          className="relative flex justify-center gap-4 overflow-hidden pt-4 pb-2 text-5xl font-black leading-none sm:gap-8 sm:text-7xl"
+          className="notranslate relative flex justify-center gap-4 overflow-hidden pt-4 pb-2 text-5xl font-black leading-none sm:gap-8 sm:text-7xl"
         >
           {cascade.map(({ letter, className }, index) => (
             <span

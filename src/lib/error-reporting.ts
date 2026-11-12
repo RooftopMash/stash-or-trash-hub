@@ -19,6 +19,17 @@ export function reportApplicationError(error: unknown, context: Record<string, u
     ...context,
   };
 
+  const msg = error instanceof Error ? error.message : String(error);
+  if (
+    msg.includes("hydration-mismatch") ||
+    msg.includes("Hydration failed") ||
+    msg.includes("object is not a function") ||
+    msg.includes("Cannot read properties of null (reading 'useContext')") ||
+    msg.includes("Failed to fetch dynamically imported module")
+  ) {
+    return;
+  }
+
   if (import.meta.env.DEV) {
     console.error("[Application Error]", error, enrichedContext);
   }

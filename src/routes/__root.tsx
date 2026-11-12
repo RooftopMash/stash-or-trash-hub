@@ -3,7 +3,6 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
-  useRouter,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -77,9 +76,12 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: any; reset: () => void }) {
-  const router = useRouter({ warn: false });
   useEffect(() => {
-    reportApplicationError(error instanceof Error ? error : new Error(String(error)), { boundary: "tanstack_root_error_component" });
+    try {
+      reportApplicationError(error instanceof Error ? error : new Error(String(error)), { boundary: "tanstack_root_error_component" });
+    } catch {
+      // ignore
+    }
   }, [error]);
 
   return (
@@ -94,8 +96,11 @@ function ErrorComponent({ error, reset }: { error: any; reset: () => void }) {
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
-              router?.invalidate();
-              reset();
+              if (typeof window !== "undefined") {
+                window.location.reload();
+              } else {
+                reset();
+              }
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
@@ -168,12 +173,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap",
       },
     ],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify(BRAND_BAROMETER_SCHEMA),
-      },
-    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -203,67 +202,6 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContentBoundary>
           <HeadContent />
         </HeadContentBoundary>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                if (typeof window === 'undefined') return;
-                var origErr = console.error;
-                console.error = function() {
-                  for (var i = 0; i < arguments.length; i++) {
-                    var a = arguments[i];
-                    if (typeof a === 'string' && (
-                      a.indexOf('hydration-mismatch') !== -1 ||
-                      a.indexOf('A tree hydrated but some attributes') !== -1 ||
-                      a.indexOf('Hydration failed because') !== -1 ||
-                      a.indexOf('Invalid hook call') !== -1 ||
-                      a.indexOf("reading 'useContext'") !== -1 ||
-                      a.indexOf("reading 'useSyncExternalStore'") !== -1
-                    )) {
-                      return;
-                    }
-                  }
-                  return origErr.apply(console, arguments);
-                };
-                function isIgnorable(msg) {
-                  if (!msg) return false;
-                  return msg.indexOf("reading 'useContext'") !== -1 ||
-                    msg.indexOf("reading 'useSyncExternalStore'") !== -1 ||
-                    msg.indexOf('Invalid hook call') !== -1 ||
-                    msg.indexOf('Failed to fetch dynamically imported module') !== -1;
-                }
-                window.addEventListener('error', function(e) {
-                  var m = (e && (e.message || (e.error && e.error.message))) || '';
-                  if (isIgnorable(m)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }
-                });
-                window.addEventListener('unhandledrejection', function(event) {
-                  var r = event && event.reason;
-                  var m = (r && (r.message || String(r))) || '';
-                  if (isIgnorable(m)) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                  }
-                });
-                window.addEventListener('vite:preloadError', function(event) {
-                  event.preventDefault();
-                });
-              })();
-              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                function registerSW() {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
-                }
-                if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                  registerSW();
-                } else {
-                  window.addEventListener('load', registerSW);
-                }
-              }
-            `,
-          }}
-        />
       </head>
       <body suppressHydrationWarning>
         {children}
@@ -279,6 +217,18 @@ function RootComponent() {
   useEffect(() => {
     installProductionSecurityShield();
     autoSeedFirestoreIfEmpty();
+
+    // Dynamically inject Brand Barometer JSON-LD schema into head
+    if (typeof document !== "undefined") {
+      const schemaId = "sot-brand-schema";
+      if (!document.getElementById(schemaId)) {
+        const script = document.createElement("script");
+        script.id = schemaId;
+        script.type = "application/ld+json";
+        script.textContent = JSON.stringify(BRAND_BAROMETER_SCHEMA);
+        document.head.appendChild(script);
+      }
+    }
 
     // Register PWA Service Worker for store package & offline caching
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {

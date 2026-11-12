@@ -136,8 +136,9 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
         <div className="flex min-w-0 flex-1 items-center gap-2.5 lg:gap-4">
           <Link to="/" className="group flex shrink-0 items-center gap-2 whitespace-nowrap">
             <span
+              translate="no"
               aria-label="SOrT — Stash Or Trash logo"
-              className="flex h-8.5 w-8.5 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border-2 border-slate-950 bg-white text-xs sm:text-sm font-black tracking-[-0.08em] shadow-xs transition-transform group-hover:scale-105 select-none"
+              className="notranslate flex h-8.5 w-8.5 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border-2 border-slate-950 bg-white text-xs sm:text-sm font-black tracking-[-0.08em] shadow-xs transition-transform group-hover:scale-105 select-none"
             >
               <span className="text-[#d6a928]">S</span>
               <span className="text-slate-950">O</span>
