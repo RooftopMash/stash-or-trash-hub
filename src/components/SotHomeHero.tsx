@@ -222,8 +222,8 @@ export function SotHomeHero() {
               <VerdictSuccess
                 active={activeObject === "coin"}
                 inline
-                label="STASHED!"
-                sublabel="Keep what serves you · Gold standard"
+                label={t("hero.stashedSuccessLabel", { defaultValue: "STASHED!" })}
+                sublabel={t("hero.stashedSuccessSub", { defaultValue: "Keep what serves you · Gold standard" })}
               />
               <button
                 type="button"
@@ -268,8 +268,8 @@ export function SotHomeHero() {
                   search={{ filter: "stash" }}
                   onClick={() =>
                     triggerVerdictSuccess({
-                      label: "STASHES OF THE DAY",
-                      sublabel: "Keep what serves you · Community Gold Standard",
+                      label: t("feed.stashesOfDay", { defaultValue: "STASHES OF THE DAY" }),
+                      sublabel: t("hero.stashesOfDaySub", { defaultValue: "Keep what serves you · Community Gold Standard" }),
                     })
                   }
                   className="inline-flex w-full items-center justify-center gap-1 sm:gap-2 rounded-full border-2 border-slate-950 bg-[#d6a928] px-2 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-950 shadow-[0_4px_18px_rgba(214,169,40,0.28)] transition hover:brightness-105"
@@ -288,7 +288,7 @@ export function SotHomeHero() {
             <div className="group relative flex flex-col items-center p-1 sm:p-4 transition">
               <button
                 type="button"
-                aria-label="Slam trash can for Trashes of the Day"
+                aria-label={t("hero.slamTrashAria", { defaultValue: "Slam trash can for Trashes of the Day" })}
                 onClick={handleTrashClick}
                 onMouseEnter={() => {
                   if (activeObject !== "bin") {
@@ -330,7 +330,7 @@ export function SotHomeHero() {
                     )}
                   />
                 </div>
-                <span className="sr-only">Slam trash can for Trashes of the Day</span>
+                <span className="sr-only">{t("hero.slamTrashAria", { defaultValue: "Slam trash can for Trashes of the Day" })}</span>
               </button>
 
               <div className="mt-2 sm:mt-3 flex w-full flex-col items-center gap-1 sm:gap-1.5 text-center">
@@ -370,13 +370,16 @@ export function SotHomeHero() {
             <div className="flex flex-col justify-between rounded-3xl border-2 border-[#d6a928] bg-slate-950 p-6 text-white shadow-md sm:flex-row sm:items-center gap-6">
               <div>
                 <span className="inline-block text-xs font-black uppercase tracking-[0.16em] text-[#f5d061]">
-                  🏛️ Official Registered Brand Account Active
+                  {t("hero.brandAccountActive", { defaultValue: "🏛️ Official Registered Brand Account Active" })}
                 </span>
                 <h3 className="mt-2 font-display text-2xl font-black text-white">
-                  Open Your Dedicated Brand Command &amp; Launch Suite
+                  {t("hero.brandSuiteTitle", { defaultValue: "Open Your Dedicated Brand Command & Launch Suite" })}
                 </h3>
                 <p className="mt-1.5 max-w-2xl text-xs font-medium leading-relaxed text-slate-300 sm:text-sm">
-                  Access your single-brand intelligence barometer, host live product launches &amp; relaunches, manage corporate desk operator seats, and resolve customer issues within the CPA with your chosen teams.
+                  {t("hero.brandSuiteDesc", {
+                    defaultValue:
+                      "Access your single-brand intelligence barometer, host live product launches & relaunches, manage corporate desk operator seats, and resolve customer issues within the CPA with your chosen teams.",
+                  })}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -385,14 +388,14 @@ export function SotHomeHero() {
                   onClick={() => navigate({ to: "/dashboard" })}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-[#d6a928] px-4 py-2.5 text-xs font-black text-slate-950 transition hover:bg-[#e5b935] cursor-pointer"
                 >
-                  Open Brand Command Suite <ArrowRight className="h-3.5 w-3.5" />
+                  {t("hero.openBrandSuite", { defaultValue: "Open Brand Command Suite" })} <ArrowRight className="h-3.5 w-3.5" />
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate({ to: "/profile" })}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
                 >
-                  Open Corporate Brand Desk
+                  {t("hero.openBrandDesk", { defaultValue: "Open Corporate Brand Desk" })}
                 </button>
               </div>
             </div>
@@ -400,13 +403,16 @@ export function SotHomeHero() {
             <div className="flex flex-col justify-between rounded-3xl border-2 border-[#d6a928]/60 bg-gradient-to-b from-[#fffbeb] to-white p-6 shadow-sm sm:flex-row sm:items-center gap-6">
               <div>
                 <span className="inline-block text-xs font-black uppercase tracking-[0.16em] text-amber-800">
-                  🎉 100% Free Forever for Everyday Consumers &amp; Voters
+                  {t("hero.consumerFreeBadge", { defaultValue: "🎉 100% Free Forever for Everyday Consumers & Voters" })}
                 </span>
                 <h3 className="mt-2 font-display text-2xl font-black text-slate-950">
-                  Vote Stash or Trash, Scan Barcodes &amp; Claim Live Launch Perks
+                  {t("hero.consumerFreeTitle", { defaultValue: "Vote Stash or Trash, Scan Barcodes & Claim Live Launch Perks" })}
                 </h3>
                 <p className="mt-1.5 max-w-2xl text-xs font-medium leading-relaxed text-slate-700 sm:text-sm">
-                  Spin the South African Zwepe Gold Coin, slam Randy the Hungry Trash Can, scan product barcodes before you buy, connect with mutual Friends, and claim instant promo vouchers.
+                  {t("hero.consumerFreeDesc", {
+                    defaultValue:
+                      "Spin the South African Zwepe Gold Coin, slam Randy the Hungry Trash Can, scan product barcodes before you buy, connect with mutual Friends, and claim instant promo vouchers.",
+                  })}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -414,13 +420,13 @@ export function SotHomeHero() {
                   to="/profile"
                   className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-black text-[#f5d061] transition hover:bg-slate-900"
                 >
-                  Open My Personal Profile <ArrowRight className="h-3.5 w-3.5" />
+                  {t("hero.openMyProfile", { defaultValue: "Open My Personal Profile" })} <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
                 <Link
                   to="/scan"
                   className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 hover:bg-slate-50"
                 >
-                  Scan Product Barcode
+                  {t("hero.scanBarcodeBtn", { defaultValue: "Scan Product Barcode" })}
                 </Link>
               </div>
             </div>
@@ -479,7 +485,7 @@ export function SotHomeHero() {
                 <div className="flex items-center gap-2">
                   <Layers className="h-4 w-4 text-primary" />
                   <h3 className="font-display text-sm font-extrabold uppercase tracking-wider text-slate-950">
-                    {t("hero.liveSentiment", { defaultValue: "Barometer Tier Segmentation" })}
+                    {t("hero.barometerSegmentation", { defaultValue: "Barometer Tier Segmentation" })}
                   </h3>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                     {barometerBrands.length} {t("nav.brands", { defaultValue: "Brands" })}
@@ -643,21 +649,26 @@ export function SotHomeHero() {
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-black uppercase tracking-wider text-amber-900">
                     <Trophy className="h-3.5 w-3.5 text-amber-700" />
-                    {t("hero.gettingStashed", { defaultValue: "Top Stashed of the Day" })}
+                    {t("hero.topStashedTitle", { defaultValue: "Top Stashed of the Day" })}
                   </span>
                   <span className="font-display text-sm font-black text-amber-700">
                     +{topStashedItem?.stashCount ?? 0} {t("hero.stashes", { defaultValue: "Stashes" })}
                   </span>
                 </div>
                 <h3 className="mt-3 font-display text-base font-bold text-slate-950 line-clamp-1">
-                  {topStashedItem?.title ?? "Community Favorite Brand"}
+                  {topStashedItem?.title ?? t("hero.communityFavoriteFallback", { defaultValue: "Community Favorite Brand" })}
                 </h3>
                 <p className="mt-1 text-xs text-slate-600 line-clamp-2">
-                  {topStashedItem?.description ?? "Consumers are celebrating exceptional service, product durability, and ethical practices."}
+                  {topStashedItem?.description ??
+                    t("hero.communityFavoriteDesc", {
+                      defaultValue:
+                        "Consumers are celebrating exceptional service, product durability, and ethical practices.",
+                    })}
                 </p>
                 {topStashedItem?.brandName && (
                   <p className="mt-2 text-xs font-semibold text-slate-500">
-                    {t("nav.brands", { defaultValue: "Brand" })}: <span className="text-slate-900 font-bold">{topStashedItem.brandName}</span>
+                    {t("hero.brandLabel", { defaultValue: "Brand" })}:{" "}
+                    <span className="text-slate-900 font-bold">{topStashedItem.brandName}</span>
                   </p>
                 )}
               </div>
@@ -678,21 +689,26 @@ export function SotHomeHero() {
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-black uppercase tracking-wider text-slate-800">
                     <AlertTriangle className="h-3.5 w-3.5 text-slate-700" />
-                    {t("hero.gettingTrashed", { defaultValue: "Top Trashed of the Day" })}
+                    {t("hero.topTrashedTitle", { defaultValue: "Top Trashed of the Day" })}
                   </span>
                   <span className="font-display text-sm font-black text-slate-900">
                     {topTrashedItem?.trashCount ?? 0} {t("hero.trashes", { defaultValue: "Trashed" })}
                   </span>
                 </div>
                 <h3 className="mt-3 font-display text-base font-bold text-slate-950 line-clamp-1">
-                  {topTrashedItem?.title ?? "Critical Consumer Callout"}
+                  {topTrashedItem?.title ?? t("hero.criticalCalloutFallback", { defaultValue: "Critical Consumer Callout" })}
                 </h3>
                 <p className="mt-1 text-xs text-slate-600 line-clamp-2">
-                  {topTrashedItem?.description ?? "Public accountability on poor service delivery, pricing changes, or quality concerns."}
+                  {topTrashedItem?.description ??
+                    t("hero.criticalCalloutDesc", {
+                      defaultValue:
+                        "Public accountability on poor service delivery, pricing changes, or quality concerns.",
+                    })}
                 </p>
                 {topTrashedItem?.brandName && (
                   <p className="mt-2 text-xs font-semibold text-slate-500">
-                    {t("nav.brands", { defaultValue: "Brand" })}: <span className="text-slate-900 font-bold">{topTrashedItem.brandName}</span>
+                    {t("hero.brandLabel", { defaultValue: "Brand" })}:{" "}
+                    <span className="text-slate-900 font-bold">{topTrashedItem.brandName}</span>
                   </p>
                 )}
               </div>

@@ -13,6 +13,8 @@ import { Check, ChevronDown, Globe, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+import { applyGoogleDomTranslation, ensureGoogleTranslateLoaded } from "@/lib/google-translate";
+
 export async function switchAppLanguage(
   i18nInstance: { changeLanguage: (lng: string) => Promise<unknown> },
   code: string,
@@ -24,6 +26,12 @@ export async function switchAppLanguage(
   if (typeof document !== "undefined") {
     document.documentElement.lang = code;
     document.documentElement.dir = RTL_LANGUAGES.includes(code) ? "rtl" : "ltr";
+  }
+  // Layer 2: Trigger Google DOM Translation sweep so 100% of the visible page translates
+  try {
+    applyGoogleDomTranslation(code);
+  } catch {
+    // Non-blocking fallback
   }
 }
 

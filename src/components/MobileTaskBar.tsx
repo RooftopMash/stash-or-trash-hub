@@ -95,7 +95,7 @@ export function MobileTaskBar() {
               <Flame className="h-4 w-4" />
             )}
           </div>
-          <span>{filter === "trash" ? "Trash" : filter === "stash" ? "Stash" : t("nav.feed", { defaultValue: "Feed" })}</span>
+          <span>{filter === "trash" ? t("vote.trash", { defaultValue: "Trash" }) : filter === "stash" ? t("vote.stash", { defaultValue: "Stash" }) : t("nav.feed", { defaultValue: "Feed" })}</span>
         </Link>
 
         {/* 3. SCAN: Center Cyber Emerald Forensic Barcode Action Button */}

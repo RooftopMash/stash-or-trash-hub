@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
 import { useRoles } from "@/hooks/useRoles";
+import { useTranslation } from "@/hooks/useTranslation";
 import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import {
   BRAND_BROADCAST_CATEGORIES,
@@ -46,6 +47,7 @@ export function LiveStageSection({
   brandNameFilter,
 }: LiveStageSectionProps) {
   const { isDeveloper, persona } = useRoles();
+  const { t, liveStage } = useTranslation();
   const [sessions, setSessions] = useState<LiveBroadcastSession[]>(DEFAULT_LIVE_SESSIONS);
   const [filter, setFilter] = useState<"all" | "brand_owner" | "consumer">(defaultFilter);
   const [claimedIds, setClaimedIds] = useState<Record<string, boolean>>({});
@@ -159,18 +161,21 @@ export function LiveStageSection({
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white">
               <Radio className="h-3.5 w-3.5 animate-pulse" />
-              LIVE STAGE
+              {t("liveStage.liveStageBadge", { defaultValue: "LIVE STAGE" })}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d6a928]/50 bg-[#d6a928]/15 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#f5d061]">
               <Rocket className="h-3.5 w-3.5 text-[#d6a928]" />
-              Brand Product Launches, Relaunches &amp; Consumer Cams
+              {t("liveStage.broadcastsBadge", { defaultValue: "Brand Product Launches, Relaunches & Consumer Cams" })}
             </span>
           </div>
           <h2 className="mt-2.5 font-display text-xl font-black tracking-tight text-white sm:text-2xl">
-            Watch Live Brand Reveals, Vote Stash or Trash &amp; Claim Instant Launch Perks
+            {t("liveStage.heading", { defaultValue: "Watch Live Brand Reveals, Vote Stash or Trash & Claim Instant Launch Perks" })}
           </h2>
           <p className="mt-1 max-w-3xl text-xs text-slate-300 sm:text-sm">
-            Brand Owners broadcast product launches, relaunches, and factory tours directly to clients &amp; prospects — while consumers stream real-time store and batch situations.
+            {t("liveStage.subheading", {
+              defaultValue:
+                "Brand Owners broadcast product launches, relaunches, and factory tours directly to clients & prospects — while consumers stream real-time store and batch situations.",
+            })}
           </p>
         </div>
 
@@ -182,7 +187,7 @@ export function LiveStageSection({
               className="gap-1.5 bg-[#d6a928] font-black text-slate-950 hover:bg-[#e5b935]"
             >
               <Rocket className="h-4 w-4" />
-              Host Brand Launch / Relaunch
+              {t("liveStage.hostBrandLaunch", { defaultValue: "Host Brand Launch / Relaunch" })}
             </Button>
           )}
           {(persona === "consumer" || isDeveloper) && (
@@ -193,7 +198,7 @@ export function LiveStageSection({
               className="gap-1.5 border-rose-500/60 bg-rose-600/15 font-bold text-rose-300 hover:bg-rose-600/25 hover:text-white"
             >
               <Video className="h-4 w-4" />
-              Consumer Situation Cam
+              {t("liveStage.consumerCam", { defaultValue: "Consumer Situation Cam" })}
             </Button>
           )}
         </div>
@@ -212,7 +217,7 @@ export function LiveStageSection({
                 : "text-slate-300 hover:text-white",
             )}
           >
-            All Live Streams ({sessions.length})
+            {t("liveStage.allStreams", { defaultValue: "All Live Streams" })} ({sessions.length})
           </button>
           <button
             type="button"
@@ -224,7 +229,7 @@ export function LiveStageSection({
                 : "text-slate-300 hover:text-white",
             )}
           >
-            🚀 Official Brand Launches &amp; Relaunches (
+            🚀 {t("liveStage.brandLaunches", { defaultValue: "Official Brand Launches & Relaunches" })} (
             {sessions.filter((s) => s.persona === "brand_owner").length})
           </button>
           <button
@@ -237,14 +242,14 @@ export function LiveStageSection({
                 : "text-slate-300 hover:text-white",
             )}
           >
-            📹 Consumer Situation Cams (
+            📹 {t("liveStage.consumerCams", { defaultValue: "Consumer Situation Cams" })} (
             {sessions.filter((s) => s.persona === "consumer").length})
           </button>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <BellRing className="h-3.5 w-3.5 text-[#d6a928]" />
-          <span>Followers are auto-alerted when a Brand goes live</span>
+          <span>{t("liveStage.followersAlerted", { defaultValue: "Followers are auto-alerted when a Brand goes live" })}</span>
         </div>
       </div>
 
@@ -361,7 +366,7 @@ export function LiveStageSection({
                             {session.launchPerk.discountLabel}
                           </span>
                           <span className="text-[10px] text-slate-400 tabular-nums">
-                            ({session.launchPerk.totalAvailable - session.launchPerk.claimedCount} left)
+                            ({session.launchPerk.totalAvailable - session.launchPerk.claimedCount} {t("liveStage.promoLeft", { defaultValue: "left" })})
                           </span>
                         </div>
                         <p className="truncate text-xs font-bold text-white">
@@ -387,7 +392,7 @@ export function LiveStageSection({
                         </>
                       ) : (
                         <>
-                          <Sparkles className="mr-1 h-3.5 w-3.5" /> Claim Launch Perk
+                          <Sparkles className="mr-1 h-3.5 w-3.5" /> {t("liveStage.claimLaunchPerk", { defaultValue: "Claim Launch Perk" })}
                         </>
                       )}
                     </Button>
@@ -399,13 +404,15 @@ export function LiveStageSection({
               <div className="mt-4 border-t border-slate-800 pt-3">
                 <div className="flex items-center justify-between text-[11px] font-bold">
                   <span className="text-[#f5d061] tabular-nums">
-                    🪙 {stashPct}% Stash ({session.stashVotes})
+                    🪙 {stashPct}% {t("vote.stash", { defaultValue: "Stash" })} ({session.stashVotes})
                   </span>
                   <span className="text-[10px] uppercase tracking-wider text-slate-400">
-                    {session.persona === "brand_owner" ? "Live Launch Pulse" : "Live Community Verdict"}
+                    {session.persona === "brand_owner"
+                      ? t("liveStage.launchPulse", { defaultValue: "Live Launch Pulse" })
+                      : t("liveStage.communityVerdict", { defaultValue: "Live Community Verdict" })}
                   </span>
                   <span className="text-rose-400 tabular-nums">
-                    🗑️ {100 - stashPct}% Trash ({session.trashVotes})
+                    🗑️ {100 - stashPct}% {t("vote.trash", { defaultValue: "Trash" })} ({session.trashVotes})
                   </span>
                 </div>
                 <div className="mt-1.5 flex h-2 w-full overflow-hidden rounded-full bg-slate-800">
@@ -432,7 +439,7 @@ export function LiveStageSection({
                           : "bg-slate-800 text-[#f5d061] hover:bg-[#d6a928] hover:text-slate-950",
                       )}
                     >
-                      <Coins className="h-3.5 w-3.5" /> Stash ({session.stashVotes})
+                      <Coins className="h-3.5 w-3.5" /> {t("vote.stash", { defaultValue: "Stash" })} ({session.stashVotes})
                     </Button>
                     <Button
                       type="button"
@@ -445,7 +452,7 @@ export function LiveStageSection({
                           : "bg-slate-800 text-slate-300 hover:bg-rose-600 hover:text-white",
                       )}
                     >
-                      <Recycle className="h-3.5 w-3.5" /> Trash ({session.trashVotes})
+                      <Recycle className="h-3.5 w-3.5" /> {t("vote.trash", { defaultValue: "Trash" })} ({session.trashVotes})
                     </Button>
                   </div>
 
@@ -456,7 +463,7 @@ export function LiveStageSection({
                     className="h-8 gap-1.5 bg-white px-3 text-xs font-black text-slate-950 hover:bg-slate-200"
                   >
                     <Radio className="h-3.5 w-3.5 text-rose-600 animate-pulse" />
-                    Watch &amp; Engage Live
+                    {t("liveStage.watchAndEngage", { defaultValue: "Watch & Engage Live" })}
                   </Button>
                 </div>
               </div>

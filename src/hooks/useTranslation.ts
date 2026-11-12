@@ -81,10 +81,16 @@ export function useTranslation() {
       ...(targetBundle.scanner || {}),
     };
 
+    const mergedLiveStage = {
+      ...(fallbackBundle.liveStage || {}),
+      ...(targetBundle.liveStage || {}),
+    };
+
     return {
       hero: mergedHero,
       feed: mergedFeed,
       scanner: mergedScanner,
+      liveStage: mergedLiveStage,
     } as AppTranslationBundle;
   }, [currentLocale]);
 
@@ -92,6 +98,7 @@ export function useTranslation() {
   const hero = translations.hero;
   const feed = translations.feed;
   const scanner = translations.scanner;
+  const liveStage = useMemo(() => (translations as any).liveStage || {}, [translations]);
 
   // Flexible translator function that checks appTranslations first, then falls back to i18next
   const t = useMemo(() => {
@@ -111,9 +118,10 @@ export function useTranslation() {
     fn.hero = hero;
     fn.feed = feed;
     fn.scanner = scanner;
+    fn.liveStage = liveStage;
 
     return fn;
-  }, [translations, hero, feed, scanner, i18nextT]);
+  }, [translations, hero, feed, scanner, liveStage, i18nextT]);
 
   // Quick switch locale helper
   const switchLocale = useCallback(
@@ -129,6 +137,12 @@ export function useTranslation() {
         document.documentElement.dir = ["ar", "he", "fa", "ur"].includes(code) ? "rtl" : "ltr";
       }
       setCurrentLocale(code.split("-")[0].toLowerCase());
+      try {
+        const { applyGoogleDomTranslation } = await import("@/lib/google-translate");
+        applyGoogleDomTranslation(code);
+      } catch {
+        // Non-blocking fallback
+      }
     },
     [i18n],
   );
@@ -139,6 +153,7 @@ export function useTranslation() {
     hero,
     feed,
     scanner,
+    liveStage,
     t,
     i18n,
     switchLocale,
