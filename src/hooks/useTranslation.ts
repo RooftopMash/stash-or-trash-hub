@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation as useI18nextTranslation } from "react-i18next";
 import { appTranslations } from "@/lib/locale-app";
+import { BRAND_TRANSLATIONS } from "@/lib/locale-brand";
 
-export type AppTranslationBundle = typeof appTranslations.en;
+export type AppTranslationBundle = typeof appTranslations.en & { brand: typeof BRAND_TRANSLATIONS };
 export type AppLocale = keyof typeof appTranslations | string;
 
 /**
@@ -61,7 +62,9 @@ export function useTranslation() {
     }
   }, [i18n?.language, getActiveLocaleCode, currentLocale]);
 
-  // Merge the locale translations with English fallback so no key is ever missing
+  // Merge the locale translations with English fallback so no key is ever missing.
+  // Brand identity is a canonical proper name and always comes from the invariant
+  // appTranslations dictionary entry, never from a locale-specific translation.
   const translations = useMemo<AppTranslationBundle>(() => {
     const targetBundle = appTranslations[currentLocale] || appTranslations.en;
     const fallbackBundle = appTranslations.en;
@@ -91,6 +94,7 @@ export function useTranslation() {
       feed: mergedFeed,
       scanner: mergedScanner,
       liveStage: mergedLiveStage,
+      brand: BRAND_TRANSLATIONS,
     } as AppTranslationBundle;
   }, [currentLocale]);
 
@@ -99,6 +103,7 @@ export function useTranslation() {
   const feed = translations.feed;
   const scanner = translations.scanner;
   const liveStage = useMemo(() => (translations as any).liveStage || {}, [translations]);
+  const brand = translations.brand;
 
   // Flexible translator function that checks appTranslations first, then falls back to i18next
   const t = useMemo(() => {
@@ -119,9 +124,10 @@ export function useTranslation() {
     fn.feed = feed;
     fn.scanner = scanner;
     fn.liveStage = liveStage;
+    fn.brand = brand;
 
     return fn;
-  }, [translations, hero, feed, scanner, liveStage, i18nextT]);
+  }, [translations, hero, feed, scanner, liveStage, brand, i18nextT]);
 
   // Quick switch locale helper
   const switchLocale = useCallback(
@@ -154,6 +160,7 @@ export function useTranslation() {
     feed,
     scanner,
     liveStage,
+    brand,
     t,
     i18n,
     switchLocale,
