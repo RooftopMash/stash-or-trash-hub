@@ -135,14 +135,20 @@ export function QuickRateModal({
           {/* Target Identity info */}
           <div className="p-3 rounded-lg bg-muted/40 border border-border/60 text-xs space-y-1">
             <div className="flex items-center justify-between font-bold text-foreground">
-              <span>{brandName} {productName && `— ${productName}`}</span>
+              <span>
+                <span translate="no" className="notranslate">{brandName}</span>{" "}
+                {productName && `— ${productName}`}
+              </span>
               <Badge variant="secondary" className="text-[10px]">
                 {category || "General"}
               </Badge>
             </div>
             <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
               <Building2 className="h-3.5 w-3.5" />
-              <span>Parent Company: <strong>{brandOwner}</strong></span>
+              <span>
+                Parent Company:{" "}
+                <strong translate="no" className="notranslate">{brandOwner}</strong>
+              </span>
             </div>
             {scanResult && (
               <div className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 pt-0.5">

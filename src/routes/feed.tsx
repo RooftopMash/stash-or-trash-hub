@@ -797,7 +797,10 @@ function Feed() {
                               />
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1">
-                                  <span className="truncate font-display text-sm font-bold text-foreground group-hover:text-primary">
+                                  <span
+                                    translate="no"
+                                    className="notranslate truncate font-display text-sm font-bold text-foreground group-hover:text-primary"
+                                  >
                                     {brand.name}
                                   </span>
                                   {brand.verified && (

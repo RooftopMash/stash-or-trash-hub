@@ -95,7 +95,10 @@ export function DisputeResolutionBadge({ item, onChange }: DisputeResolutionBadg
 
           {item.brandName && (
             <span className="text-[11px] text-muted-foreground">
-              Target: <strong className="text-foreground">{item.brandName}</strong>
+              Target:{" "}
+              <strong translate="no" className="notranslate text-foreground">
+                {item.brandName}
+              </strong>
             </span>
           )}
         </div>
@@ -127,7 +130,13 @@ export function DisputeResolutionBadge({ item, onChange }: DisputeResolutionBadg
         <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-[11px]">
           <div className="flex items-center gap-1.5 text-primary">
             <Building2 className="h-3 w-3" />
-            <span>Are you with <strong>{item.brandName}</strong>?</span>
+            <span>
+              Are you with{" "}
+              <strong translate="no" className="notranslate">
+                {item.brandName}
+              </strong>
+              ?
+            </span>
           </div>
           <Link
             to="/auth"

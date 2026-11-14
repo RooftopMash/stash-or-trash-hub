@@ -28,8 +28,82 @@ export interface FirestoreBrand {
   riskScore?: number;
   status?: "active" | "pending" | "flagged";
   isVerified?: boolean;
+  isAutoSourced?: boolean;
+  claimStatus?: "unclaimed" | "claimed";
+  ownerEmail?: string;
+  verifiedDomain?: string;
   createdBy?: string;
   createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FirestoreBrandClaim {
+  id: string;
+  brandId: string;
+  brandSlug: string;
+  brandName: string;
+  brandWebsite?: string;
+  officialDomain?: string;
+  claimantUid: string;
+  claimantEmail: string;
+  emailDomain: string;
+  roleTitle?: string;
+  domainMatchStatus: "matched" | "subdomain_match" | "mismatch" | "free_provider" | "no_website" | "invalid_email";
+  verificationCode?: string;
+  status: "code_sent" | "verified_domain" | "pending_review" | "approved" | "rejected";
+  message?: string;
+  reviewedBy?: string;
+  verifiedAt?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export type EcosystemItemType =
+  | "release"
+  | "innovation_presentation"
+  | "innovation_submission"
+  | "event"
+  | "collab";
+
+export interface FirestoreEcosystemItem {
+  id: string;
+  brandId: string;
+  brandSlug: string;
+  brandName: string;
+  itemType: EcosystemItemType;
+  title: string;
+  summary: string;
+  category: string;
+  status: string;
+  eventDate?: string;
+  location?: string;
+  compensation?: string;
+  externalUrl?: string;
+  authorUid: string;
+  authorName: string;
+  upvotes: number;
+  rsvpCount: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface FirestoreBrandCollabApplication {
+  id: string;
+  itemId: string;
+  itemTitle: string;
+  brandId: string;
+  brandSlug: string;
+  brandName: string;
+  brandOwnerUid: string;
+  applicantUid: string;
+  applicantName: string;
+  applicantEmail?: string;
+  kind: "rsvp" | "collab_application";
+  pitch: string;
+  portfolioUrl?: string;
+  status: "submitted" | "shortlisted" | "accepted" | "declined";
+  brandReply?: string;
+  createdAt: string;
   updatedAt?: string;
 }
 
@@ -428,6 +502,120 @@ export async function deleteFirestoreFriend(friendId: string): Promise<void> {
     await deleteDoc(doc(db, "friends", friendId));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, docPath);
+  }
+}
+
+// ----------------------------------------------------
+// BRAND OWNERSHIP CLAIMS (DOMAIN EMAIL VERIFICATION)
+// ----------------------------------------------------
+export async function getFirestoreBrandClaims(): Promise<FirestoreBrandClaim[]> {
+  const collectionPath = "brand_claims";
+  try {
+    const q = query(collection(db, collectionPath), orderBy("createdAt", "desc"), limit(150));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as FirestoreBrandClaim[];
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, collectionPath);
+  }
+}
+
+export async function createFirestoreBrandClaim(claim: FirestoreBrandClaim): Promise<FirestoreBrandClaim> {
+  const docPath = `brand_claims/${claim.id}`;
+  try {
+    await setDoc(doc(db, "brand_claims", claim.id), claim);
+    return claim;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, docPath);
+  }
+}
+
+export async function updateFirestoreBrandClaim(
+  claimId: string,
+  patch: Partial<FirestoreBrandClaim>,
+): Promise<void> {
+  const docPath = `brand_claims/${claimId}`;
+  try {
+    await updateDoc(doc(db, "brand_claims", claimId), {
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, docPath);
+  }
+}
+
+// ----------------------------------------------------
+// BRAND ECOSYSTEM (RELEASES, INNOVATIONS, EVENTS & COLLABS)
+// ----------------------------------------------------
+export async function getFirestoreEcosystemItems(): Promise<FirestoreEcosystemItem[]> {
+  const collectionPath = "brand_ecosystem_items";
+  try {
+    const q = query(collection(db, collectionPath), orderBy("createdAt", "desc"), limit(200));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as FirestoreEcosystemItem[];
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, collectionPath);
+  }
+}
+
+export async function createFirestoreEcosystemItem(
+  item: FirestoreEcosystemItem,
+): Promise<FirestoreEcosystemItem> {
+  const docPath = `brand_ecosystem_items/${item.id}`;
+  try {
+    await setDoc(doc(db, "brand_ecosystem_items", item.id), item);
+    return item;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, docPath);
+  }
+}
+
+export async function updateFirestoreEcosystemItemCounts(
+  itemId: string,
+  patch: { upvotes?: number; rsvpCount?: number },
+): Promise<void> {
+  const docPath = `brand_ecosystem_items/${itemId}`;
+  try {
+    await updateDoc(doc(db, "brand_ecosystem_items", itemId), {
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, docPath);
+  }
+}
+
+export async function createFirestoreCollabApplication(
+  application: FirestoreBrandCollabApplication,
+): Promise<FirestoreBrandCollabApplication> {
+  const docPath = `brand_collab_applications/${application.id}`;
+  try {
+    await setDoc(doc(db, "brand_collab_applications", application.id), application);
+    return application;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, docPath);
+  }
+}
+
+export async function getFirestoreCollabApplications(
+  userId: string,
+): Promise<FirestoreBrandCollabApplication[]> {
+  const collectionPath = "brand_collab_applications";
+  try {
+    const [asApplicant, asBrand] = await Promise.all([
+      getDocs(query(collection(db, collectionPath), where("applicantUid", "==", userId), limit(100))),
+      getDocs(query(collection(db, collectionPath), where("brandOwnerUid", "==", userId), limit(100))),
+    ]);
+    const map = new Map<string, FirestoreBrandCollabApplication>();
+    for (const d of asApplicant.docs) {
+      map.set(d.id, { id: d.id, ...d.data() } as FirestoreBrandCollabApplication);
+    }
+    for (const d of asBrand.docs) {
+      map.set(d.id, { id: d.id, ...d.data() } as FirestoreBrandCollabApplication);
+    }
+    return Array.from(map.values());
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, collectionPath);
   }
 }
 

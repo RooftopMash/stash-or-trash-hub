@@ -15,6 +15,7 @@ import { brandCategory, categoryClass, categoryOptions, matchesCategory } from "
 import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { BRAND_TIERS, type BrandTierFilter, getBrandTier, getTierInfo, matchesTier, compareBrandTiers } from "@/lib/brandTiers";
 import { publishBrandsFromWikidata, SUPPORTED_IMPORT_COUNTRIES } from "@/lib/wikidata-import";
+import { extractRegistrableDomain, isBrandAutoSourced } from "@/lib/brand-domain-verification";
 import type { Brand } from "@/lib/brands";
 import { cn } from "@/lib/utils";
 
@@ -367,7 +368,9 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <h3 className="truncate font-display text-lg font-bold">{brand.name}</h3>
+                    <h3 translate="no" className="notranslate truncate font-display text-lg font-bold">
+                      {brand.name}
+                    </h3>
                     {brand.verified && <BadgeCheck className="size-4 shrink-0 text-primary" />}
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -408,6 +411,21 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
                     {country?.name.common ?? countryName(code) ?? "Global"}
                     <span className="text-xs">{code}</span>
                   </p>
+
+                  <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-2 text-[11px]">
+                    {brand.claimStatus === "claimed" && brand.verifiedDomain ? (
+                      <span className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400">
+                        <BadgeCheck className="size-3.5" /> Verified Owner (@{brand.verifiedDomain})
+                      </span>
+                    ) : isBrandAutoSourced(brand) ? (
+                      <span className="font-semibold text-[#b88914] truncate">
+                        Auto-sourced · {extractRegistrableDomain(brand.website) ? `Claim via @${extractRegistrableDomain(brand.website)}` : "Claim Ownership"}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Registered Brand Profile</span>
+                    )}
+                    <span className="font-bold text-primary shrink-0">Open Hub →</span>
+                  </div>
                 </div>
               </Link>
             );

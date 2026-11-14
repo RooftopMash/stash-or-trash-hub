@@ -22,17 +22,23 @@ export type AppLocale = keyof typeof appTranslations | string;
 export function useTranslation() {
   const { i18n, t: i18nextT } = useI18nextTranslation();
 
+  const normalizeLocaleKey = (lng: string) => {
+    const lower = (lng || "en").toLowerCase();
+    if (lower === "zh-tw" || lower === "zh-cn") return lower;
+    return lower.split("-")[0];
+  };
+
   // Read current locale from i18n or localStorage
   const getActiveLocaleCode = useCallback(() => {
     if (i18n?.language) {
-      return i18n.language.split("-")[0].toLowerCase();
+      return normalizeLocaleKey(i18n.language);
     }
     if (typeof window !== "undefined") {
       const stored = window.localStorage.getItem("sot-lang");
-      if (stored) return stored.split("-")[0].toLowerCase();
+      if (stored) return normalizeLocaleKey(stored);
     }
     if (typeof document !== "undefined" && document.documentElement.lang) {
-      return document.documentElement.lang.split("-")[0].toLowerCase();
+      return normalizeLocaleKey(document.documentElement.lang);
     }
     return "en";
   }, [i18n]);
@@ -42,7 +48,7 @@ export function useTranslation() {
   // Subscribe to language changes in app state
   useEffect(() => {
     const handleLangChange = (lng: string) => {
-      const normalized = (lng || "en").split("-")[0].toLowerCase();
+      const normalized = normalizeLocaleKey(lng);
       setCurrentLocale(normalized);
     };
 
@@ -142,7 +148,7 @@ export function useTranslation() {
         document.documentElement.lang = code;
         document.documentElement.dir = ["ar", "he", "fa", "ur"].includes(code) ? "rtl" : "ltr";
       }
-      setCurrentLocale(code.split("-")[0].toLowerCase());
+      setCurrentLocale(normalizeLocaleKey(code));
       try {
         const { applyGoogleDomTranslation } = await import("@/lib/google-translate");
         applyGoogleDomTranslation(code);

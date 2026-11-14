@@ -1029,5 +1029,27 @@
   }
 }
 
+/* =========================================================================
+   GOOGLE WEBSITE TRANSLATE ENGINE CLEAN CHROME SUPPRESSION
+   Keeps header at top:0 without banner shift or floating highlight tooltips
+   ========================================================================= */
+body {
+  top: 0px !important;
+}
 
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame,
+iframe.VIpgJd-ZVi9od-ORHb-OEVmcd,
+.VIpgJd-ZVi9od-ORHb-OEVmcd,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+  visibility: hidden !important;
+}
 
+.goog-text-highlight {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}

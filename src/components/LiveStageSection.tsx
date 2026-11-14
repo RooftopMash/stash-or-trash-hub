@@ -304,13 +304,14 @@ export function LiveStageSection({
                       <Link
                         to="/brands/$slug"
                         params={{ slug: session.brandSlug }}
-                        className="inline-flex items-center gap-1 text-xs font-extrabold text-[#f5d061] hover:underline"
+                        translate="no"
+                        className="notranslate inline-flex items-center gap-1 text-xs font-extrabold text-[#f5d061] hover:underline"
                       >
                         <Building2 className="h-3 w-3" />
-                        {session.brandName}
+                        <span translate="no" className="notranslate">{session.brandName}</span>
                       </Link>
                     ) : (
-                      <span className="text-xs font-extrabold text-[#f5d061]">
+                      <span translate="no" className="notranslate text-xs font-extrabold text-[#f5d061]">
                         {session.brandName}
                       </span>
                     )}
@@ -388,7 +389,10 @@ export function LiveStageSection({
                     >
                       {isClaimed ? (
                         <>
-                          <Check className="mr-1 h-3.5 w-3.5" /> {session.launchPerk.promoCode}
+                          <Check className="mr-1 h-3.5 w-3.5" />{" "}
+                          <span translate="no" className="notranslate">
+                            {session.launchPerk.promoCode}
+                          </span>
                         </>
                       ) : (
                         <>

@@ -44,6 +44,7 @@ import { Input } from "@/components/ui/input";
 import {
   BadgeCheck,
   Building2,
+  Calendar,
   Check,
   Coins,
   Copy,
@@ -52,7 +53,9 @@ import {
   ExternalLink,
   Gift,
   Globe,
+  Handshake,
   LayoutDashboard,
+  Lightbulb,
   Loader2,
   Lock,
   MessageSquare,
@@ -114,6 +117,9 @@ import {
   getClaimedLaunchPerks,
   type BrandBroadcastCategory,
 } from "@/lib/live-broadcasts";
+import { BrandEcosystemHub } from "@/components/BrandEcosystemHub";
+import { BrandOwnershipClaimModal } from "@/components/BrandOwnershipClaimModal";
+import { fetchMyCollabApplications } from "@/lib/brand-ecosystem";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -122,6 +128,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 type DashboardTab =
   | "command"
   | "launch_studio"
+  | "ecosystem"
   | "client_desk"
   | "cx_awards"
   | "b2b_pricing"
@@ -161,6 +168,7 @@ function DashboardPage() {
   // Private 1-on-1 Messenger Call state
   const [messengerCallOpen, setMessengerCallOpen] = useState(false);
   const [messengerCallSession, setMessengerCallSession] = useState<MessengerCallSession | null>(null);
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
 
   // Global Wikidata / Country Brand Sourcing states (Admin only)
   const [importCountry, setImportCountry] = useState("ZA");
@@ -249,6 +257,22 @@ function DashboardPage() {
     queryFn: fetchPendingVerifications,
     enabled: hasAdminView && activeTab === "admin_sourcing",
   });
+
+  const { data: collabApplications = [] } = useQuery({
+    queryKey: ["brand-collab-applications", user?.id ?? "guest", activeBrand.slug],
+    queryFn: () => fetchMyCollabApplications(user?.id ?? "brand-owner"),
+    enabled: persona === "brand_owner" && activeTab === "ecosystem",
+  });
+
+  const brandIncomingApplications = useMemo(
+    () =>
+      collabApplications.filter(
+        (app) =>
+          app.brandSlug.toLowerCase() === activeBrand.slug.toLowerCase() ||
+          app.brandOwnerUid === user?.id,
+      ),
+    [collabApplications, activeBrand.slug, user?.id],
+  );
 
   const handleSaveBrandIdentity = (e: React.FormEvent) => {
     e.preventDefault();
@@ -555,7 +579,7 @@ function DashboardPage() {
             </section>
 
             {/* Quick Consumer Actions */}
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-2xl border border-border bg-card p-5">
                 <h2 className="font-display text-lg font-bold flex items-center gap-2">
                   <Gift className="h-5 w-5 text-[#d6a928]" />
@@ -618,6 +642,23 @@ function DashboardPage() {
                   Open Barcode Scanner →
                 </Button>
               </div>
+
+              <div className="rounded-2xl border border-[#d6a928]/40 bg-card p-5">
+                <h2 className="font-display text-lg font-bold flex items-center gap-2">
+                  <Rocket className="h-5 w-5 text-[#d6a928]" />
+                  Releases, C2B Pitches &amp; Collabs
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Explore new brand drops, pitch C2B innovations directly to brands, RSVP to launch events, and join paid collabs.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => navigate({ to: "/discover" })}
+                  className="mt-4 w-full bg-slate-950 text-xs font-black text-[#f5d061] hover:bg-slate-900"
+                >
+                  Explore Discover Ecosystem →
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
@@ -652,6 +693,14 @@ function DashboardPage() {
                       className="h-8 gap-1.5 border-slate-700 bg-slate-900 text-xs font-bold text-[#f5d061] hover:bg-slate-800"
                     >
                       <Pencil className="h-3 w-3" /> Change / Edit My Registered Brand
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setClaimModalOpen(true)}
+                      className="h-8 gap-1.5 border-emerald-500/40 bg-emerald-950/60 text-xs font-bold text-emerald-300 hover:bg-emerald-900/60"
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Verify Ownership via Corporate Domain
                     </Button>
                   </div>
 
@@ -792,6 +841,7 @@ function DashboardPage() {
                 [
                   ["command", `📊 ${activeBrand.name} Intelligence & Barometer`],
                   ["launch_studio", `🚀 ${activeBrand.name} Launch & Broadcast Studio`],
+                  ["ecosystem", `🤝 Releases, Innovations & Collabs`],
                   [
                     "client_desk",
                     `📞 ${activeBrand.name} Client Calling Desk ${hasTier2 ? "" : "🔒 Tier 2"}`,
@@ -957,6 +1007,67 @@ function DashboardPage() {
                 </section>
 
                 <LiveStageSection defaultFilter="brand_owner" />
+              </div>
+            )}
+
+            {/* =====================================================================
+                TAB 2B: RELEASES, INNOVATIONS, AUTHENTICITY & B2C/C2B COLLABS
+               ===================================================================== */}
+            {activeTab === "ecosystem" && (
+              <div className="mt-6 space-y-6">
+                <BrandEcosystemHub brand={activeBrand} showTabs />
+
+                <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4">
+                    <div>
+                      <span className="text-xs font-black uppercase tracking-wider text-emerald-600">
+                        B2C / C2B Collaboration &amp; Event Response Inbox
+                      </span>
+                      <h2 className="mt-1 font-display text-xl font-black text-foreground">
+                        Incoming Event RSVPs &amp; Collaboration Proposals for {activeBrand.name}
+                      </h2>
+                    </div>
+                    <Button asChild size="sm" variant="outline" className="gap-1.5 font-bold">
+                      <Link to="/discover">
+                        <Globe className="h-4 w-4 text-[#d6a928]" /> View Public Discover Hub
+                      </Link>
+                    </Button>
+                  </div>
+
+                  {brandIncomingApplications.length === 0 ? (
+                    <div className="mt-4 rounded-2xl border border-dashed border-border bg-background/60 p-6 text-center text-xs text-muted-foreground">
+                      No RSVPs or collaboration proposals recorded yet for {activeBrand.name}. Publish an Event or Collaboration Call above to begin receiving direct consumer &amp; creator pitches.
+                    </div>
+                  ) : (
+                    <div className="mt-4 space-y-3">
+                      {brandIncomingApplications.map((app) => (
+                        <div
+                          key={app.id}
+                          className="flex flex-col justify-between gap-3 rounded-2xl border border-border bg-background p-4 sm:flex-row sm:items-center"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                              <span className="rounded bg-[#d6a928]/15 px-2 py-0.5 font-bold text-[#b88914] uppercase">
+                                {app.kind === "rsvp" ? "Event RSVP" : "C2B / Creator Proposal"}
+                              </span>
+                              <span className="font-bold text-foreground">{app.applicantName}</span>
+                              {app.applicantEmail && (
+                                <span className="text-muted-foreground">({app.applicantEmail})</span>
+                              )}
+                            </div>
+                            <p className="mt-1 font-display text-sm font-bold text-foreground">
+                              {app.itemTitle}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">{app.pitch}</p>
+                          </div>
+                          <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold uppercase text-emerald-700 dark:text-emerald-300">
+                            {app.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
               </div>
             )}
 
@@ -1424,6 +1535,17 @@ function DashboardPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Corporate Domain-Matched Ownership Claim Modal */}
+      <BrandOwnershipClaimModal
+        brand={activeBrand}
+        open={claimModalOpen}
+        onOpenChange={setClaimModalOpen}
+        onClaimCompleted={() => {
+          const latest = getRegisteredBrandIdentity();
+          setRegisteredBrand(latest);
+        }}
+      />
     </div>
   );
 }

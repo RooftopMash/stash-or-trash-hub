@@ -52,6 +52,10 @@ import {
   PhoneOff,
   Scale,
   Store,
+  Globe,
+  Handshake,
+  Lightbulb,
+  Rocket,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PeopleTrustFactor } from "@/components/PeopleTrustFactor";
@@ -65,6 +69,13 @@ import {
   type MessengerCallSession,
 } from "@/components/MessengerPrivateCallModal";
 import { BrandMoodyRatingCard } from "@/components/BrandMoodyRatingCard";
+import { BrandOwnershipClaimModal } from "@/components/BrandOwnershipClaimModal";
+import { BrandEcosystemHub } from "@/components/BrandEcosystemHub";
+import {
+  extractRegistrableDomain,
+  isBrandAutoSourced,
+  isBrandClaimable,
+} from "@/lib/brand-domain-verification";
 
 export const Route = createFileRoute("/brands/$slug")({
   component: BrandPage,
@@ -155,8 +166,11 @@ function BrandPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Active Hub Tab: "feed" | "rewards" | "people" | "verifier"
-  const [activeTab, setActiveTab] = useState<"feed" | "rewards" | "people" | "verifier">("feed");
+  // Active Hub Tab: "feed" | "releases" | "verifier" | "innovations" | "events_collabs" | "rewards" | "people"
+  const [activeTab, setActiveTab] = useState<
+    "feed" | "releases" | "verifier" | "innovations" | "events_collabs" | "rewards" | "people"
+  >("feed");
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
 
   // Strategy C: Brand Counterfeit Verifier & Live Call/Broadcast States
   const [liveCallModalOpen, setLiveCallModalOpen] = useState(false);
@@ -204,7 +218,7 @@ function BrandPage() {
   // Claimed Coupon States
   const [claimedCoupons, setClaimedCoupons] = useState<Record<string, boolean>>({});
 
-  const { data: brand, isLoading } = useQuery({
+  const { data: brand, isLoading, refetch: refetchBrand } = useQuery({
     queryKey: ["brand", slug],
     queryFn: () => fetchBrandBySlug(slug),
   });
@@ -327,6 +341,11 @@ function BrandPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 translate="no" className="notranslate font-display text-2xl font-extrabold">{brand.name}</h1>
                   {brand.verified && <BadgeCheck className="h-5 w-5 text-primary" />}
+                  {brand.claimStatus === "claimed" && brand.verifiedDomain && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                      <Globe className="h-3 w-3" /> Domain Verified: @{brand.verifiedDomain}
+                    </span>
+                  )}
 
                   {/* SOT People's Rating Badge */}
                   <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold border ${getPeoplesSotGrade(brand.trust_score).color} ${getPeoplesSotGrade(brand.trust_score).border}`}>
@@ -403,7 +422,8 @@ function BrandPage() {
                           onClick={() => setCallRequestModalOpen(true)}
                           className="gap-1.5 bg-[#d6a928] text-slate-950 hover:bg-[#e5b935] font-bold text-xs shadow-sm"
                         >
-                          <PhoneCall className="h-4 w-4" /> Request a Call from {brand.name}
+                          <PhoneCall className="h-4 w-4" /> Request a Call from{" "}
+                          <span translate="no" className="notranslate">{brand.name}</span>
                         </Button>
                       );
                     }
@@ -426,7 +446,8 @@ function BrandPage() {
                           }}
                           className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-500 font-bold text-xs"
                         >
-                          <Phone className="h-4 w-4" /> Call {brand.name} Desk (Voice)
+                          <Phone className="h-4 w-4" /> Call{" "}
+                          <span translate="no" className="notranslate">{brand.name}</span> Desk (Voice)
                         </Button>
                         <Button
                           size="sm"
@@ -474,14 +495,13 @@ function BrandPage() {
                   >
                     <ShieldCheck className="h-4 w-4 text-[#d6a928]" /> Counterfeit & CPA Guide
                   </Button>
-                  {user && !isOwner && !brand.verified && (
+                  {isBrandClaimable(brand, user?.id) && (
                     <Button
                       size="sm"
-                      variant="outline"
-                      disabled={verReq?.status === "pending"}
-                      onClick={() => askVerify(true)}
+                      onClick={() => setClaimModalOpen(true)}
+                      className="gap-1.5 bg-[#d6a928] font-black text-slate-950 hover:bg-[#e5b935] text-xs"
                     >
-                      {verReq?.status === "pending" ? "Claim pending" : "Claim this brand"}
+                      <BadgeCheck className="h-4 w-4" /> Claim &amp; Verify Ownership
                     </Button>
                   )}
                   {isOwner && !brand.verified && (
@@ -507,6 +527,32 @@ function BrandPage() {
                     </Button>
                   )}
                 </div>
+
+                {/* Unclaimed Auto-Sourced Brand Domain Claim Callout */}
+                {isBrandClaimable(brand, user?.id) && (
+                  <div className="mt-4 flex flex-col gap-2 rounded-xl border border-[#d6a928]/50 bg-amber-50/70 p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-slate-950">
+                        {isBrandAutoSourced(brand)
+                          ? "Auto-Sourced Brand Profile · Unclaimed by Corporate Owner"
+                          : "Brand Ownership Verification Available"}
+                      </p>
+                      <p className="text-[11px] text-slate-700">
+                        {extractRegistrableDomain(brand.website)
+                          ? `Represent ${brand.name}? Verify instantly using an official @${extractRegistrableDomain(brand.website)} corporate email address.`
+                          : `Represent ${brand.name}? Submit your official corporate email for ownership verification.`}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setClaimModalOpen(true)}
+                      className="shrink-0 whitespace-nowrap border-slate-950 bg-white font-bold text-slate-950 hover:bg-slate-100 text-xs"
+                    >
+                      Verify via Official Domain →
+                    </Button>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -518,38 +564,62 @@ function BrandPage() {
 
             {/* SUPER APP SPECIAL FEATURES INTERFACE (Interactive Social Hub Tabs) */}
             <section className="mt-6 rounded-2xl border border-border bg-card p-1 shadow-sm overflow-hidden">
-              <div className="grid grid-cols-2 sm:grid-cols-4 bg-secondary/40 p-1 rounded-xl gap-1">
+              <div className="flex overflow-x-auto bg-secondary/40 p-1 rounded-xl gap-1 no-scrollbar">
                 <button
                   onClick={() => setActiveTab("feed")}
-                  className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                  className={`flex shrink-0 whitespace-nowrap items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                     activeTab === "feed" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <MessageCircle className="h-3.5 w-3.5" /> Feed ({feed?.length ?? 0})
                 </button>
                 <button
+                  onClick={() => setActiveTab("releases")}
+                  className={`flex shrink-0 whitespace-nowrap items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    activeTab === "releases" ? "bg-slate-950 text-[#f5d061] shadow-xs" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Rocket className="h-3.5 w-3.5 text-[#d6a928]" /> New Releases
+                </button>
+                <button
                   onClick={() => setActiveTab("verifier")}
-                  className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                  className={`flex shrink-0 whitespace-nowrap items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                     activeTab === "verifier" ? "bg-slate-950 text-[#d6a928] shadow-xs" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <ScanBarcode className="h-3.5 w-3.5 text-[#d6a928]" /> Counterfeit Verifier
+                  <ScanBarcode className="h-3.5 w-3.5 text-[#d6a928]" /> Authenticity
+                </button>
+                <button
+                  onClick={() => setActiveTab("innovations")}
+                  className={`flex shrink-0 whitespace-nowrap items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    activeTab === "innovations" ? "bg-slate-950 text-[#f5d061] shadow-xs" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Lightbulb className="h-3.5 w-3.5 text-indigo-500" /> Innovations &amp; Pitches
+                </button>
+                <button
+                  onClick={() => setActiveTab("events_collabs")}
+                  className={`flex shrink-0 whitespace-nowrap items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    activeTab === "events_collabs" ? "bg-slate-950 text-[#f5d061] shadow-xs" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Handshake className="h-3.5 w-3.5 text-blue-500" /> Events &amp; Collabs
                 </button>
                 <button
                   onClick={() => setActiveTab("rewards")}
-                  className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                  className={`flex shrink-0 whitespace-nowrap items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                     activeTab === "rewards" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <Gift className="h-3.5 w-3.5 text-amber-500 animate-pulse" /> Super Rewards
+                  <Gift className="h-3.5 w-3.5 text-amber-500" /> Rewards
                 </button>
                 <button
                   onClick={() => setActiveTab("people")}
-                  className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                  className={`flex shrink-0 whitespace-nowrap items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                     activeTab === "people" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <BarChart3 className="h-3.5 w-3.5 text-blue-500" /> SOT Standard Grade
+                  <BarChart3 className="h-3.5 w-3.5 text-blue-500" /> SOT Grade
                 </button>
               </div>
 
@@ -576,6 +646,18 @@ function BrandPage() {
                       ))
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* RELEASES, INNOVATIONS & B2C/C2B COLLABS TABS */}
+              {(activeTab === "releases" || activeTab === "innovations" || activeTab === "events_collabs") && (
+                <div className="p-4">
+                  <BrandEcosystemHub
+                    brand={brand}
+                    initialTab={activeTab}
+                    showTabs={true}
+                    compact
+                  />
                 </div>
               )}
 
@@ -716,7 +798,7 @@ function BrandPage() {
                         ? feed.reduce((acc, it) => acc + it.stashCount + it.trashCount, 0) || feed.length
                         : 24
                     }
-                    sampleVerdicts={feed?.map((f) => f.title) ?? []}
+                    sampleReviews={feed?.map((f) => f.title) ?? []}
                   />
 
                   {/* CX/UX Matrix Metrics */}
@@ -779,10 +861,12 @@ function BrandPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
                     <div>
                       <h3 className="font-display font-extrabold text-lg flex items-center gap-1.5">
-                        <ShieldCheck className="h-5 w-5 text-[#d6a928]" /> {brand.name} Counterfeit Verifier & Revenue Recovery
+                        <ShieldCheck className="h-5 w-5 text-[#d6a928]" />{" "}
+                        <span translate="no" className="notranslate">{brand.name}</span> Counterfeit Verifier & Revenue Recovery
                       </h3>
                       <p className="text-xs text-muted-foreground">
-                        Verify product batch numbers, protect {brand.name} from bogus/fake imitations, and unlock direct customer recovery rewards.
+                        Verify product batch numbers, protect{" "}
+                        <span translate="no" className="notranslate">{brand.name}</span> from bogus/fake imitations, and unlock direct customer recovery rewards.
                       </p>
                     </div>
                     <Button
@@ -838,7 +922,7 @@ function BrandPage() {
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                       <p className="text-[11px] text-muted-foreground">
-                        Helps {brand.name} map grey-market/bogus supply leaks while rewarding you with genuine replacement vouchers.
+                        Helps <span translate="no" className="notranslate">{brand.name}</span> map grey-market/bogus supply leaks while rewarding you with genuine replacement vouchers.
                       </p>
                       <Button type="submit" size="sm" className="font-bold gap-1.5">
                         <ShieldCheck className="h-3.5 w-3.5" /> Verify Batch Now
@@ -891,7 +975,8 @@ function BrandPage() {
                   <div className="grid gap-3 sm:grid-cols-3 text-xs">
                     <div className="rounded-xl border border-border bg-secondary/10 p-3.5">
                       <p className="font-display font-bold text-foreground flex items-center gap-1.5">
-                        <Store className="h-4 w-4 text-emerald-500" /> 1. For {brand.name}
+                        <Store className="h-4 w-4 text-emerald-500" /> 1. For{" "}
+                        <span translate="no" className="notranslate">{brand.name}</span>
                       </p>
                       <p className="mt-1 text-muted-foreground leading-relaxed">
                         Recovers revenue lost to counterfeit/bogus imitations and opens a direct marketing & loyalty window to verified buyers.
@@ -952,6 +1037,17 @@ function BrandPage() {
         brandName={brand?.name}
         itemTitle={`${brand?.name ?? "Brand"} Authenticity & CPA Resolution`}
       />
+
+      {brand && (
+        <BrandOwnershipClaimModal
+          open={claimModalOpen}
+          onOpenChange={setClaimModalOpen}
+          brand={brand}
+          onClaimCompleted={() => {
+            void refetchBrand();
+          }}
+        />
+      )}
 
       {/* INTERACTIVE DIGITAL BILLBOARD QR SCANNER DIALOG */}
       <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>

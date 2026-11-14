@@ -822,7 +822,9 @@ async function persistApprovedBrandRecord(
         riskScore: 12,
         status: "active",
         isVerified: true,
-        createdBy: ownerId,
+        isAutoSourced: true,
+        claimStatus: "unclaimed",
+        createdBy: ownerId || "system",
       },
       cleanId,
     );

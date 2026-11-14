@@ -524,15 +524,27 @@ export function AwardsPage() {
                                     <span className="w-5 font-display font-extrabold text-muted-foreground text-center">
                                       {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}`}
                                     </span>
-                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-secondary font-bold text-[11px]">
+                                    <div
+                                      translate="no"
+                                      className="notranslate flex h-7 w-7 shrink-0 items-center justify-center rounded bg-secondary font-bold text-[11px]"
+                                    >
                                       {b.signedLogoUrl ? (
-                                        <img src={b.signedLogoUrl} alt={b.name} className="h-full w-full object-cover rounded" />
+                                        <img
+                                          src={b.signedLogoUrl}
+                                          alt={b.name}
+                                          translate="no"
+                                          className="notranslate h-full w-full object-cover rounded"
+                                        />
                                       ) : (
-                                        b.name.charAt(0)
+                                        <span translate="no" className="notranslate">
+                                          {b.name.charAt(0)}
+                                        </span>
                                       )}
                                     </div>
                                     <div className="truncate">
-                                      <p className="font-bold truncate text-foreground">{b.name}</p>
+                                      <p translate="no" className="notranslate font-bold truncate text-foreground">
+                                        {b.name}
+                                      </p>
                                       <span className={cn("text-[9px] font-semibold border rounded px-1", tInfo.badgeClass)}>
                                         {tInfo.pricePoint} {tInfo.shortName}
                                       </span>
@@ -610,7 +622,9 @@ export function AwardsPage() {
                                     {idx + 1}
                                   </span>
                                   <div className="truncate">
-                                    <p className="font-bold truncate text-foreground">{b.name}</p>
+                                    <p translate="no" className="notranslate font-bold truncate text-foreground">
+                                      {b.name}
+                                    </p>
                                     <p className="text-[10px] text-muted-foreground truncate">{brandCategory(b.name, b.category)}</p>
                                   </div>
                                 </div>
@@ -699,16 +713,28 @@ export function AwardsPage() {
                         <span className="w-8 text-center font-display text-lg font-extrabold text-muted-foreground">
                           {i < 3 ? ["1st", "2nd", "3rd"][i] : i + 1}
                         </span>
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary text-sm font-bold">
+                        <div
+                          translate="no"
+                          className="notranslate flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary text-sm font-bold"
+                        >
                           {b.signedLogoUrl ? (
-                            <img src={b.signedLogoUrl} alt={b.name} className="h-full w-full object-cover" />
+                            <img
+                              src={b.signedLogoUrl}
+                              alt={b.name}
+                              translate="no"
+                              className="notranslate h-full w-full object-cover"
+                            />
                           ) : (
-                            b.name.charAt(0).toUpperCase()
+                            <span translate="no" className="notranslate">
+                              {b.name.charAt(0).toUpperCase()}
+                            </span>
                           )}
                         </div>
                         <span className="flex-1 truncate font-semibold">
                           <span className="flex items-center gap-2">
-                            <span className="truncate">{b.name}</span>
+                            <span translate="no" className="notranslate truncate">
+                              {b.name}
+                            </span>
                             <span
                               className={cn(
                                 "hidden sm:inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold leading-none",

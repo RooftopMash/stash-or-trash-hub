@@ -98,7 +98,9 @@ export function BrandSearch({
                         selectedId === b.id ? "opacity-100" : "opacity-0",
                       )}
                     />
-                    <span className="truncate">{b.name}</span>
+                    <span translate="no" className="notranslate truncate">
+                      {b.name}
+                    </span>
                     {b.country && (
                       <span className="ml-auto shrink-0 pl-2 text-xs text-muted-foreground">
                         {b.country}

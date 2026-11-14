@@ -199,7 +199,12 @@ export function ItemCard({
                 {item.audit?.brandInfo?.brandOwner && (
                   <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
                     <Building2 className="h-3 w-3" />
-                    <span>Owner: {item.audit.brandInfo.brandOwner}</span>
+                    <span>
+                      Owner:{" "}
+                      <span translate="no" className="notranslate">
+                        {item.audit.brandInfo.brandOwner}
+                      </span>
+                    </span>
                   </span>
                 )}
                 {(item.receiptVerification || (item.audit as any)?.receiptVerification) && (
@@ -260,7 +265,12 @@ export function ItemCard({
                   title={`Request a Call or Contact ${item.brandName} Desk`}
                 >
                   <PhoneCall className="h-2.5 w-2.5" />
-                  <span>Call {item.brandName}</span>
+                  <span>
+                    Call{" "}
+                    <span translate="no" className="notranslate">
+                      {item.brandName}
+                    </span>
+                  </span>
                 </button>
               )}
             </div>

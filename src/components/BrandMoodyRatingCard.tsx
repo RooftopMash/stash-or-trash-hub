@@ -78,7 +78,7 @@ export function BrandMoodyRatingCard({
             </span>
           </div>
           <h3 className="mt-2 text-2xl font-black tracking-tight text-foreground">
-            {brandName} Trust & Sentiment Audit
+            <span translate="no" className="notranslate">{brandName}</span> Trust & Sentiment Audit
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
             Independent consumer credit analysis based on {totalVerdicts} verified community verdicts.

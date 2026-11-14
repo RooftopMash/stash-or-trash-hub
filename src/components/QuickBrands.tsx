@@ -67,7 +67,9 @@ export function QuickBrands({ country = null }: QuickBrandsProps) {
               <BrandLogo name={b.name} url={b.signedLogoUrl} className="h-9 w-9 text-sm" />
               <div className="min-w-0">
                 <div className="flex items-center gap-1">
-                  <span className="truncate text-sm font-semibold">{b.name}</span>
+                  <span translate="no" className="notranslate truncate text-sm font-semibold">
+                    {b.name}
+                  </span>
                   {b.verified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-stash" />}
                 </div>
                 <span className="text-[11px] text-muted-foreground">

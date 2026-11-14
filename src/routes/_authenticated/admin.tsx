@@ -22,8 +22,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Download, Check, X, Globe, Copy, Search, Sparkles, LayoutDashboard } from "lucide-react";
+import { Download, Check, X, Globe, Copy, Search, Sparkles, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { AdminAppealsQueue } from "@/components/AdminAppealsQueue";
+import {
+  adminReviewBrandClaim,
+  fetchAllBrandClaimsForReview,
+  type LocalBrandClaimRecord,
+} from "@/lib/brand-domain-verification";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
@@ -47,6 +52,12 @@ function AdminPage() {
   const { data: candidates, refetch: refetchCand } = useQuery({
     queryKey: ["brand-candidates"],
     queryFn: fetchBrandCandidates,
+    enabled: hasAdminAccess,
+  });
+
+  const { data: domainClaims = [], refetch: refetchDomainClaims } = useQuery({
+    queryKey: ["brand-domain-claims"],
+    queryFn: fetchAllBrandClaimsForReview,
     enabled: hasAdminAccess,
   });
 
@@ -190,7 +201,10 @@ function AdminPage() {
                 Import Queue{candidates?.length ? ` (${candidates.length})` : ""}
               </TabsTrigger>
               <TabsTrigger value="verifications">
-                Verifications{verifications?.length ? ` (${verifications.length})` : ""}
+                Verifications
+                {verifications?.length || domainClaims.filter((c) => c.status === "pending_review").length
+                  ? ` (${(verifications?.length ?? 0) + domainClaims.filter((c) => c.status === "pending_review").length})`
+                  : ""}
               </TabsTrigger>
               <TabsTrigger value="appeals">Appeals</TabsTrigger>
             </TabsList>
@@ -387,8 +401,77 @@ function AdminPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="verifications" className="mt-6 space-y-3">
-              {(verifications ?? []).length === 0 ? (
+            <TabsContent value="verifications" className="mt-6 space-y-4">
+              {domainClaims.length > 0 && (
+                <div className="space-y-3">
+                  <h2 className="font-display text-base font-extrabold flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-[#d6a928]" />
+                    Domain Ownership Claims ({domainClaims.length})
+                  </h2>
+                  {domainClaims.map((claim: LocalBrandClaimRecord) => (
+                    <div
+                      key={claim.id}
+                      className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p translate="no" className="notranslate font-display text-base font-bold">
+                            {claim.brandName}
+                          </p>
+                          <span className="rounded-md border border-border bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase">
+                            Domain: {claim.domainMatchStatus}
+                          </span>
+                          <span className="rounded-md bg-[#d6a928]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-foreground">
+                            {claim.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-mono">
+                          Claimant: {claim.claimantEmail} · Official Domain: {claim.officialDomain || "Not set"}
+                        </p>
+                        {claim.message && <p className="text-xs text-muted-foreground">{claim.message}</p>}
+                      </div>
+                      {claim.status === "pending_review" && (
+                        <div className="flex gap-2 shrink-0">
+                          <Button
+                            size="sm"
+                            onClick={async () => {
+                              await adminReviewBrandClaim({
+                                claim,
+                                reviewerId: user?.id ?? "admin-reviewer",
+                                approve: true,
+                              });
+                              toast.success(`Approved ownership claim for ${claim.brandName}`);
+                              await Promise.all([
+                                refetchDomainClaims(),
+                                queryClient.invalidateQueries({ queryKey: ["brands"] }),
+                              ]);
+                            }}
+                          >
+                            Approve Ownership
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              await adminReviewBrandClaim({
+                                claim,
+                                reviewerId: user?.id ?? "admin-reviewer",
+                                approve: false,
+                              });
+                              toast.info(`Rejected claim for ${claim.brandName}`);
+                              await refetchDomainClaims();
+                            }}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {(verifications ?? []).length === 0 && domainClaims.length === 0 ? (
                 <p className="text-muted-foreground">{t("admin.empty")}</p>
               ) : (
                 (verifications ?? []).map((r) => (

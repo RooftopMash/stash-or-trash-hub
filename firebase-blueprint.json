@@ -33,6 +33,10 @@
         "riskScore": { "type": "number" },
         "status": { "type": "string", "enum": ["active", "pending", "flagged"] },
         "isVerified": { "type": "boolean" },
+        "isAutoSourced": { "type": "boolean" },
+        "claimStatus": { "type": "string", "enum": ["unclaimed", "claimed"] },
+        "ownerEmail": { "type": "string", "maxLength": 200 },
+        "verifiedDomain": { "type": "string", "maxLength": 200 },
         "createdBy": { "type": "string" },
         "createdAt": { "type": "string" },
         "updatedAt": { "type": "string" }
@@ -146,6 +150,84 @@
       "properties": {
         "status": { "type": "string" }
       }
+    },
+    "BrandClaim": {
+      "title": "BrandClaim",
+      "description": "Domain-matched brand ownership claim and corporate email verification record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "brandId": { "type": "string" },
+        "brandSlug": { "type": "string" },
+        "brandName": { "type": "string" },
+        "brandWebsite": { "type": "string" },
+        "officialDomain": { "type": "string" },
+        "claimantUid": { "type": "string" },
+        "claimantEmail": { "type": "string" },
+        "emailDomain": { "type": "string" },
+        "roleTitle": { "type": "string", "maxLength": 120 },
+        "domainMatchStatus": { "type": "string", "enum": ["matched", "subdomain_match", "mismatch", "free_provider", "no_website", "invalid_email"] },
+        "verificationCode": { "type": "string" },
+        "status": { "type": "string", "enum": ["code_sent", "verified_domain", "pending_review", "approved", "rejected"] },
+        "message": { "type": "string", "maxLength": 1000 },
+        "reviewedBy": { "type": "string" },
+        "verifiedAt": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "brandId", "brandSlug", "brandName", "claimantUid", "claimantEmail", "emailDomain", "domainMatchStatus", "status", "createdAt"]
+    },
+    "BrandEcosystemItem": {
+      "title": "BrandEcosystemItem",
+      "description": "Brand new releases, innovation presentations & C2B submissions, events, and collaboration opportunities",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "brandId": { "type": "string" },
+        "brandSlug": { "type": "string" },
+        "brandName": { "type": "string" },
+        "itemType": { "type": "string", "enum": ["release", "innovation_presentation", "innovation_submission", "event", "collab"] },
+        "title": { "type": "string", "maxLength": 200 },
+        "summary": { "type": "string", "maxLength": 2000 },
+        "category": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "maxLength": 80 },
+        "eventDate": { "type": "string", "maxLength": 120 },
+        "location": { "type": "string", "maxLength": 200 },
+        "compensation": { "type": "string", "maxLength": 200 },
+        "externalUrl": { "type": "string", "maxLength": 500 },
+        "authorUid": { "type": "string" },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "upvotes": { "type": "number" },
+        "rsvpCount": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "brandId", "brandSlug", "brandName", "itemType", "title", "summary", "authorUid", "authorName", "upvotes", "rsvpCount", "createdAt"]
+    },
+    "BrandCollabApplication": {
+      "title": "BrandCollabApplication",
+      "description": "Event RSVP and B2C/C2B collaboration partnership applications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "itemId": { "type": "string" },
+        "itemTitle": { "type": "string" },
+        "brandId": { "type": "string" },
+        "brandSlug": { "type": "string" },
+        "brandName": { "type": "string" },
+        "brandOwnerUid": { "type": "string" },
+        "applicantUid": { "type": "string" },
+        "applicantName": { "type": "string", "maxLength": 100 },
+        "applicantEmail": { "type": "string", "maxLength": 200 },
+        "kind": { "type": "string", "enum": ["rsvp", "collab_application"] },
+        "pitch": { "type": "string", "maxLength": 2000 },
+        "portfolioUrl": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["submitted", "shortlisted", "accepted", "declined"] },
+        "brandReply": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "itemId", "itemTitle", "brandId", "brandSlug", "brandName", "brandOwnerUid", "applicantUid", "applicantName", "kind", "pitch", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -160,6 +242,18 @@
     "/brands/{brandId}/votes/{voteId}": {
       "schema": "BrandVote",
       "description": "User stash/trash votes on a brand"
+    },
+    "/brand_claims/{claimId}": {
+      "schema": "BrandClaim",
+      "description": "Domain-matched brand ownership claims and email verification records"
+    },
+    "/brand_ecosystem_items/{itemId}": {
+      "schema": "BrandEcosystemItem",
+      "description": "Published brand releases, innovation presentations & submissions, events, and B2C/C2B collaboration briefs"
+    },
+    "/brand_collab_applications/{applicationId}": {
+      "schema": "BrandCollabApplication",
+      "description": "Private user RSVPs and B2C/C2B collaboration proposals"
     },
     "/brand_crisis_alerts/{alertId}": {
       "schema": "BrandCrisisAlert",

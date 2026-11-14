@@ -134,16 +134,21 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
       {/* Compact Single-Line Navbar — everything fits cleanly on one line with zero wrapping */}
       <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between gap-2 px-3 sm:px-5 lg:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-2.5 lg:gap-4">
-          <Link to="/" className="group flex shrink-0 items-center gap-2 whitespace-nowrap">
+          <Link
+            to="/"
+            translate="no"
+            className="notranslate group flex shrink-0 items-center gap-2 whitespace-nowrap"
+          >
             <span
               translate="no"
               aria-label="SOrT — Stash Or Trash logo"
+              data-sot-brand="logo"
               className="notranslate flex h-8.5 w-8.5 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border-2 border-slate-950 bg-white text-xs sm:text-sm font-black tracking-[-0.08em] shadow-xs transition-transform group-hover:scale-105 select-none"
             >
-              <span className="text-[#d6a928]">S</span>
-              <span className="text-slate-950">O</span>
-              <span className="text-[#e34b4b]">r</span>
-              <span className="text-[#2563eb]">T</span>
+              <span translate="no" className="notranslate text-[#d6a928]">S</span>
+              <span translate="no" className="notranslate text-slate-950">O</span>
+              <span translate="no" className="notranslate text-[#e34b4b]">r</span>
+              <span translate="no" className="notranslate text-[#2563eb]">T</span>
             </span>
             <SotWordmark className="hidden xl:inline-flex text-base whitespace-nowrap" />
           </Link>
@@ -180,6 +185,12 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-[#2563eb] [&.active]:text-white font-bold"
             >
               {t("nav.brands", { defaultValue: "Brands" })}
+            </Link>
+            <Link
+              to="/discover"
+              className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground [&.active]:bg-slate-950 [&.active]:text-[#f5d061] font-bold"
+            >
+              {t("nav.discover", { defaultValue: "Discover" })}
             </Link>
             <Link
               to="/awards"
@@ -223,7 +234,12 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               {persona === "brand_owner" ? (
                 <>
                   <Building2 className="h-3 w-3 text-[#d6a928]" />
-                  <span className="max-w-[100px] truncate">DEV: {registeredBrandName}</span>
+                  <span className="max-w-[100px] truncate">
+                    DEV:{" "}
+                    <span translate="no" className="notranslate">
+                      {registeredBrandName}
+                    </span>
+                  </span>
                 </>
               ) : (
                 <>
@@ -333,9 +349,14 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
                   <span className="text-[#f5d061]">{incomingCall.callerName}</span>
                 </p>
                 <p className="text-[11px] text-emerald-200">
-                  {incomingCall.callDirection === "brand_to_user"
-                    ? `Brand Owner reaching out on SOT regarding ${incomingCall.brandName} (${incomingCall.topic})`
-                    : `Direct SOT User-to-User Call · Room: ${incomingCall.roomChannel}`}
+                  {incomingCall.callDirection === "brand_to_user" ? (
+                    <>
+                      Brand Owner reaching out on <span translate="no" className="notranslate">SOT</span> regarding{" "}
+                      <span translate="no" className="notranslate">{incomingCall.brandName}</span> ({incomingCall.topic})
+                    </>
+                  ) : (
+                    `Direct SOT User-to-User Call · Room: ${incomingCall.roomChannel}`
+                  )}
                 </p>
               </div>
             </div>

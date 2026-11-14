@@ -27,11 +27,14 @@ export function BrandLogo({
         <img
           src={url}
           alt={name}
+          translate="no"
           loading="lazy"
-          className={cn("h-full w-full object-contain", imgClassName)}
+          className={cn("notranslate h-full w-full object-contain", imgClassName)}
         />
       ) : (
-        <span aria-hidden>{name.charAt(0).toUpperCase()}</span>
+        <span translate="no" className="notranslate" aria-hidden>
+          {name.charAt(0).toUpperCase()}
+        </span>
       )}
     </div>
   );

@@ -5,8 +5,8 @@
  * - Automatically hooks into the top language switcher.
  * - Sets Google Translate engine cookies (`googtrans=/en/${lang}`).
  * - Injects Google's website translation element into the DOM if not present.
- * - Triggers full DOM sweeps so 100% of visible texts, feed posts, reviews,
- *   cards, and descriptions translate seamlessly into any selected language.
+ * - Preserves `translate="no"` / `.notranslate` brand names, logos, and wordmarks
+ *   across all 52 supported languages without distorting SOrT or brand identities.
  */
 
 declare global {
@@ -19,56 +19,122 @@ declare global {
 
 const SUPPORTED_GOOGLE_LANGS: Record<string, string> = {
   en: "en",
-  zu: "zu", // isiZulu
-  xh: "xh", // isiXhosa
-  af: "af", // Afrikaans
-  st: "st", // Sesotho
-  tn: "tn", // Setswana
-  nso: "nso", // Sepedi
-  sw: "sw", // Swahili
-  es: "es", // Spanish
-  fr: "fr", // French
-  de: "de", // German
-  pt: "pt", // Portuguese
-  it: "it", // Italian
-  nl: "nl", // Dutch
-  ru: "ru", // Russian
+  es: "es",
+  fr: "fr",
+  de: "de",
+  pt: "pt",
+  it: "it",
+  nl: "nl",
+  pl: "pl",
+  ro: "ro",
+  sv: "sv",
+  no: "no",
+  da: "da",
+  fi: "fi",
+  cs: "cs",
+  hu: "hu",
+  el: "el",
+  uk: "uk",
+  ru: "ru",
+  tr: "tr",
+  ar: "ar",
+  he: "iw",
+  iw: "iw",
+  fa: "fa",
+  ur: "ur",
+  hi: "hi",
+  bn: "bn",
+  ta: "ta",
+  te: "te",
+  mr: "mr",
+  gu: "gu",
+  pa: "pa",
+  th: "th",
+  vi: "vi",
+  id: "id",
+  ms: "ms",
+  fil: "tl",
+  tl: "tl",
   zh: "zh-CN",
   "zh-cn": "zh-CN",
   "zh-tw": "zh-TW",
   ja: "ja",
   ko: "ko",
-  ar: "ar",
-  hi: "hi",
-  el: "el",
-  tr: "tr",
-  pl: "pl",
+  sw: "sw",
+  am: "am",
+  zu: "zu",
+  xh: "xh",
+  st: "st",
+  tn: "tn",
+  af: "af",
+  ha: "ha",
+  yo: "yo",
+  ig: "ig",
+  nso: "nso",
+  sk: "sk",
+  bg: "bg",
 };
+
+const INCLUDED_GOOGLE_LANGUAGES = Array.from(new Set(Object.values(SUPPORTED_GOOGLE_LANGS))).join(",");
+
+export function resolveGoogleTargetLang(langCode: string): string {
+  const cleaned = (langCode || "en").trim();
+  const exactLower = cleaned.toLowerCase();
+  if (SUPPORTED_GOOGLE_LANGS[exactLower]) {
+    return SUPPORTED_GOOGLE_LANGS[exactLower];
+  }
+  const baseLower = exactLower.split("-")[0];
+  return SUPPORTED_GOOGLE_LANGS[baseLower] || baseLower || "en";
+}
+
+/**
+ * Ensures every brand mark, logo, and `[translate="no"]` element has both
+ * `translate="no"` and `.notranslate` before Google Translate walks the DOM.
+ */
+function reinforceNotranslateElements(): void {
+  if (typeof document === "undefined") return;
+  try {
+    const protectedNodes = document.querySelectorAll<HTMLElement>(
+      '[translate="no"], .notranslate, [data-sot-brand]',
+    );
+    protectedNodes.forEach((node) => {
+      if (node.getAttribute("translate") !== "no") {
+        node.setAttribute("translate", "no");
+      }
+      if (!node.classList.contains("notranslate")) {
+        node.classList.add("notranslate");
+      }
+    });
+  } catch {
+    // non-blocking
+  }
+}
 
 /**
  * Ensures Google Translate engine cookie is set across the domain and path.
  */
-function setGoogleTranslateCookie(langCode: string) {
+function setGoogleTranslateCookie(targetLang: string) {
   if (typeof document === "undefined") return;
 
-  if (langCode === "en" || !langCode) {
-    // Clear cookie to return to native English
+  if (targetLang === "en" || !targetLang) {
     const past = "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     document.cookie = `googtrans${past}`;
     if (typeof window !== "undefined") {
       document.cookie = `googtrans${past} domain=${window.location.hostname};`;
       document.cookie = `googtrans${past} domain=.${window.location.hostname};`;
+      const hostParts = window.location.hostname.split(".");
+      if (hostParts.length > 1) {
+        const apex = hostParts.slice(-2).join(".");
+        document.cookie = `googtrans${past} domain=.${apex};`;
+      }
     }
     return;
   }
 
-  const target = SUPPORTED_GOOGLE_LANGS[langCode.toLowerCase()] || langCode.toLowerCase();
-  const value = `/en/${target}`;
-
+  const value = `/en/${targetLang}`;
   document.cookie = `googtrans=${value}; path=/;`;
   if (typeof window !== "undefined") {
     document.cookie = `googtrans=${value}; path=/; domain=${window.location.hostname};`;
-    // also fallback for apex domain
     const hostParts = window.location.hostname.split(".");
     if (hostParts.length > 1) {
       const apex = hostParts.slice(-2).join(".");
@@ -78,30 +144,67 @@ function setGoogleTranslateCookie(langCode: string) {
 }
 
 /**
+ * Restores the original English DOM if Google Translate had previously translated it.
+ */
+function restoreOriginalEnglishDom(): void {
+  if (typeof document === "undefined") return;
+
+  try {
+    const combo = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+    if (combo && combo.value !== "") {
+      combo.value = "en";
+      combo.dispatchEvent(new Event("change"));
+      combo.value = "";
+    }
+
+    const bannerFrames = document.querySelectorAll<HTMLIFrameElement>(
+      "iframe.goog-te-banner-frame, iframe.VIpgJd-ZVi9od-ORHb-OEVmcd",
+    );
+    bannerFrames.forEach((frame) => {
+      try {
+        const innerDoc = frame.contentDocument || frame.contentWindow?.document;
+        const restoreBtn = innerDoc?.querySelector<HTMLElement>(
+          'button[id$=".restore"], a[id$=".restore"]',
+        );
+        restoreBtn?.click();
+      } catch {
+        // ignore cross-origin restrictions
+      }
+    });
+
+    document.documentElement.classList.remove("translated-ltr", "translated-rtl");
+  } catch {
+    // non-blocking
+  }
+}
+
+/**
  * Injects Google Translate script if not yet loaded.
  */
 export function ensureGoogleTranslateLoaded(): void {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
-  // Ensure mount point exists
+  reinforceNotranslateElements();
+
   let mount = document.getElementById("google_translate_element");
   if (!mount) {
     mount = document.createElement("div");
     mount.id = "google_translate_element";
+    mount.className = "notranslate";
+    mount.setAttribute("translate", "no");
     mount.style.display = "none";
     mount.setAttribute("aria-hidden", "true");
     document.body.appendChild(mount);
   }
 
-  // Register the global init callback
   window.googleTranslateElementInit = () => {
     try {
+      reinforceNotranslateElements();
       if (window.google?.translate?.TranslateElement) {
         new window.google.translate.TranslateElement(
           {
             pageLanguage: "en",
-            includedLanguages:
-              "en,zu,xh,af,st,tn,nso,sw,es,fr,de,pt,it,nl,ru,zh-CN,zh-TW,ja,ko,ar,hi,el,tr,pl",
+            includedLanguages: INCLUDED_GOOGLE_LANGUAGES,
             layout: window.google.translate.TranslateElement.InlineLayout?.HORIZONTAL || 0,
             autoDisplay: false,
             multilanguagePage: true,
@@ -114,7 +217,6 @@ export function ensureGoogleTranslateLoaded(): void {
     }
   };
 
-  // Check if script tag is already injected
   const SCRIPT_ID = "sot-google-translate-script";
   if (!document.getElementById(SCRIPT_ID)) {
     const script = document.createElement("script");
@@ -135,27 +237,19 @@ export function ensureGoogleTranslateLoaded(): void {
 export function applyGoogleDomTranslation(langCode: string): void {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
-  const normalized = (langCode || "en").split("-")[0].toLowerCase();
-  setGoogleTranslateCookie(normalized);
+  const targetLang = resolveGoogleTargetLang(langCode);
+  setGoogleTranslateCookie(targetLang);
 
-  // If selecting English, restore original page DOM
-  if (normalized === "en") {
-    // If the combo exists, reset it to empty or 'en'
-    const combo = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-    if (combo && combo.value !== "") {
-      combo.value = "";
-      combo.dispatchEvent(new Event("change"));
-    }
+  if (targetLang === "en") {
+    restoreOriginalEnglishDom();
     return;
   }
 
-  // Ensure the script is initialized
+  reinforceNotranslateElements();
   ensureGoogleTranslateLoaded();
 
-  const targetLang = SUPPORTED_GOOGLE_LANGS[normalized] || normalized;
-
-  // Attempt to select language on Google's combo element
   const fireCombo = () => {
+    reinforceNotranslateElements();
     const combo = document.querySelector<HTMLSelectElement>(".goog-te-combo");
     if (combo) {
       if (combo.value !== targetLang) {
@@ -168,11 +262,10 @@ export function applyGoogleDomTranslation(langCode: string): void {
   };
 
   if (!fireCombo()) {
-    // Retry shortly in case script is still booting
     let attempts = 0;
     const interval = setInterval(() => {
       attempts++;
-      if (fireCombo() || attempts > 15) {
+      if (fireCombo() || attempts > 20) {
         clearInterval(interval);
       }
     }, 250);

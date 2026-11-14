@@ -42,6 +42,55 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+const DEV_SW_RECOVERY_SCRIPT = `<script>(function(){try{var s=document.currentScript;if(s&&s.parentNode)s.parentNode.removeChild(s);var h=location.hostname;var isDev=h==='localhost'||h==='127.0.0.1'||h.indexOf('ais-dev-')===0;if(!isDev||!('serviceWorker' in navigator))return;var ctrl=navigator.serviceWorker.controller;Promise.all([navigator.serviceWorker.getRegistrations().then(function(regs){return Promise.all(regs.map(function(r){return r.unregister();}));}),'caches' in window?caches.keys().then(function(keys){return Promise.all(keys.map(function(k){return caches.delete(k);}));}):Promise.resolve()]).then(function(){if(ctrl&&!sessionStorage.getItem('__sot_sw_escaped')){sessionStorage.setItem('__sot_sw_escaped','1');location.reload();}else if(!ctrl){sessionStorage.removeItem('__sot_sw_escaped');}}).catch(function(){});}catch(e){}})();</script>`;
+
+function injectDevSwRecoveryIntoHtml(response: Response): Response {
+  if (process.env.NODE_ENV === "production") return response;
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("text/html") || !response.body) return response;
+
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let injected = false;
+  let buffer = "";
+
+  const transform = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      if (injected) {
+        controller.enqueue(chunk);
+        return;
+      }
+      buffer += decoder.decode(chunk, { stream: true });
+      const headMatch = /<head(?:\s[^>]*)?>/i.exec(buffer);
+      if (headMatch) {
+        const insertAt = headMatch.index + headMatch[0].length;
+        const out = buffer.slice(0, insertAt) + DEV_SW_RECOVERY_SCRIPT + buffer.slice(insertAt);
+        injected = true;
+        buffer = "";
+        controller.enqueue(encoder.encode(out));
+      } else if (buffer.length > 8192) {
+        injected = true;
+        controller.enqueue(encoder.encode(buffer));
+        buffer = "";
+      }
+    },
+    flush(controller) {
+      if (buffer.length > 0) {
+        controller.enqueue(encoder.encode(buffer));
+        buffer = "";
+      }
+    },
+  });
+
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  return new Response(response.body.pipeThrough(transform), {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 function securityHeaders(contentType?: string): HeadersInit {
   return {
     ...(contentType ? { "content-type": contentType } : {}),
@@ -65,7 +114,8 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      return withSecurityHeaders(injectDevSwRecoveryIntoHtml(normalized));
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {

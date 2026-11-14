@@ -19,6 +19,10 @@ export type Brand = {
   created_at: string;
   signedLogoUrl: string | null;
   ownerName: string | null;
+  isAutoSourced?: boolean;
+  claimStatus?: "unclaimed" | "claimed";
+  ownerEmail?: string | null;
+  verifiedDomain?: string | null;
 };
 
 export function slugify(name: string): string {
@@ -73,7 +77,11 @@ export async function fetchBrands(): Promise<Brand[]> {
         trust_score: b.trustScore ?? 50,
         created_at: b.createdAt || new Date().toISOString(),
         signedLogoUrl: b.logoUrl || null,
-        ownerName: null,
+        ownerName: b.verifiedDomain ? `Verified Owner (${b.verifiedDomain})` : null,
+        isAutoSourced: b.isAutoSourced ?? (!b.createdBy || b.createdBy === "system"),
+        claimStatus: b.claimStatus ?? (b.verifiedDomain ? "claimed" : "unclaimed"),
+        ownerEmail: b.ownerEmail ?? null,
+        verifiedDomain: b.verifiedDomain ?? null,
       }));
     }
   } catch (fsErr) {
@@ -109,20 +117,71 @@ export async function fetchBrands(): Promise<Brand[]> {
     created_at: b.created_at,
     signedLogoUrl: b.logo_url,
     ownerName: null,
+    isAutoSourced: true,
+    claimStatus: "unclaimed",
   }));
 
-  const combined = [...localImported, ...firestoreBrands, ...legacyBrands];
+  const claimsByBrandKey = new Map<string, { claimantUid: string; claimantEmail: string; domain: string; website?: string }>();
+  if (typeof window !== "undefined") {
+    try {
+      const rawClaims = window.localStorage.getItem("sot-brand-domain-claims-v1");
+      if (rawClaims) {
+        const parsed = JSON.parse(rawClaims) as Array<{
+          brandId: string;
+          brandSlug: string;
+          claimantUid: string;
+          claimantEmail: string;
+          officialDomain?: string;
+          emailDomain: string;
+          brandWebsite?: string;
+          status: string;
+        }>;
+        for (const c of parsed) {
+          if (c.status === "verified_domain" || c.status === "approved") {
+            const entry = {
+              claimantUid: c.claimantUid,
+              claimantEmail: c.claimantEmail,
+              domain: c.officialDomain || c.emailDomain,
+              website: c.brandWebsite,
+            };
+            claimsByBrandKey.set(c.brandSlug.toLowerCase(), entry);
+            claimsByBrandKey.set(c.brandId.toLowerCase(), entry);
+          }
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const combined = [...firestoreBrands, ...localImported, ...legacyBrands];
   const seenSlugs = new Set<string>();
   const seenNames = new Set<string>();
   const deduped: Brand[] = [];
 
-  for (const b of [...combined, ...fallback]) {
-    const s = b.slug.trim().toLowerCase();
-    const n = b.name.trim().toLowerCase();
+  for (const rawBrand of [...combined, ...fallback]) {
+    const s = rawBrand.slug.trim().toLowerCase();
+    const n = rawBrand.name.trim().toLowerCase();
     if (seenSlugs.has(s) || seenNames.has(n)) continue;
     seenSlugs.add(s);
     seenNames.add(n);
-    deduped.push(b);
+
+    const claimed = claimsByBrandKey.get(s) || claimsByBrandKey.get(rawBrand.id.toLowerCase());
+    if (claimed) {
+      deduped.push({
+        ...rawBrand,
+        owner_id: claimed.claimantUid,
+        verified: true,
+        claimStatus: "claimed",
+        isAutoSourced: false,
+        ownerEmail: claimed.claimantEmail,
+        verifiedDomain: claimed.domain,
+        website: rawBrand.website || claimed.website || null,
+        ownerName: `Verified Owner (@${claimed.domain})`,
+      });
+    } else {
+      deduped.push(rawBrand);
+    }
   }
   return deduped;
 }

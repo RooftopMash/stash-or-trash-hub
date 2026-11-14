@@ -46,7 +46,10 @@ export function TopLanguageStrip() {
   const { i18n } = useTranslation();
   const [query, setQuery] = useState("");
   const [countryQuery, setCountryQuery] = useState("");
-  const activeCode = (i18n.language || "en").split("-")[0];
+  const rawLang = i18n.language || "en";
+  const activeCode = LANGUAGES.some((l) => l.code.toLowerCase() === rawLang.toLowerCase())
+    ? LANGUAGES.find((l) => l.code.toLowerCase() === rawLang.toLowerCase())!.code
+    : rawLang.split("-")[0].toLowerCase();
 
   const extraLanguages = useMemo(() => {
     const others = LANGUAGES.filter((l) => !FEATURED_CODES.has(l.code));
@@ -91,12 +94,13 @@ export function TopLanguageStrip() {
               <button
                 key={locale.code}
                 type="button"
+                translate="no"
                 onClick={() => void switchAppLanguage(i18n, locale.code)}
                 aria-pressed={isActive}
                 aria-label={`Switch language to ${locale.label}`}
                 data-lang={locale.code}
                 className={cn(
-                  "inline-flex shrink-0 items-center rounded-md px-2.5 py-0.5 text-xs font-bold whitespace-nowrap transition-all cursor-pointer",
+                  "notranslate inline-flex shrink-0 items-center rounded-md px-2.5 py-0.5 text-xs font-bold whitespace-nowrap transition-all cursor-pointer",
                   isActive
                     ? "bg-[#d6a928] text-slate-950 shadow-xs"
                     : "text-slate-300 hover:bg-white/10 hover:text-white",
@@ -150,6 +154,7 @@ export function TopLanguageStrip() {
                           <button
                             key={`${country.countryCode}-${lang.code}`}
                             type="button"
+                            translate="no"
                             onClick={() => {
                               void switchAppLanguage(i18n, lang.code);
                               toast.success(
@@ -157,7 +162,7 @@ export function TopLanguageStrip() {
                               );
                             }}
                             className={cn(
-                              "rounded-md px-2 py-0.5 text-[11px] font-bold transition cursor-pointer",
+                              "notranslate rounded-md px-2 py-0.5 text-[11px] font-bold transition cursor-pointer",
                               selected
                                 ? "bg-[#d6a928] text-slate-950"
                                 : "bg-background text-foreground border border-border hover:bg-secondary",
@@ -186,7 +191,9 @@ export function TopLanguageStrip() {
                     : "text-slate-400 hover:bg-white/10 hover:text-white",
                 )}
               >
-                <span>{activeExtra ? activeExtra.label : "More"}</span>
+                <span translate="no" className="notranslate">
+                  {activeExtra ? activeExtra.label : "More"}
+                </span>
                 <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
@@ -204,15 +211,16 @@ export function TopLanguageStrip() {
                 {extraLanguages.map((l) => (
                   <DropdownMenuItem
                     key={l.code}
+                    translate="no"
                     onClick={() => void switchAppLanguage(i18n, l.code)}
                     className={
                       l.code === activeCode
-                        ? "justify-between font-semibold text-primary"
-                        : "justify-between"
+                        ? "notranslate justify-between font-semibold text-primary"
+                        : "notranslate justify-between"
                     }
                     dir={RTL_LANGUAGES.includes(l.code) ? "rtl" : "ltr"}
                   >
-                    <span>{l.label}</span>
+                    <span translate="no" className="notranslate">{l.label}</span>
                     {l.code === activeCode && <Check className="h-3.5 w-3.5" />}
                   </DropdownMenuItem>
                 ))}

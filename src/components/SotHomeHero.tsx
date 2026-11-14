@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { ArrowRight, Coins, Recycle, Trophy, AlertTriangle, Sparkles, TrendingUp, Layers, Gauge, ChevronRight } from "lucide-react";
+import { ArrowRight, BadgeCheck, Coins, Handshake, Lightbulb, Recycle, Rocket, ShieldCheck, Trophy, AlertTriangle, Sparkles, TrendingUp, Layers, Gauge, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFeed } from "@/lib/stash";
 import { fetchBrands } from "@/lib/brands";
@@ -249,7 +249,8 @@ export function SotHomeHero() {
                   {/* Original South African coin icon: spins upright on edge & precesses flat */}
                   <img
                     src={coinIcon}
-                    alt="$OrT South African spinning gold coin"
+                    alt="SOrT South African spinning gold coin"
+                    translate="no"
                     width={250}
                     height={250}
                     fetchPriority="high"
@@ -321,6 +322,7 @@ export function SotHomeHero() {
                   <img
                     src={binIcon}
                     alt="SOrT solid stainless steel metallic trash can"
+                    translate="no"
                     width={250}
                     height={250}
                     fetchPriority="high"
@@ -362,6 +364,105 @@ export function SotHomeHero() {
         {/* LIVE BRAND LAUNCHES, RELAUNCHES & CONSUMER BROADCAST STAGE */}
         <div className="mx-auto w-full max-w-5xl">
           <LiveStageSection />
+        </div>
+
+        {/* FULL PLATFORM ECOSYSTEM QUICK-LAUNCH STRIP (NO IMAGES MODIFIED) */}
+        <div className="mx-auto w-full max-w-5xl rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#b88914]">
+                More Than Stash Or Trash · Complete Brand-Consumer Ecosystem
+              </p>
+              <h2 className="mt-0.5 font-display text-xl font-black text-slate-950">
+                Releases, Authenticity, Innovation Pitches &amp; B2C Collaborations
+              </h2>
+            </div>
+            <Link
+              to="/discover"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-black text-[#f5d061] hover:bg-slate-900 whitespace-nowrap shrink-0"
+            >
+              Open Full Ecosystem Hub <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Link
+              to="/discover"
+              search={{ tab: "releases" }}
+              className="group rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:border-[#d6a928] hover:bg-amber-50/40"
+            >
+              <div className="flex items-center justify-between">
+                <Rocket className="h-5 w-5 text-[#b88914]" />
+                <ArrowRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-950 transition-colors" />
+              </div>
+              <h3 className="mt-2.5 font-display text-sm font-black text-slate-950">
+                New Releases &amp; Drops
+              </h3>
+              <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+                Explore upcoming launches, limited drops, and official product rollouts.
+              </p>
+            </Link>
+
+            <Link
+              to="/scan"
+              className="group rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:border-emerald-500 hover:bg-emerald-50/40"
+            >
+              <div className="flex items-center justify-between">
+                <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                <ArrowRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-950 transition-colors" />
+              </div>
+              <h3 className="mt-2.5 font-display text-sm font-black text-slate-950">
+                Verify Authenticity &amp; Origin
+              </h3>
+              <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+                Scan barcodes/seals and check official domain-verified brand ownership.
+              </p>
+            </Link>
+
+            <Link
+              to="/discover"
+              search={{ tab: "innovations" }}
+              className="group rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:border-indigo-500 hover:bg-indigo-50/40"
+            >
+              <div className="flex items-center justify-between">
+                <Lightbulb className="h-5 w-5 text-indigo-600" />
+                <ArrowRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-950 transition-colors" />
+              </div>
+              <h3 className="mt-2.5 font-display text-sm font-black text-slate-950">
+                Innovations &amp; C2B Pitches
+              </h3>
+              <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+                Watch brand R&amp;D demos or pitch your own consumer-to-brand innovations.
+              </p>
+            </Link>
+
+            <Link
+              to="/discover"
+              search={{ tab: "events_collabs" }}
+              className="group rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:border-blue-500 hover:bg-blue-50/40"
+            >
+              <div className="flex items-center justify-between">
+                <Handshake className="h-5 w-5 text-blue-600" />
+                <ArrowRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-950 transition-colors" />
+              </div>
+              <h3 className="mt-2.5 font-display text-sm font-black text-slate-950">
+                B2C / C2B Events &amp; Collabs
+              </h3>
+              <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+                RSVP to customer townhalls and apply for brand-creator collaborations.
+              </p>
+            </Link>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
+            <span className="inline-flex items-center gap-1.5 font-semibold">
+              <BadgeCheck className="h-4 w-4 text-[#d6a928]" />
+              Represent an auto-sourced brand? Claim &amp; verify ownership using your official company email domain.
+            </span>
+            <Link to="/brands" className="font-extrabold text-slate-950 hover:underline">
+              Find &amp; Claim Your Brand →
+            </Link>
+          </div>
         </div>
 
         {/* STRICT ACCOUNT-SCOPED CALLOUT: PERSONAL USERS ONLY SEE CONSUMER TOOLS; BRAND ACCOUNTS ONLY SEE BRAND SUITE */}
@@ -549,7 +650,7 @@ export function SotHomeHero() {
                     {getTierInfo(barometerTier).label} ({getTierInfo(barometerTier).pricePoint}):
                   </span>{" "}
                   {getTierInfo(barometerTier).description}{" "}
-                  <span className="text-slate-500 italic">
+                  <span translate="no" className="notranslate text-slate-500 italic">
                     {getTierInfo(barometerTier).examples.slice(0, 4).join(", ")}.
                   </span>
                 </div>
@@ -585,7 +686,10 @@ export function SotHomeHero() {
                           <span>{tierInfo.shortName}</span>
                         </span>
                       </div>
-                      <h4 className="mt-2.5 font-display text-sm font-bold text-slate-950 truncate group-hover:text-primary transition-colors">
+                      <h4
+                        translate="no"
+                        className="notranslate mt-2.5 font-display text-sm font-bold text-slate-950 truncate group-hover:text-primary transition-colors"
+                      >
                         {brand.name}
                       </h4>
                       <p className="text-[11px] text-slate-500 truncate">
@@ -668,7 +772,9 @@ export function SotHomeHero() {
                 {topStashedItem?.brandName && (
                   <p className="mt-2 text-xs font-semibold text-slate-500">
                     {t("hero.brandLabel", { defaultValue: "Brand" })}:{" "}
-                    <span className="text-slate-900 font-bold">{topStashedItem.brandName}</span>
+                    <span translate="no" className="notranslate text-slate-900 font-bold">
+                      {topStashedItem.brandName}
+                    </span>
                   </p>
                 )}
               </div>
@@ -708,7 +814,9 @@ export function SotHomeHero() {
                 {topTrashedItem?.brandName && (
                   <p className="mt-2 text-xs font-semibold text-slate-500">
                     {t("hero.brandLabel", { defaultValue: "Brand" })}:{" "}
-                    <span className="text-slate-900 font-bold">{topTrashedItem.brandName}</span>
+                    <span translate="no" className="notranslate text-slate-900 font-bold">
+                      {topTrashedItem.brandName}
+                    </span>
                   </p>
                 )}
               </div>
@@ -729,12 +837,14 @@ export function SotHomeHero() {
         <div
           translate="no"
           aria-hidden="true"
+          data-sot-brand="cascade"
           className="notranslate relative flex justify-center gap-4 overflow-hidden pt-4 pb-2 text-5xl font-black leading-none sm:gap-8 sm:text-7xl"
         >
           {cascade.map(({ letter, className }, index) => (
             <span
               key={`${letter}-${index}`}
-              className={`${className} sot-letter-cascade`}
+              translate="no"
+              className={`notranslate ${className} sot-letter-cascade`}
               style={{ animationDelay: `${index * 180}ms` }}
             >
               {letter}

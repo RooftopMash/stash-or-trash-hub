@@ -172,7 +172,14 @@ export function VerdictTally({
               Verdict Tally
             </h3>
             <p className="text-xs text-muted-foreground">
-              {brandName ? `Community sentiment for ${brandName}` : "Aggregated public votes"}
+              {brandName ? (
+                <>
+                  Community sentiment for{" "}
+                  <span translate="no" className="notranslate">{brandName}</span>
+                </>
+              ) : (
+                "Aggregated public votes"
+              )}
             </p>
           </div>
         </div>

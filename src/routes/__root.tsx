@@ -75,14 +75,25 @@ function NotFoundComponent() {
   );
 }
 
+const reportedRootErrors = new Set<string>();
+
 function ErrorComponent({ error, reset }: { error: any; reset: () => void }) {
-  useEffect(() => {
-    try {
-      reportApplicationError(error instanceof Error ? error : new Error(String(error)), { boundary: "tanstack_root_error_component" });
-    } catch {
-      // ignore
+  try {
+    const errObj = error instanceof Error ? error : new Error(String(error));
+    const key = `${errObj.name}:${errObj.message}`;
+    if (typeof window !== "undefined" && !reportedRootErrors.has(key)) {
+      reportedRootErrors.add(key);
+      queueMicrotask(() => {
+        try {
+          reportApplicationError(errObj, { boundary: "tanstack_root_error_component" });
+        } catch {
+          // ignore
+        }
+      });
     }
-  }, [error]);
+  } catch {
+    // ignore
+  }
 
   return (
     <div role="alert" className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -230,15 +241,38 @@ function RootComponent() {
       }
     }
 
-    // Register PWA Service Worker for store package & offline caching
+    // In dev mode, unregister any stale service workers and clear old SW caches
+    // so Vite prebundled dependency hashes never mismatch across restarts.
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      const runRegister = () => {
-        navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
-      };
-      if (document.readyState === "complete" || document.readyState === "interactive") {
-        runRegister();
+      const isDevHost =
+        import.meta.env.DEV ||
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1" ||
+        window.location.hostname.startsWith("ais-dev-");
+
+      if (isDevHost) {
+        navigator.serviceWorker
+          .getRegistrations()
+          .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+          .catch(() => {});
+        if ("caches" in window) {
+          caches
+            .keys()
+            .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+            .catch(() => {});
+        }
       } else {
-        window.addEventListener("load", runRegister);
+        const runRegister = () => {
+          navigator.serviceWorker
+            .register("/sw.js", { scope: "/" })
+            .then((reg) => reg.update().catch(() => {}))
+            .catch(() => {});
+        };
+        if (document.readyState === "complete" || document.readyState === "interactive") {
+          runRegister();
+        } else {
+          window.addEventListener("load", runRegister);
+        }
       }
     }
 
@@ -247,9 +281,20 @@ function RootComponent() {
       try {
         const savedLang = window.localStorage.getItem("sot-lang");
         const browserLang = (navigator.language || "").split("-")[0];
-        const target = savedLang || browserLang;
-        if (target && target !== "en" && LANGUAGES.some((l) => l.code === target)) {
+        const rawTarget = savedLang || browserLang;
+        const matched = LANGUAGES.find(
+          (l) =>
+            l.code.toLowerCase() === rawTarget.toLowerCase() ||
+            l.code.toLowerCase() === rawTarget.split("-")[0].toLowerCase(),
+        );
+        const target = matched?.code;
+        if (target && target !== "en") {
+          document.documentElement.lang = target;
+          document.documentElement.dir = matched?.direction === "rtl" ? "rtl" : "ltr";
           void i18n.changeLanguage(target);
+          void import("@/lib/google-translate").then(({ applyGoogleDomTranslation }) => {
+            applyGoogleDomTranslation(target);
+          });
         }
       } catch {
         // ignore

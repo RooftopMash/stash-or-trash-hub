@@ -25,7 +25,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == 'Borulelo@gmail.com' ||
+        (request.auth.token.email == 'Borulelo@gmail.com' && request.auth.token.email_verified == true) ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -43,7 +43,7 @@ service cloud.firestore {
 
     function isValidBrand(data) {
       return data.keys().hasAll(['id', 'name', 'slug']) &&
-        data.keys().hasOnly(['id', 'name', 'slug', 'category', 'country', 'description', 'logoUrl', 'website', 'trustScore', 'riskScore', 'status', 'isVerified', 'createdBy', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'name', 'slug', 'category', 'country', 'description', 'logoUrl', 'website', 'trustScore', 'riskScore', 'status', 'isVerified', 'isAutoSourced', 'claimStatus', 'ownerEmail', 'verifiedDomain', 'createdBy', 'createdAt', 'updatedAt']) &&
         data.id is string && data.id.size() <= 128 &&
         data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
         data.slug is string && data.slug.size() > 0 && data.slug.size() <= 200 &&
@@ -51,7 +51,57 @@ service cloud.firestore {
         (!('country' in data) || (data.country is string && data.country.size() <= 100)) &&
         (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
         (!('status' in data) || (data.status in ['active', 'pending', 'flagged'])) &&
-        (!('isVerified' in data) || (data.isVerified is bool));
+        (!('isVerified' in data) || (data.isVerified is bool)) &&
+        (!('isAutoSourced' in data) || (data.isAutoSourced is bool)) &&
+        (!('claimStatus' in data) || (data.claimStatus in ['unclaimed', 'claimed'])) &&
+        (!('ownerEmail' in data) || (data.ownerEmail is string && data.ownerEmail.size() <= 200)) &&
+        (!('verifiedDomain' in data) || (data.verifiedDomain is string && data.verifiedDomain.size() <= 200));
+    }
+
+    function isAutoSourcedOrUnclaimedBrand(data) {
+      return !('createdBy' in data) ||
+        data.createdBy in ['system', 'seed-catalog', 'admin-wikidata-importer', 'admin-dashboard-importer', 'admin-importer'] ||
+        (('claimStatus' in data) && data.claimStatus == 'unclaimed') ||
+        (('isAutoSourced' in data) && data.isAutoSourced == true && !('verifiedDomain' in data));
+    }
+
+    function isValidBrandClaim(data) {
+      return data.keys().hasAll(['id', 'brandId', 'brandSlug', 'brandName', 'claimantUid', 'claimantEmail', 'emailDomain', 'domainMatchStatus', 'status', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'brandId', 'brandSlug', 'brandName', 'brandWebsite', 'officialDomain', 'claimantUid', 'claimantEmail', 'emailDomain', 'roleTitle', 'domainMatchStatus', 'verificationCode', 'status', 'message', 'reviewedBy', 'verifiedAt', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.brandId is string && data.brandId.size() <= 128 &&
+        data.brandSlug is string && data.brandSlug.size() <= 200 &&
+        data.brandName is string && data.brandName.size() <= 200 &&
+        data.claimantUid == request.auth.uid &&
+        data.claimantEmail is string && data.claimantEmail.size() <= 200 &&
+        data.emailDomain is string && data.emailDomain.size() <= 200 &&
+        (data.domainMatchStatus in ['matched', 'subdomain_match', 'mismatch', 'free_provider', 'no_website', 'invalid_email']) &&
+        (data.status in ['code_sent', 'verified_domain', 'pending_review', 'approved', 'rejected']) &&
+        (!('roleTitle' in data) || (data.roleTitle is string && data.roleTitle.size() <= 120)) &&
+        (!('message' in data) || (data.message is string && data.message.size() <= 1000));
+    }
+
+    function isValidEcosystemItem(data) {
+      return data.keys().hasAll(['id', 'brandId', 'brandSlug', 'brandName', 'itemType', 'title', 'summary', 'authorUid', 'authorName', 'upvotes', 'rsvpCount', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'brandId', 'brandSlug', 'brandName', 'itemType', 'title', 'summary', 'category', 'status', 'eventDate', 'location', 'compensation', 'externalUrl', 'authorUid', 'authorName', 'upvotes', 'rsvpCount', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.brandName is string && data.brandName.size() > 0 && data.brandName.size() <= 200 &&
+        (data.itemType in ['release', 'innovation_presentation', 'innovation_submission', 'event', 'collab']) &&
+        data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+        data.summary is string && data.summary.size() > 0 && data.summary.size() <= 2000 &&
+        data.authorName is string && data.authorName.size() <= 100 &&
+        data.upvotes is number && data.upvotes >= 0 &&
+        data.rsvpCount is number && data.rsvpCount >= 0;
+    }
+
+    function isValidCollabApplication(data) {
+      return data.keys().hasAll(['id', 'itemId', 'itemTitle', 'brandId', 'brandSlug', 'brandName', 'brandOwnerUid', 'applicantUid', 'applicantName', 'kind', 'pitch', 'status', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'itemId', 'itemTitle', 'brandId', 'brandSlug', 'brandName', 'brandOwnerUid', 'applicantUid', 'applicantName', 'applicantEmail', 'kind', 'pitch', 'portfolioUrl', 'status', 'brandReply', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.applicantUid is string && data.applicantUid.size() <= 128 &&
+        (data.kind in ['rsvp', 'collab_application']) &&
+        data.pitch is string && data.pitch.size() > 0 && data.pitch.size() <= 2000 &&
+        (data.status in ['submitted', 'shortlisted', 'accepted', 'declined']);
     }
 
     function isValidBrandVote(data, brandId) {
@@ -132,7 +182,10 @@ service cloud.firestore {
       allow create: if isSignedIn() && isValidId(brandId) && isValidBrand(incoming());
       allow update: if isSignedIn() && isValidId(brandId) && (
         isAdmin() ||
-        (isValidBrand(incoming()) && incoming().id == existing().id && incoming().slug == existing().slug)
+        (isValidBrand(incoming()) && incoming().id == existing().id && incoming().slug == existing().slug && (
+          existing().createdBy == request.auth.uid ||
+          (isAutoSourcedOrUnclaimedBrand(existing()) && incoming().createdBy == request.auth.uid)
+        ))
       );
       allow delete: if isAdmin();
 
@@ -146,6 +199,75 @@ service cloud.firestore {
         );
         allow delete: if isSignedIn() && (request.auth.uid == existing().userId || isAdmin());
       }
+    }
+
+    // Brand Ownership Claims & Domain Email Verification
+    match /brand_claims/{claimId} {
+      allow get: if isSignedIn() && isValidId(claimId) && (
+        resource == null ||
+        existing().claimantUid == request.auth.uid ||
+        isAdmin()
+      );
+      allow list: if isSignedIn() && (
+        existing().claimantUid == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isSignedIn() && isValidId(claimId) && isValidBrandClaim(incoming()) && (
+        incoming().status != 'approved' &&
+        (incoming().status != 'verified_domain' || incoming().domainMatchStatus in ['matched', 'subdomain_match'])
+      );
+      allow update: if isSignedIn() && isValidId(claimId) && (
+        isAdmin() ||
+        (existing().claimantUid == request.auth.uid &&
+          isValidBrandClaim(incoming()) &&
+          incoming().claimantUid == existing().claimantUid &&
+          incoming().status != 'approved' &&
+          (incoming().status != 'verified_domain' || incoming().domainMatchStatus in ['matched', 'subdomain_match']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Brand Ecosystem (New Releases, Innovation Presentations & Submissions, Events & Collabs)
+    match /brand_ecosystem_items/{itemId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isValidId(itemId) &&
+        incoming().authorUid == request.auth.uid &&
+        isValidEcosystemItem(incoming());
+      allow update: if isSignedIn() && isValidId(itemId) && isValidEcosystemItem(incoming()) && (
+        isAdmin() ||
+        (existing().authorUid == request.auth.uid &&
+          incoming().authorUid == existing().authorUid) ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['upvotes', 'rsvpCount', 'updatedAt'])
+      );
+      allow delete: if isSignedIn() && (existing().authorUid == request.auth.uid || isAdmin());
+    }
+
+    // Event RSVPs & B2C/C2B Collaboration Applications (Private PII protected)
+    match /brand_collab_applications/{applicationId} {
+      allow get: if isSignedIn() && isValidId(applicationId) && (
+        resource == null ||
+        existing().applicantUid == request.auth.uid ||
+        existing().brandOwnerUid == request.auth.uid ||
+        isAdmin()
+      );
+      allow list: if isSignedIn() && (
+        existing().applicantUid == request.auth.uid ||
+        existing().brandOwnerUid == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isSignedIn() && isValidId(applicationId) &&
+        incoming().applicantUid == request.auth.uid &&
+        isValidCollabApplication(incoming());
+      allow update: if isSignedIn() && isValidId(applicationId) && isValidCollabApplication(incoming()) && (
+        isAdmin() ||
+        (existing().brandOwnerUid == request.auth.uid &&
+          incoming().applicantUid == existing().applicantUid &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'brandReply', 'updatedAt'])) ||
+        (existing().applicantUid == request.auth.uid &&
+          incoming().applicantUid == existing().applicantUid &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['pitch', 'portfolioUrl', 'status', 'updatedAt']))
+      );
+      allow delete: if isSignedIn() && (existing().applicantUid == request.auth.uid || isAdmin());
     }
 
     // Crisis alerts

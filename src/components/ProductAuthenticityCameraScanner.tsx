@@ -1706,7 +1706,8 @@ Verified on Stash Or Trash Brand Barometer`;
                   <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 flex items-center justify-between text-xs">
                     <div>
                       <div className="font-bold text-foreground">
-                        {matchedBrand.name} in Stash Or Trash
+                        <span translate="no" className="notranslate">{matchedBrand.name}</span> in{" "}
+                        <span translate="no" className="notranslate">Stash Or Trash</span>
                       </div>
                       <div className="text-muted-foreground">
                         Overall Trust Score: {matchedBrand.trust_score}/100 • Verdict: {matchedBrand.trust_score >= 60 ? "Stash" : "Trash"}

@@ -252,13 +252,16 @@ Issued: ${new Date().toISOString()}`;
                 </div>
 
                 <DialogTitle className="text-2xl font-black font-display tracking-tight text-foreground">
-                  {brandName}{" "}
+                  <span translate="no" className="notranslate">{brandName}</span>{" "}
                   <span className="text-base font-normal text-muted-foreground">
                     ({productName})
                   </span>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-                  <span><strong>Owner:</strong> {brandOwner}</span>
+                  <span>
+                    <strong>Owner:</strong>{" "}
+                    <span translate="no" className="notranslate">{brandOwner}</span>
+                  </span>
                   <span>•</span>
                   <span><strong>Origin:</strong> {country}</span>
                   <span>•</span>
