@@ -161,7 +161,7 @@ export function QuickRateModal({
           {/* Stash vs Trash Quick Choice */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">Your Overall Stash or Trash Verdict</Label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
               <Button
                 type="button"
                 variant="stash"
@@ -174,9 +174,13 @@ export function QuickRateModal({
                     sublabel: `${brandName} · Keep what serves you`,
                   });
                 }}
-                className={`gap-2 font-bold ${verdict === "stash" ? "ring-2 ring-emerald-500 scale-[1.02]" : "opacity-60"}`}
+                className={`gap-1.5 sm:gap-2 px-2.5 sm:px-4 font-bold ${verdict === "stash" ? "ring-2 ring-emerald-500 scale-[1.02]" : "opacity-60"}`}
               >
-                <img src={coinIcon} alt="" className="h-5 w-5" /> Stash (Keep & Buy)
+                <img src={coinIcon} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                <span className="truncate">
+                  <span className="sm:hidden">Stash (Keep)</span>
+                  <span className="hidden sm:inline">Stash (Keep &amp; Buy)</span>
+                </span>
               </Button>
               <Button
                 type="button"
@@ -186,9 +190,13 @@ export function QuickRateModal({
                   playTrashSound();
                   setVerdict("trash");
                 }}
-                className={`gap-2 font-bold ${verdict === "trash" ? "ring-2 ring-rose-500 scale-[1.02]" : "opacity-60"}`}
+                className={`gap-1.5 sm:gap-2 px-2.5 sm:px-4 font-bold ${verdict === "trash" ? "ring-2 ring-rose-500 scale-[1.02]" : "opacity-60"}`}
               >
-                <img src={binIcon} alt="" className="h-5 w-5" /> Trash (Boycott / Avoid)
+                <img src={binIcon} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                <span className="truncate">
+                  <span className="sm:hidden">Trash (Avoid)</span>
+                  <span className="hidden sm:inline">Trash (Boycott / Avoid)</span>
+                </span>
               </Button>
             </div>
           </div>

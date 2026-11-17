@@ -211,40 +211,40 @@ export function VerdictTally({
       </div>
 
       {/* Primary Tally Counter Cards */}
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3">
         {/* Stash Tally Card */}
         <div
           className={cn(
-            "relative flex flex-col justify-between overflow-hidden rounded-xl border p-4 transition-all",
+            "min-w-0 relative flex flex-col justify-between overflow-hidden rounded-xl border p-3 sm:p-4 transition-all",
             isStashLeading
               ? "border-stash/40 bg-stash/10 shadow-xs"
               : "border-border bg-card/60"
           )}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background/80 shadow-xs border border-border/50">
-                <img src={coinIcon} alt="" aria-hidden className="h-6 w-6 object-contain" />
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-background/80 shadow-xs border border-border/50">
+                <img src={coinIcon} alt="" aria-hidden className="h-5 w-5 sm:h-6 sm:w-6 object-contain" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-xs font-bold uppercase tracking-wider text-stash">
                   {t("vote.stash", "Stash")}
                 </span>
-                <p className="text-[11px] text-muted-foreground">Keep / Approve</p>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">Keep / Approve</p>
               </div>
             </div>
             {isStashLeading && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-stash/20 px-2 py-0.5 text-[10px] font-extrabold text-stash">
+              <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-stash/20 px-2 py-0.5 text-[10px] font-extrabold text-stash shrink-0">
                 <TrendingUp className="h-3 w-3" /> Leading
               </span>
             )}
           </div>
 
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="font-display text-2xl font-black tracking-tight text-foreground">
+            <span className="font-display text-xl sm:text-2xl font-black tracking-tight text-foreground">
               {stash.toLocaleString()}
             </span>
-            <span className="text-sm font-bold text-stash">
+            <span className="text-xs sm:text-sm font-bold text-stash">
               {hasVotes ? `${stashPct}%` : "50%"}
             </span>
           </div>
@@ -253,36 +253,36 @@ export function VerdictTally({
         {/* Trash Tally Card */}
         <div
           className={cn(
-            "relative flex flex-col justify-between overflow-hidden rounded-xl border p-4 transition-all",
+            "min-w-0 relative flex flex-col justify-between overflow-hidden rounded-xl border p-3 sm:p-4 transition-all",
             isTrashLeading
               ? "border-trash/40 bg-trash/10 shadow-xs"
               : "border-border bg-card/60"
           )}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background/80 shadow-xs border border-border/50">
-                <img src={binIcon} alt="" aria-hidden className="h-6 w-6 object-contain" />
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-background/80 shadow-xs border border-border/50">
+                <img src={binIcon} alt="" aria-hidden className="h-5 w-5 sm:h-6 sm:w-6 object-contain" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-xs font-bold uppercase tracking-wider text-trash">
                   {t("vote.trash", "Trash")}
                 </span>
-                <p className="text-[11px] text-muted-foreground">Dump / Reject</p>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">Dump / Reject</p>
               </div>
             </div>
             {isTrashLeading && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-trash/20 px-2 py-0.5 text-[10px] font-extrabold text-trash">
+              <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-trash/20 px-2 py-0.5 text-[10px] font-extrabold text-trash shrink-0">
                 <TrendingDown className="h-3 w-3" /> Leading
               </span>
             )}
           </div>
 
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="font-display text-2xl font-black tracking-tight text-foreground">
+            <span className="font-display text-xl sm:text-2xl font-black tracking-tight text-foreground">
               {trash.toLocaleString()}
             </span>
-            <span className="text-sm font-bold text-trash">
+            <span className="text-xs sm:text-sm font-bold text-trash">
               {hasVotes ? `${trashPct}%` : "50%"}
             </span>
           </div>

@@ -15,14 +15,45 @@ import {
 } from "@/lib/brandTiers";
 import { BrandLogo } from "@/components/BrandLogo";
 import { LiveStageSection } from "@/components/LiveStageSection";
+import { HeroInteractiveStage } from "@/components/HeroInteractiveStage";
 import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
 import { useRoles } from "@/hooks/useRoles";
 import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import { cn } from "@/lib/utils";
 import coinIcon from "@/assets/icon-coin.webp";
-import binIcon from "@/assets/icon-bin.webp";
 import coinsWatermark from "@/assets/watermark-coins.webp";
 import binsWatermark from "@/assets/watermark-bins.webp";
+
+interface FallingCoinSpec {
+  id: string;
+  leftPct: number;
+  sizePx: number;
+  animationName: string;
+  durationSec: number;
+  delaySec: number;
+  opacity: number;
+}
+
+const CHAOTIC_FALLING_COINS: FallingCoinSpec[] = [
+  // Horizontal flat-spinning coins catching air drag (scaled 16-26px like real small coins vs trash cans)
+  { id: "h-1", leftPct: 8, sizePx: 24, animationName: "sot-fall-coin-horiz-cw", durationSec: 11.3, delaySec: -1.7, opacity: 0.9 },
+  { id: "h-2", leftPct: 68, sizePx: 20, animationName: "sot-fall-coin-horiz-ccw", durationSec: 9.7, delaySec: -4.9, opacity: 0.8 },
+  { id: "h-3", leftPct: 36, sizePx: 22, animationName: "sot-fall-coin-horiz-cw", durationSec: 13.1, delaySec: -6.1, opacity: 0.85 },
+  { id: "h-4", leftPct: 84, sizePx: 19, animationName: "sot-fall-coin-horiz-ccw", durationSec: 10.9, delaySec: -2.3, opacity: 0.78 },
+  // Irregular unpatterned off-axis 3D tumblers
+  { id: "e-1", leftPct: 48, sizePx: 18, animationName: "sot-fall-coin-erratic-a", durationSec: 10.1, delaySec: -7.2, opacity: 0.75 },
+  { id: "e-2", leftPct: 14, sizePx: 26, animationName: "sot-fall-coin-erratic-b", durationSec: 12.7, delaySec: -3.4, opacity: 0.92 },
+  { id: "e-3", leftPct: 78, sizePx: 17, animationName: "sot-fall-coin-erratic-c", durationSec: 8.3, delaySec: -0.8, opacity: 0.72 },
+  { id: "e-4", leftPct: 54, sizePx: 25, animationName: "sot-fall-coin-erratic-b", durationSec: 14.3, delaySec: -9.5, opacity: 0.88 },
+  { id: "e-5", leftPct: 41, sizePx: 18, animationName: "sot-fall-coin-erratic-c", durationSec: 7.9, delaySec: -4.1, opacity: 0.76 },
+  { id: "e-6", leftPct: 19, sizePx: 16, animationName: "sot-fall-coin-erratic-a", durationSec: 11.9, delaySec: -8.3, opacity: 0.7 },
+  // Collision Pair 1: converge mid-air (~47% height) & ricochet apart
+  { id: "c1-l", leftPct: 21, sizePx: 22, animationName: "sot-fall-collide-1-left", durationSec: 9.2, delaySec: -2.1, opacity: 0.92 },
+  { id: "c1-r", leftPct: 27, sizePx: 21, animationName: "sot-fall-collide-1-right", durationSec: 9.2, delaySec: -2.1, opacity: 0.92 },
+  // Collision Pair 2: converge lower-mid air (~57% height) & ricochet apart
+  { id: "c2-l", leftPct: 57, sizePx: 20, animationName: "sot-fall-collide-2-left", durationSec: 11.6, delaySec: -6.4, opacity: 0.9 },
+  { id: "c2-r", leftPct: 64, sizePx: 22, animationName: "sot-fall-collide-2-right", durationSec: 11.6, delaySec: -6.4, opacity: 0.9 },
+];
 
 const cascade = [
   { letter: "S", className: "text-[#d6a928]" },
@@ -160,11 +191,11 @@ export function SotHomeHero() {
       suppressHydrationWarning
       className="relative isolate overflow-hidden border-b-2 border-[#d6a928]/30 bg-white text-slate-950"
     >
-      {/* Split-screen brand watermark: visible on desktop, hidden on mobile so mobile text is 100% crisp and readable */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden z-0 hidden sm:block">
-        {/* Left Half: Falling Gold Coins Watermark (Continuous Waterfall Rain) */}
+      {/* Split-screen brand watermark: chaotic/colliding falling SOrT Krugerrands left vs uniform falling Option A Trash Cans right */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+        {/* Reduced-motion fallback static watermark tile on Left Half (identical scatter aesthetic) */}
         <div
-          className="sot-watermark-rain-coins absolute inset-y-0 left-0 w-1/2 opacity-20"
+          className="hidden motion-reduce:block absolute inset-y-0 left-0 w-1/2 opacity-15 sm:opacity-20"
           style={{
             backgroundImage: `url(${coinsWatermark})`,
             backgroundSize: "140px 140px",
@@ -173,9 +204,36 @@ export function SotHomeHero() {
             WebkitMaskImage: "linear-gradient(to right, black 65%, transparent 100%)",
           }}
         />
-        {/* Right Half: Falling Silver Trash Cans Watermark (Continuous Waterfall Rain) */}
+
+        {/* Left Half: Realistic Non-Uniform Falling SOrT Gold Krugerrands (horizontal spins, erratic tumbles & mid-air collisions) */}
         <div
-          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-20"
+          className="motion-reduce:hidden absolute inset-y-0 left-0 w-1/2 opacity-[0.15] sm:opacity-[0.23] [perspective:900px]"
+          style={{
+            maskImage: "linear-gradient(to right, black 68%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to right, black 68%, transparent 100%)",
+          }}
+        >
+          {CHAOTIC_FALLING_COINS.map((coin) => (
+            <img
+              key={coin.id}
+              src={coinIcon}
+              alt=""
+              aria-hidden="true"
+              className="sot-falling-coin-item absolute top-0 select-none drop-shadow-[0_4px_8px_rgba(180,130,20,0.28)]"
+              style={{
+                left: `${coin.leftPct}%`,
+                width: `${coin.sizePx}px`,
+                height: `${coin.sizePx}px`,
+                opacity: coin.opacity,
+                animation: `${coin.animationName} ${coin.durationSec}s linear ${coin.delaySec}s infinite`,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Right Half: Uniform Falling Option A Vintage Trash Cans Watermark */}
+        <div
+          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-[0.14] sm:opacity-20"
           style={{
             backgroundImage: `url(${binsWatermark})`,
             backgroundSize: "140px 140px",
@@ -214,144 +272,16 @@ export function SotHomeHero() {
           </p>
         </div>
 
-        {/* Hero Interactive Objects: Side-by-Side on Mobile AND Desktop (Coin Left & Bin Right) */}
-        <div className="flex min-h-[220px] items-center justify-center sm:min-h-[360px]">
-          <div className="mx-auto grid w-full max-w-4xl grid-cols-2 gap-2.5 sm:gap-8">
-            {/* Left Object: Stash Gold Coin */}
-            <div className="group relative flex flex-col items-center p-1 sm:p-4 transition">
-              <VerdictSuccess
-                active={activeObject === "coin"}
-                inline
-                label={t("hero.stashedSuccessLabel", { defaultValue: "STASHED!" })}
-                sublabel={t("hero.stashedSuccessSub", { defaultValue: "Keep what serves you · Gold standard" })}
-              />
-              <button
-                type="button"
-                aria-label={t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })}
-                onClick={handleCoinClick}
-                onMouseEnter={() => {
-                  if (activeObject !== "coin") {
-                    setActiveObject("coin");
-                    window.setTimeout(() => setActiveObject(null), 2900);
-                  }
-                }}
-                className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6a928] rounded-2xl p-1 sm:p-2 cursor-pointer"
-              >
-                <div className="relative flex h-36 w-full items-center justify-center sm:h-72 [perspective:900px]">
-                  {/* Tabletop contact surface shadow synchronized with Zwepe spin */}
-                  <div
-                    className={cn(
-                      "sot-coin-shadow absolute bottom-2 sm:bottom-5 h-5 sm:h-8 w-28 sm:w-44 rounded-full bg-slate-950/30 blur-sm sm:blur-md pointer-events-none",
-                      activeObject === "coin" && "sot-object-active",
-                    )}
-                  />
-
-                  {/* Original South African coin icon: spins upright on edge & precesses flat */}
-                  <img
-                    src={coinIcon}
-                    alt="SOrT South African spinning gold coin"
-                    translate="no"
-                    width={250}
-                    height={250}
-                    fetchPriority="high"
-                    className={cn(
-                      "sot-coin-art relative z-10 w-full max-w-[125px] sm:max-w-[240px] drop-shadow-md transition-transform group-hover:scale-105",
-                      activeObject === "coin" && "sot-object-active",
-                    )}
-                  />
-                </div>
-                <span className="sr-only">{t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })}</span>
-              </button>
-
-              <div className="mt-2 sm:mt-3 flex w-full flex-col items-center gap-1 sm:gap-1.5 text-center">
-                <Link
-                  to="/feed"
-                  search={{ filter: "stash" }}
-                  onClick={() =>
-                    triggerVerdictSuccess({
-                      label: t("feed.stashesOfDay", { defaultValue: "STASHES OF THE DAY" }),
-                      sublabel: t("hero.stashesOfDaySub", { defaultValue: "Keep what serves you · Community Gold Standard" }),
-                    })
-                  }
-                  className="inline-flex w-full items-center justify-center gap-1 sm:gap-2 rounded-full border-2 border-slate-950 bg-[#d6a928] px-2 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-950 shadow-[0_4px_18px_rgba(214,169,40,0.28)] transition hover:brightness-105"
-                >
-                  <Coins className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-                  <span className="truncate">{t("feed.stashesOfDay", { defaultValue: "Stashes" })} ({totalStashes})</span>
-                  <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 hidden sm:inline" />
-                </Link>
-                <p className="text-[10px] sm:text-xs font-bold text-slate-700 hidden sm:block">
-                  {t("hero.tapCoin", { defaultValue: "Tap coin to spin & view Stashes" })}
-                </p>
-              </div>
-            </div>
-
-            {/* Right Object: Intact 3D Metallic Stainless Steel Trash Can (Lid Securely on Top) */}
-            <div className="group relative flex flex-col items-center p-1 sm:p-4 transition">
-              <button
-                type="button"
-                aria-label={t("hero.slamTrashAria", { defaultValue: "Slam trash can for Trashes of the Day" })}
-                onClick={handleTrashClick}
-                onMouseEnter={() => {
-                  if (activeObject !== "bin") {
-                    setActiveObject("bin");
-                    window.setTimeout(() => setActiveObject(null), 1350);
-                  }
-                }}
-                className="relative flex w-full flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 rounded-2xl p-1 sm:p-2 cursor-pointer"
-              >
-                <div className="relative flex h-36 w-full items-center justify-center sm:h-72 sot-bin-stage">
-                  {/* Grounded floor contact shadow */}
-                  <div
-                    aria-hidden="true"
-                    className={cn(
-                      "sot-bin-shadow pointer-events-none absolute bottom-1 sm:bottom-2 h-4 sm:h-7 w-28 sm:w-44 rounded-full bg-slate-950/30 blur-sm sm:blur-md",
-                      activeObject === "bin" && "sot-object-active",
-                    )}
-                  />
-
-                  {/* Shockwave ring on slam impact */}
-                  <div
-                    aria-hidden="true"
-                    className={cn(
-                      "sot-bin-shockwave pointer-events-none absolute bottom-1 sm:bottom-2 h-4 sm:h-7 w-28 sm:w-44 rounded-full border-2 border-slate-400/40 opacity-0",
-                      activeObject === "bin" && "sot-object-active",
-                    )}
-                  />
-
-                  {/* Solid intact 3D stainless steel trash can: Lid naturally seated firmly on top */}
-                  <img
-                    src={binIcon}
-                    alt="SOrT solid stainless steel metallic trash can"
-                    translate="no"
-                    width={250}
-                    height={250}
-                    fetchPriority="high"
-                    className={cn(
-                      "sot-bin-art relative z-10 w-full max-w-[125px] sm:max-w-[240px] object-contain drop-shadow-md transition-transform group-hover:scale-105 select-none",
-                      activeObject === "bin" && "sot-object-active",
-                    )}
-                  />
-                </div>
-                <span className="sr-only">{t("hero.slamTrashAria", { defaultValue: "Slam trash can for Trashes of the Day" })}</span>
-              </button>
-
-              <div className="mt-2 sm:mt-3 flex w-full flex-col items-center gap-1 sm:gap-1.5 text-center">
-                <Link
-                  to="/feed"
-                  search={{ filter: "trash" }}
-                  className="inline-flex w-full items-center justify-center gap-1 sm:gap-2 rounded-full bg-slate-900 px-2 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider text-white shadow-sm transition hover:bg-slate-800"
-                >
-                  <Recycle className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-                  <span className="truncate">{t("feed.trashesOfDay", { defaultValue: "Trashes" })} ({totalTrashes})</span>
-                  <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 hidden sm:inline" />
-                </Link>
-                <p className="text-[10px] sm:text-xs font-medium text-slate-500 hidden sm:block">
-                  {t("hero.tapBin", { defaultValue: "Click trash can to slam & review callouts" })}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Hero Interactive Objects: Always Side-by-Side on Mobile AND Desktop (Coin Left & Bin Right), NO surface planes */}
+        <HeroInteractiveStage
+          activeObject={activeObject}
+          setActiveObject={setActiveObject}
+          totalStashes={totalStashes}
+          totalTrashes={totalTrashes}
+          feedItems={feedItems}
+          onCoinClick={handleCoinClick}
+          onTrashClick={handleTrashClick}
+        />
 
         {/* Transition Toast when clicked */}
         {statusMessage && (
