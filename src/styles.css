@@ -100,7 +100,8 @@
   }
   96% {
     /* Final shudder */
-    transform: perspective(900px) rotateX(70.5deg) rotateY(9020deg) rotateZ(-1deg) translateY(25.8px);
+    transform: perspective(900px) rotateX(70.5deg) rotateY(9020deg) rotateZ(-1deg)
+      translateY(25.8px);
     filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.14));
   }
   100% {
@@ -121,7 +122,8 @@
     transform: scale(0.6, 0.15);
     opacity: 0.25;
   }
-  8%, 28% {
+  8%,
+  28% {
     /* Grounded upright contact point: narrow dark ellipse right at rim contact point */
     transform: scale(0.4, 0.12);
     opacity: 0.75;
@@ -138,7 +140,8 @@
     transform: scale(0.95, 0.35);
     opacity: 0.42;
   }
-  68%, 88% {
+  68%,
+  88% {
     transform: scale(1.05, 0.42);
     opacity: 0.35;
   }
@@ -226,7 +229,8 @@
     /* Coils down in anticipation before launching the lid */
     transform: translate3d(0, 6px, 0) scale3d(1.07, 0.92, 1) rotateZ(-1deg);
   }
-  18%, 26% {
+  18%,
+  26% {
     /* Upward stretch as the lid pops off into the air */
     transform: translate3d(0, -8px, 0) scale3d(0.93, 1.08, 1) rotateZ(1.5deg);
   }
@@ -266,7 +270,8 @@
 
 /* Randy idle lid jiggle: loose metal lid pops up & down slightly on the barrel rim */
 @keyframes randy-idle-lid {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate3d(0, 0, 0) rotateZ(0deg);
   }
   22% {
@@ -285,7 +290,8 @@
 
 /* Hover jiggle: when user hovers, loose lid levitates up and jiggles eagerly above the barrel */
 @keyframes randy-hover-lid-jiggle {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate3d(0, -16px, 10px) rotateZ(-6deg) rotateX(8deg);
   }
   50% {
@@ -295,7 +301,8 @@
 
 /* Ambient idle coin float */
 @keyframes sot-coin-approach {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) rotate(-1deg);
   }
   50% {
@@ -314,7 +321,9 @@
 
 .sot-coin-shadow {
   transform-origin: 50% 50%;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 .sot-coin-shadow.sot-object-active {
   animation: sot-zwepe-shadow 2.9s cubic-bezier(0.18, 0.8, 0.24, 1) forwards;
@@ -326,7 +335,8 @@
     transform: translate3d(0, 8px, 0) scale(0.92);
     opacity: 0.75;
   }
-  18%, 26% {
+  18%,
+  26% {
     /* Lid popped high in the air: junk rises visibly in the barrel mouth */
     transform: translate3d(0, -10px, 6px) scale(1.06) rotate(-2deg);
     opacity: 1;
@@ -355,7 +365,9 @@
 .randy-junk-contents {
   transform-origin: 50% 100%;
   transform: translate3d(0, 8px, 0) scale(0.92);
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s ease;
 }
 .randy-junk-contents.randy-active {
   animation: randy-junk-gulp 1.3s cubic-bezier(0.22, 0.9, 0.3, 1) forwards;
@@ -389,7 +401,9 @@
   transform-origin: 50% 18%;
   will-change: transform;
   animation: randy-idle-lid 3.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
-  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease;
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 0.25s ease;
 }
 .randy-lid.randy-active {
   animation: randy-lid-chomp 1.3s cubic-bezier(0.22, 0.9, 0.3, 1) forwards;
@@ -412,36 +426,43 @@
   }
   12% {
     /* High-torque upward hoist before the slam */
-    transform: perspective(900px) translate3d(0, -26px, 18px) rotateZ(-5deg) rotateX(8deg) scale(1.04, 1.04);
+    transform: perspective(900px) translate3d(0, -26px, 18px) rotateZ(-5deg) rotateX(8deg)
+      scale(1.04, 1.04);
     filter: drop-shadow(0 26px 24px rgba(15, 23, 42, 0.34)) brightness(1.08);
   }
   24% {
     /* Peak apex poise */
-    transform: perspective(900px) translate3d(0, -30px, 22px) rotateZ(3deg) rotateX(10deg) scale(1.05, 1.05);
+    transform: perspective(900px) translate3d(0, -30px, 22px) rotateZ(3deg) rotateX(10deg)
+      scale(1.05, 1.05);
     filter: drop-shadow(0 30px 28px rgba(15, 23, 42, 0.36)) brightness(1.12);
   }
   36% {
     /* CRUSHING SLAM IMPACT ON THE FLOOR */
-    transform: perspective(900px) translate3d(0, 10px, 0) rotateZ(0deg) rotateX(-4deg) scale(1.1, 0.9);
+    transform: perspective(900px) translate3d(0, 10px, 0) rotateZ(0deg) rotateX(-4deg)
+      scale(1.1, 0.9);
     filter: drop-shadow(0 4px 8px rgba(15, 23, 42, 0.55)) brightness(1.18) contrast(1.06);
   }
   46% {
     /* Metallic rebound & right rim rock */
-    transform: perspective(900px) translate3d(4px, -10px, 6px) rotateZ(6.5deg) rotateX(3deg) scale(0.97, 1.04);
+    transform: perspective(900px) translate3d(4px, -10px, 6px) rotateZ(6.5deg) rotateX(3deg)
+      scale(0.97, 1.04);
     filter: drop-shadow(0 14px 16px rgba(15, 23, 42, 0.3)) brightness(1.04);
   }
   56% {
     /* Left rim rock clatter */
-    transform: perspective(900px) translate3d(-4px, 2px, 0) rotateZ(-5.5deg) rotateX(-2deg) scale(1.03, 0.97);
+    transform: perspective(900px) translate3d(-4px, 2px, 0) rotateZ(-5.5deg) rotateX(-2deg)
+      scale(1.03, 0.97);
     filter: drop-shadow(0 8px 12px rgba(15, 23, 42, 0.36));
   }
   66% {
     /* Secondary right rim rock */
-    transform: perspective(900px) translate3d(2.5px, -3px, 0) rotateZ(3.8deg) rotateX(1.5deg) scale(0.99, 1.02);
+    transform: perspective(900px) translate3d(2.5px, -3px, 0) rotateZ(3.8deg) rotateX(1.5deg)
+      scale(0.99, 1.02);
   }
   76% {
     /* Secondary left rim rock */
-    transform: perspective(900px) translate3d(-2px, 1px, 0) rotateZ(-2.4deg) rotateX(-1deg) scale(1.01, 0.99);
+    transform: perspective(900px) translate3d(-2px, 1px, 0) rotateZ(-2.4deg) rotateX(-1deg)
+      scale(1.01, 0.99);
   }
   85% {
     /* High-frequency steel rim chatter */
@@ -457,11 +478,13 @@
 }
 
 @keyframes sot-bin-shadow-physics {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1, 1);
     opacity: 0.32;
   }
-  12%, 24% {
+  12%,
+  24% {
     transform: scale(0.68, 0.65);
     opacity: 0.18;
   }
@@ -480,7 +503,8 @@
 }
 
 @keyframes sot-bin-shockwave-ring {
-  0%, 32% {
+  0%,
+  32% {
     transform: scale(0.5, 0.22);
     opacity: 0;
     border-color: rgba(15, 23, 42, 0);
@@ -502,7 +526,8 @@
 }
 
 @keyframes sot-bin-idle-poise {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate3d(0, 0, 0) rotateZ(0deg);
   }
   50% {
@@ -518,7 +543,9 @@
   transform-origin: 50% 88%;
   animation: sot-bin-idle-poise 4.8s ease-in-out infinite;
   filter: drop-shadow(0 12px 16px rgba(15, 23, 42, 0.24));
-  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), filter 0.25s ease;
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1),
+    filter 0.25s ease;
 }
 
 .group:hover .sot-bin-art:not(.sot-object-active) {
@@ -533,7 +560,9 @@
 
 .sot-bin-shadow {
   transform-origin: 50% 50%;
-  transition: transform 0.25s ease, opacity 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease;
 }
 
 .sot-bin-shadow.sot-object-active {
@@ -617,178 +646,185 @@
    ========================================================================= */
 @keyframes sot-fall-coin-horiz-cw {
   0% {
-    transform: translate3d(-10px, -16vh, 0) rotateX(68deg) rotateY(-12deg) rotateZ(0deg);
+    transform: translate3d(-10px, -90px, 0) rotateX(68deg) rotateY(-12deg) rotateZ(0deg);
   }
   25% {
-    transform: translate3d(18px, 16vh, 18px) rotateX(72deg) rotateY(8deg) rotateZ(420deg);
+    transform: translate3d(18px, 140px, 18px) rotateX(72deg) rotateY(8deg) rotateZ(420deg);
   }
   52% {
-    transform: translate3d(-8px, 48vh, -10px) rotateX(62deg) rotateY(-14deg) rotateZ(910deg);
+    transform: translate3d(-8px, 400px, -10px) rotateX(62deg) rotateY(-14deg) rotateZ(910deg);
   }
   78% {
-    transform: translate3d(24px, 80vh, 14px) rotateX(74deg) rotateY(10deg) rotateZ(1340deg);
+    transform: translate3d(24px, 640px, 14px) rotateX(74deg) rotateY(10deg) rotateZ(1340deg);
   }
   100% {
-    transform: translate3d(4px, 114vh, 0) rotateX(68deg) rotateY(-12deg) rotateZ(1800deg);
+    transform: translate3d(4px, 880px, 0) rotateX(68deg) rotateY(-12deg) rotateZ(1800deg);
   }
 }
 
 @keyframes sot-fall-coin-horiz-ccw {
   0% {
-    transform: translate3d(14px, -16vh, 0) rotateX(74deg) rotateY(15deg) rotateZ(0deg);
+    transform: translate3d(14px, -90px, 0) rotateX(74deg) rotateY(15deg) rotateZ(0deg);
   }
   30% {
-    transform: translate3d(-22px, 22vh, -12px) rotateX(64deg) rotateY(-8deg) rotateZ(-540deg);
+    transform: translate3d(-22px, 190px, -12px) rotateX(64deg) rotateY(-8deg) rotateZ(-540deg);
   }
   63% {
-    transform: translate3d(12px, 60vh, 16px) rotateX(75deg) rotateY(12deg) rotateZ(-1120deg);
+    transform: translate3d(12px, 500px, 16px) rotateX(75deg) rotateY(12deg) rotateZ(-1120deg);
   }
   100% {
-    transform: translate3d(-12px, 114vh, 0) rotateX(70deg) rotateY(6deg) rotateZ(-1680deg);
+    transform: translate3d(-12px, 880px, 0) rotateX(70deg) rotateY(6deg) rotateZ(-1680deg);
   }
 }
 
 @keyframes sot-fall-coin-erratic-a {
   0% {
-    transform: translate3d(0px, -16vh, 0) rotateX(12deg) rotateY(0deg) rotateZ(-18deg);
+    transform: translate3d(0px, -90px, 0) rotateX(12deg) rotateY(0deg) rotateZ(-18deg);
   }
   21% {
-    transform: translate3d(26px, 14vh, 22px) rotateX(140deg) rotateY(190deg) rotateZ(45deg);
+    transform: translate3d(26px, 120px, 22px) rotateX(140deg) rotateY(190deg) rotateZ(45deg);
   }
   47% {
-    transform: translate3d(-18px, 46vh, -14px) rotateX(285deg) rotateY(410deg) rotateZ(-72deg);
+    transform: translate3d(-18px, 380px, -14px) rotateX(285deg) rotateY(410deg) rotateZ(-72deg);
   }
   74% {
-    transform: translate3d(16px, 79vh, 18px) rotateX(410deg) rotateY(640deg) rotateZ(110deg);
+    transform: translate3d(16px, 640px, 18px) rotateX(410deg) rotateY(640deg) rotateZ(110deg);
   }
   100% {
-    transform: translate3d(-6px, 114vh, 0) rotateX(560deg) rotateY(900deg) rotateZ(-18deg);
+    transform: translate3d(-6px, 880px, 0) rotateX(560deg) rotateY(900deg) rotateZ(-18deg);
   }
 }
 
 @keyframes sot-fall-coin-erratic-b {
   0% {
-    transform: translate3d(8px, -16vh, 0) rotateX(-20deg) rotateY(40deg) rotateZ(24deg);
+    transform: translate3d(8px, -90px, 0) rotateX(-20deg) rotateY(40deg) rotateZ(24deg);
   }
   34% {
-    transform: translate3d(-28px, 28vh, 16px) rotateX(210deg) rotateY(-240deg) rotateZ(-95deg);
+    transform: translate3d(-28px, 240px, 16px) rotateX(210deg) rotateY(-240deg) rotateZ(-95deg);
   }
   67% {
-    transform: translate3d(22px, 68vh, -18px) rotateX(460deg) rotateY(-520deg) rotateZ(150deg);
+    transform: translate3d(22px, 560px, -18px) rotateX(460deg) rotateY(-520deg) rotateZ(150deg);
   }
   100% {
-    transform: translate3d(-10px, 114vh, 0) rotateX(720deg) rotateY(-810deg) rotateZ(24deg);
+    transform: translate3d(-10px, 880px, 0) rotateX(720deg) rotateY(-810deg) rotateZ(24deg);
   }
 }
 
 @keyframes sot-fall-coin-erratic-c {
   0% {
-    transform: translate3d(-14px, -16vh, 0) rotateX(48deg) rotateY(15deg) rotateZ(0deg);
+    transform: translate3d(-14px, -90px, 0) rotateX(48deg) rotateY(15deg) rotateZ(0deg);
   }
   18% {
-    transform: translate3d(10px, 9vh, 10px) rotateX(115deg) rotateY(120deg) rotateZ(180deg);
+    transform: translate3d(10px, 90px, 10px) rotateX(115deg) rotateY(120deg) rotateZ(180deg);
   }
   42% {
-    transform: translate3d(28px, 38vh, -16px) rotateX(340deg) rotateY(250deg) rotateZ(310deg);
+    transform: translate3d(28px, 320px, -16px) rotateX(340deg) rotateY(250deg) rotateZ(310deg);
   }
   69% {
-    transform: translate3d(-19px, 72vh, 20px) rotateX(510deg) rotateY(480deg) rotateZ(520deg);
+    transform: translate3d(-19px, 590px, 20px) rotateX(510deg) rotateY(480deg) rotateZ(520deg);
   }
   100% {
-    transform: translate3d(6px, 114vh, 0) rotateX(700deg) rotateY(760deg) rotateZ(720deg);
+    transform: translate3d(6px, 880px, 0) rotateX(700deg) rotateY(760deg) rotateZ(720deg);
   }
 }
 
-/* Synchronized Mid-Air Collision Pair 1 (converge at ~46% frame, tap & ricochet apart!) */
+/* Synchronized Mid-Air Collision Pair 1 (converge at ~47% frame, tap & ricochet apart!) */
 @keyframes sot-fall-collide-1-left {
   0% {
-    transform: translate3d(-34px, -16vh, 0) rotateX(25deg) rotateY(0deg) rotateZ(-15deg);
+    transform: translate3d(-32px, -90px, 0) rotateX(25deg) rotateY(0deg) rotateZ(-15deg);
   }
   42% {
-    transform: translate3d(22px, 38vh, 10px) rotateX(155deg) rotateY(280deg) rotateZ(45deg);
+    transform: translate3d(20px, 310px, 10px) rotateX(155deg) rotateY(280deg) rotateZ(45deg);
   }
   47% {
     /* IMPACT POINT */
-    transform: translate3d(34px, 44vh, 18px) rotateX(190deg) rotateY(350deg) rotateZ(78deg) scale(1.06);
+    transform: translate3d(30px, 360px, 18px) rotateX(190deg) rotateY(350deg) rotateZ(78deg)
+      scale(1.06);
   }
   53% {
     /* SHARP LEFTWARD RECOIL + KICKED SPIN */
-    transform: translate3d(-6px, 51vh, 26px) rotateX(265deg) rotateY(490deg) rotateZ(-140deg) scale(1);
+    transform: translate3d(-6px, 420px, 26px) rotateX(265deg) rotateY(490deg) rotateZ(-140deg)
+      scale(1);
   }
   78% {
-    transform: translate3d(-52px, 82vh, -10px) rotateX(490deg) rotateY(790deg) rotateZ(-290deg);
+    transform: translate3d(-48px, 660px, -10px) rotateX(490deg) rotateY(790deg) rotateZ(-290deg);
   }
   100% {
-    transform: translate3d(-72px, 114vh, 0) rotateX(680deg) rotateY(1080deg) rotateZ(-420deg);
+    transform: translate3d(-66px, 880px, 0) rotateX(680deg) rotateY(1080deg) rotateZ(-420deg);
   }
 }
 
 @keyframes sot-fall-collide-1-right {
   0% {
-    transform: translate3d(38px, -16vh, 0) rotateX(62deg) rotateY(20deg) rotateZ(20deg);
+    transform: translate3d(36px, -90px, 0) rotateX(62deg) rotateY(20deg) rotateZ(20deg);
   }
   42% {
-    transform: translate3d(-18px, 38vh, 10px) rotateX(70deg) rotateY(-210deg) rotateZ(610deg);
+    transform: translate3d(-16px, 310px, 10px) rotateX(70deg) rotateY(-210deg) rotateZ(610deg);
   }
   47% {
     /* IMPACT POINT */
-    transform: translate3d(-28px, 44vh, 18px) rotateX(65deg) rotateY(-260deg) rotateZ(700deg) scale(1.06);
+    transform: translate3d(-26px, 360px, 18px) rotateX(65deg) rotateY(-260deg) rotateZ(700deg)
+      scale(1.06);
   }
   53% {
     /* SHARP RIGHTWARD RICOCHET + TUMBLE KICK */
-    transform: translate3d(16px, 50vh, -12px) rotateX(145deg) rotateY(-420deg) rotateZ(890deg) scale(1);
+    transform: translate3d(14px, 415px, -12px) rotateX(145deg) rotateY(-420deg) rotateZ(890deg)
+      scale(1);
   }
   78% {
-    transform: translate3d(58px, 81vh, 14px) rotateX(320deg) rotateY(-690deg) rotateZ(1180deg);
+    transform: translate3d(52px, 655px, 14px) rotateX(320deg) rotateY(-690deg) rotateZ(1180deg);
   }
   100% {
-    transform: translate3d(76px, 114vh, 0) rotateX(470deg) rotateY(-950deg) rotateZ(1440deg);
+    transform: translate3d(70px, 880px, 0) rotateX(470deg) rotateY(-950deg) rotateZ(1440deg);
   }
 }
 
-/* Synchronized Mid-Air Collision Pair 2 (hits at ~58% frame in lower-middle sky) */
+/* Synchronized Mid-Air Collision Pair 2 (hits at ~57% frame in lower-middle sky) */
 @keyframes sot-fall-collide-2-left {
   0% {
-    transform: translate3d(-28px, -16vh, 0) rotateX(15deg) rotateY(30deg) rotateZ(10deg);
+    transform: translate3d(-26px, -90px, 0) rotateX(15deg) rotateY(30deg) rotateZ(10deg);
   }
   52% {
-    transform: translate3d(20px, 52vh, 8px) rotateX(220deg) rotateY(410deg) rotateZ(120deg);
+    transform: translate3d(18px, 420px, 8px) rotateX(220deg) rotateY(410deg) rotateZ(120deg);
   }
   57% {
     /* COLLISION IMPACT */
-    transform: translate3d(30px, 58vh, 16px) rotateX(260deg) rotateY(490deg) rotateZ(165deg) scale(1.07);
+    transform: translate3d(28px, 470px, 16px) rotateX(260deg) rotateY(490deg) rotateZ(165deg)
+      scale(1.07);
   }
   63% {
     /* REBOUND LEFT */
-    transform: translate3d(-12px, 65vh, -14px) rotateX(380deg) rotateY(640deg) rotateZ(-80deg) scale(1);
+    transform: translate3d(-10px, 530px, -14px) rotateX(380deg) rotateY(640deg) rotateZ(-80deg)
+      scale(1);
   }
   100% {
-    transform: translate3d(-66px, 114vh, 0) rotateX(620deg) rotateY(980deg) rotateZ(-360deg);
+    transform: translate3d(-60px, 880px, 0) rotateX(620deg) rotateY(980deg) rotateZ(-360deg);
   }
 }
 
 @keyframes sot-fall-collide-2-right {
   0% {
-    transform: translate3d(32px, -16vh, 0) rotateX(68deg) rotateY(-10deg) rotateZ(0deg);
+    transform: translate3d(30px, -90px, 0) rotateX(68deg) rotateY(-10deg) rotateZ(0deg);
   }
   52% {
-    transform: translate3d(-16px, 52vh, 8px) rotateX(64deg) rotateY(15deg) rotateZ(-780deg);
+    transform: translate3d(-14px, 420px, 8px) rotateX(64deg) rotateY(15deg) rotateZ(-780deg);
   }
   57% {
     /* COLLISION IMPACT */
-    transform: translate3d(-26px, 58vh, 16px) rotateX(72deg) rotateY(-40deg) rotateZ(-890deg) scale(1.07);
+    transform: translate3d(-24px, 470px, 16px) rotateX(72deg) rotateY(-40deg) rotateZ(-890deg)
+      scale(1.07);
   }
   63% {
     /* REBOUND RIGHT & KNOCKED OUT OF HORIZONTAL SPIN */
-    transform: translate3d(18px, 64vh, 22px) rotateX(190deg) rotateY(-210deg) rotateZ(-1080deg) scale(1);
+    transform: translate3d(16px, 525px, 22px) rotateX(190deg) rotateY(-210deg) rotateZ(-1080deg)
+      scale(1);
   }
   100% {
-    transform: translate3d(68px, 114vh, 0) rotateX(410deg) rotateY(-580deg) rotateZ(-1380deg);
+    transform: translate3d(64px, 880px, 0) rotateX(410deg) rotateY(-580deg) rotateZ(-1380deg);
   }
 }
 
 .sot-falling-coin-item {
-  will-change: transform;
   transform-style: preserve-3d;
   backface-visibility: visible;
 }
@@ -1051,15 +1087,18 @@
   }
   14% {
     opacity: 1;
-    transform: translate3d(calc(var(--tx, 0px) * 0.35), calc(var(--ty, 0px) * 0.25 - 12px), 0) scale(1.35) rotate(60deg);
+    transform: translate3d(calc(var(--tx, 0px) * 0.35), calc(var(--ty, 0px) * 0.25 - 12px), 0)
+      scale(1.35) rotate(60deg);
   }
   65% {
     opacity: 0.95;
-    transform: translate3d(calc(var(--tx, 0px) * 0.88), calc(var(--ty, 0px) * 0.78), 0) scale(1) rotate(190deg);
+    transform: translate3d(calc(var(--tx, 0px) * 0.88), calc(var(--ty, 0px) * 0.78), 0) scale(1)
+      rotate(190deg);
   }
   100% {
     opacity: 0;
-    transform: translate3d(var(--tx, 0px), calc(var(--ty, 0px) + 24px), 0) scale(0.15) rotate(320deg);
+    transform: translate3d(var(--tx, 0px), calc(var(--ty, 0px) + 24px), 0) scale(0.15)
+      rotate(320deg);
   }
 }
 
@@ -1124,7 +1163,9 @@
 
 .verdict-shockwave-ring {
   animation: verdict-shockwave 1.15s cubic-bezier(0.16, 0.84, 0.32, 1) forwards;
-  box-shadow: 0 0 28px rgba(214, 169, 40, 0.65), inset 0 0 18px rgba(214, 169, 40, 0.35);
+  box-shadow:
+    0 0 28px rgba(214, 169, 40, 0.65),
+    inset 0 0 18px rgba(214, 169, 40, 0.35);
 }
 
 .verdict-shockwave-ring-delayed {

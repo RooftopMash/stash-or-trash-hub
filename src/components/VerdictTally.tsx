@@ -60,7 +60,7 @@ export function VerdictTally({
           void queryClient.invalidateQueries({ queryKey: ["brand-verdict-tally", brandId] });
           // Flash live indicator
           setTimeout(() => setIsLiveActive(false), 2000);
-        }
+        },
       )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
@@ -82,7 +82,7 @@ export function VerdictTally({
 
   const stash = verdict?.stash ?? 0;
   const trash = verdict?.trash ?? 0;
-  const total = verdict?.total ?? (stash + trash);
+  const total = verdict?.total ?? stash + trash;
 
   // If no votes exist yet, show 50-50 neutral split in the bar layout
   const hasVotes = total > 0;
@@ -99,35 +99,47 @@ export function VerdictTally({
         id={`verdict-tally-${brandId}`}
         className={cn(
           "w-full rounded-xl border border-border bg-card p-3 shadow-xs space-y-2",
-          className
+          className,
         )}
       >
         <div className="flex items-center justify-between text-xs font-semibold">
           <div className="flex items-center gap-1.5 text-stash">
             <img src={coinIcon} alt="" aria-hidden className="h-4 w-4 object-contain" />
-            <span>{t("vote.stash", "Stash")}: {stash.toLocaleString()}</span>
-            <span className="text-[10px] font-normal text-muted-foreground">({hasVotes ? `${stashPct}%` : "—"})</span>
+            <span>
+              {t("vote.stash", "Stash")}: {stash.toLocaleString()}
+            </span>
+            <span className="text-[10px] font-normal text-muted-foreground">
+              ({hasVotes ? `${stashPct}%` : "—"})
+            </span>
           </div>
 
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             {showLivePulse && (
               <span className="flex items-center gap-1">
                 <span className="relative flex h-2 w-2">
-                  <span className={cn(
-                    "absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping bg-emerald-400",
-                    !isLiveActive && "hidden"
-                  )} />
+                  <span
+                    className={cn(
+                      "absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping bg-emerald-400",
+                      !isLiveActive && "hidden",
+                    )}
+                  />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                 </span>
                 <span>Live</span>
               </span>
             )}
-            <span>· {total.toLocaleString()} {t("brand.votes", "votes")}</span>
+            <span>
+              · {total.toLocaleString()} {t("brand.votes", "votes")}
+            </span>
           </div>
 
           <div className="flex items-center gap-1.5 text-trash">
-            <span className="text-[10px] font-normal text-muted-foreground">({hasVotes ? `${trashPct}%` : "—"})</span>
-            <span>{t("vote.trash", "Trash")}: {trash.toLocaleString()}</span>
+            <span className="text-[10px] font-normal text-muted-foreground">
+              ({hasVotes ? `${trashPct}%` : "—"})
+            </span>
+            <span>
+              {t("vote.trash", "Trash")}: {trash.toLocaleString()}
+            </span>
             <img src={binIcon} alt="" aria-hidden className="h-4 w-4 object-contain" />
           </div>
         </div>
@@ -155,7 +167,7 @@ export function VerdictTally({
       aria-labelledby={`verdict-tally-heading-${brandId}`}
       className={cn(
         "relative rounded-2xl border border-border bg-card p-5 shadow-sm transition-all",
-        className
+        className,
       )}
     >
       {/* Header bar */}
@@ -175,7 +187,9 @@ export function VerdictTally({
               {brandName ? (
                 <>
                   Community sentiment for{" "}
-                  <span translate="no" className="notranslate">{brandName}</span>
+                  <span translate="no" className="notranslate">
+                    {brandName}
+                  </span>
                 </>
               ) : (
                 "Aggregated public votes"
@@ -192,7 +206,7 @@ export function VerdictTally({
                 "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold border transition-all",
                 isLiveActive
                   ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                  : "border-border/80 bg-secondary/60 text-muted-foreground"
+                  : "border-border/80 bg-secondary/60 text-muted-foreground",
               )}
             >
               <span className="relative flex h-2 w-2">
@@ -216,21 +230,26 @@ export function VerdictTally({
         <div
           className={cn(
             "min-w-0 relative flex flex-col justify-between overflow-hidden rounded-xl border p-3 sm:p-4 transition-all",
-            isStashLeading
-              ? "border-stash/40 bg-stash/10 shadow-xs"
-              : "border-border bg-card/60"
+            isStashLeading ? "border-stash/40 bg-stash/10 shadow-xs" : "border-border bg-card/60",
           )}
         >
           <div className="flex items-center justify-between gap-1">
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
               <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-background/80 shadow-xs border border-border/50">
-                <img src={coinIcon} alt="" aria-hidden className="h-5 w-5 sm:h-6 sm:w-6 object-contain" />
+                <img
+                  src={coinIcon}
+                  alt=""
+                  aria-hidden
+                  className="h-5 w-5 sm:h-6 sm:w-6 object-contain"
+                />
               </div>
               <div className="min-w-0">
                 <span className="text-xs font-bold uppercase tracking-wider text-stash">
                   {t("vote.stash", "Stash")}
                 </span>
-                <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">Keep / Approve</p>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">
+                  Keep / Approve
+                </p>
               </div>
             </div>
             {isStashLeading && (
@@ -254,21 +273,26 @@ export function VerdictTally({
         <div
           className={cn(
             "min-w-0 relative flex flex-col justify-between overflow-hidden rounded-xl border p-3 sm:p-4 transition-all",
-            isTrashLeading
-              ? "border-trash/40 bg-trash/10 shadow-xs"
-              : "border-border bg-card/60"
+            isTrashLeading ? "border-trash/40 bg-trash/10 shadow-xs" : "border-border bg-card/60",
           )}
         >
           <div className="flex items-center justify-between gap-1">
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
               <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-background/80 shadow-xs border border-border/50">
-                <img src={binIcon} alt="" aria-hidden className="h-5 w-5 sm:h-6 sm:w-6 object-contain" />
+                <img
+                  src={binIcon}
+                  alt=""
+                  aria-hidden
+                  className="h-5 w-5 sm:h-6 sm:w-6 object-contain"
+                />
               </div>
               <div className="min-w-0">
                 <span className="text-xs font-bold uppercase tracking-wider text-trash">
                   {t("vote.trash", "Trash")}
                 </span>
-                <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">Dump / Reject</p>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">
+                  Dump / Reject
+                </p>
               </div>
             </div>
             {isTrashLeading && (
@@ -352,9 +376,7 @@ export function VerdictTally({
                 Dead Heat: Exactly tied {stash} to {trash}.
               </span>
             )}
-            {!hasVotes && (
-              <span>Be the first community member to cast a Stash or Trash vote!</span>
-            )}
+            {!hasVotes && <span>Be the first community member to cast a Stash or Trash vote!</span>}
           </div>
 
           {hasVotes && (

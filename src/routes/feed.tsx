@@ -37,11 +37,15 @@ import { brandCategory, categoryOptions, matchesCategory } from "@/lib/categorie
 import { countryFlag, countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
+type FeedSearch = {
+  filter?: "all" | "stash" | "trash";
+  q?: string;
+  brand?: string;
+};
+
 export const Route = createFileRoute("/feed")({
   ssr: false,
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { filter?: "all" | "stash" | "trash"; q?: string; brand?: string } => ({
+  validateSearch: (search: Record<string, unknown>): FeedSearch => ({
     filter:
       search.filter === "stash" || search.filter === "trash" || search.filter === "all"
         ? (search.filter as "all" | "stash" | "trash")
@@ -66,7 +70,8 @@ function Feed() {
   const handleFilterChange = (nextFilter: "all" | "stash" | "trash") => {
     setVerdictFilter(nextFilter);
     void navigate({
-      search: (prev: any) => ({
+      to: "/feed",
+      search: (prev: FeedSearch) => ({
         ...prev,
         filter: nextFilter === "all" ? undefined : nextFilter,
       }),
@@ -80,7 +85,9 @@ function Feed() {
   const [resultScope, setResultScope] = useState<"all" | "brands" | "posts">("all");
   const [showAllMatchingBrands, setShowAllMatchingBrands] = useState(false);
   const [feedBroadcastOpen, setFeedBroadcastOpen] = useState(false);
-  const [feedBroadcastPersona, setFeedBroadcastPersona] = useState<"brand_owner" | "consumer">("consumer");
+  const [feedBroadcastPersona, setFeedBroadcastPersona] = useState<"brand_owner" | "consumer">(
+    "consumer",
+  );
 
   useEffect(() => {
     if (search.filter) {
@@ -111,7 +118,11 @@ function Feed() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const { data: feedData, isLoading: feedLoading, refetch } = useQuery({
+  const {
+    data: feedData,
+    isLoading: feedLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["feed", user?.id ?? "anon"],
     queryFn: () => fetchFeed(user?.id ?? null),
   });
@@ -154,12 +165,8 @@ function Feed() {
   }, [brandsData, selectedCountry, isSearching, searchAllCountries]);
 
   const categories = useMemo(() => {
-    const postCats = countryScopedFeed.map((item) =>
-      brandCategory(item.brandName, item.category),
-    );
-    const brandCats = countryScopedBrands.map((brand) =>
-      brandCategory(brand.name, brand.category),
-    );
+    const postCats = countryScopedFeed.map((item) => brandCategory(item.brandName, item.category));
+    const brandCats = countryScopedBrands.map((brand) => brandCategory(brand.name, brand.category));
     return categoryOptions([...postCats, ...brandCats]);
   }, [countryScopedFeed, countryScopedBrands]);
 
@@ -175,8 +182,7 @@ function Feed() {
           `${brand.name} ${brand.slug} ${brand.description ?? ""} ${category} ${cCode} ${cName}`.toLowerCase();
         const matchesSearch = !term || searchable.includes(term);
         const matchesCat = matchesCategory(category, selectedCategory);
-        const matchesSelectedBrand =
-          !selectedBrandSlug || brand.slug === selectedBrandSlug;
+        const matchesSelectedBrand = !selectedBrandSlug || brand.slug === selectedBrandSlug;
         return matchesSearch && matchesCat && matchesSelectedBrand;
       })
       .sort((a, b) => {
@@ -192,8 +198,7 @@ function Feed() {
   const stashCountTotal = useMemo(
     () =>
       countryScopedFeed.filter(
-        (item) =>
-          (item.stashCount || 0) >= (item.trashCount || 0) && (item.stashCount || 0) > 0,
+        (item) => (item.stashCount || 0) >= (item.trashCount || 0) && (item.stashCount || 0) > 0,
       ).length,
     [countryScopedFeed],
   );
@@ -201,8 +206,7 @@ function Feed() {
   const trashCountTotal = useMemo(
     () =>
       countryScopedFeed.filter(
-        (item) =>
-          (item.trashCount || 0) >= (item.stashCount || 0) && (item.trashCount || 0) > 0,
+        (item) => (item.trashCount || 0) >= (item.stashCount || 0) && (item.trashCount || 0) > 0,
       ).length,
     [countryScopedFeed],
   );
@@ -223,18 +227,15 @@ function Feed() {
           !selectedBrandSlug ||
           item.brandSlug === selectedBrandSlug ||
           (item.brandName &&
-            item.brandName.toLowerCase() ===
-              selectedBrandSlug.replace(/-/g, " ").toLowerCase());
+            item.brandName.toLowerCase() === selectedBrandSlug.replace(/-/g, " ").toLowerCase());
 
         let matchesVerdict = true;
         if (verdictFilter === "stash") {
           matchesVerdict =
-            (item.stashCount || 0) >= (item.trashCount || 0) &&
-            (item.stashCount || 0) > 0;
+            (item.stashCount || 0) >= (item.trashCount || 0) && (item.stashCount || 0) > 0;
         } else if (verdictFilter === "trash") {
           matchesVerdict =
-            (item.trashCount || 0) >= (item.stashCount || 0) &&
-            (item.trashCount || 0) > 0;
+            (item.trashCount || 0) >= (item.stashCount || 0) && (item.trashCount || 0) > 0;
         }
 
         return matchesSearch && matchesCat && matchesSelectedBrand && matchesVerdict;
@@ -242,32 +243,22 @@ function Feed() {
       .sort((a, b) => {
         if (verdictFilter === "stash") {
           return (
-            (b.stashCount || 0) -
-            (b.trashCount || 0) -
-            ((a.stashCount || 0) - (a.trashCount || 0))
+            (b.stashCount || 0) - (b.trashCount || 0) - ((a.stashCount || 0) - (a.trashCount || 0))
           );
         }
         if (verdictFilter === "trash") {
           return (
-            (b.trashCount || 0) -
-            (b.stashCount || 0) -
-            ((a.trashCount || 0) - (a.stashCount || 0))
+            (b.trashCount || 0) - (b.stashCount || 0) - ((a.trashCount || 0) - (a.stashCount || 0))
           );
         }
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
-  }, [
-    countryScopedFeed,
-    query,
-    selectedCategory,
-    selectedBrandSlug,
-    verdictFilter,
-  ]);
+  }, [countryScopedFeed, query, selectedCategory, selectedBrandSlug, verdictFilter]);
 
   const activeBrandObj = useMemo(
     () =>
       selectedBrandSlug
-        ? (brandsData ?? []).find((b) => b.slug === selectedBrandSlug) ?? null
+        ? ((brandsData ?? []).find((b) => b.slug === selectedBrandSlug) ?? null)
         : null,
     [brandsData, selectedBrandSlug],
   );
@@ -360,7 +351,8 @@ function Feed() {
                   What's Getting Stashed — Loved &amp; Recommended Brands
                 </h1>
                 <p className="mt-1.5 max-w-3xl text-sm font-semibold leading-relaxed text-amber-950/80 sm:text-base">
-                  Authentic positive community verdicts. Products, services, and local businesses that consumers endorse and recommend.
+                  Authentic positive community verdicts. Products, services, and local businesses
+                  that consumers endorse and recommend.
                 </p>
               </div>
             </div>
@@ -379,7 +371,8 @@ function Feed() {
                   What's Getting Trashed — Consumer Gripes &amp; Demands for Better
                 </h1>
                 <p className="mt-1.5 max-w-3xl text-sm font-semibold leading-relaxed text-red-950/80 sm:text-base">
-                  Public brand accountability with real-world proof. Real experiences helping brands rectify failures and consumers stay protected.
+                  Public brand accountability with real-world proof. Real experiences helping brands
+                  rectify failures and consumers stay protected.
                 </p>
               </div>
             </div>
@@ -410,7 +403,11 @@ function Feed() {
 
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            {verdictFilter === "stash" ? "Showing Verified Stashes" : verdictFilter === "trash" ? "Showing Public Trashes" : "Showing All Live Verdicts"}
+            {verdictFilter === "stash"
+              ? "Showing Verified Stashes"
+              : verdictFilter === "trash"
+                ? "Showing Public Trashes"
+                : "Showing All Live Verdicts"}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -469,8 +466,7 @@ function Feed() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={t("feed.realtimeSearchPlaceholder", {
-                  defaultValue:
-                    "Search brands, posts, categories, or keywords in real time...",
+                  defaultValue: "Search brands, posts, categories, or keywords in real time...",
                 })}
                 aria-label={t("feed.searchPlaceholder", {
                   defaultValue: "Search posts or brands",
@@ -852,9 +848,7 @@ function Feed() {
                             <button
                               type="button"
                               onClick={() =>
-                                setSelectedBrandSlug(
-                                  isSelectedBrand ? null : brand.slug,
-                                )
+                                setSelectedBrandSlug(isSelectedBrand ? null : brand.slug)
                               }
                               className={cn(
                                 "font-semibold transition-colors",
@@ -863,9 +857,7 @@ function Feed() {
                                   : "text-muted-foreground hover:text-foreground",
                               )}
                             >
-                              {isSelectedBrand
-                                ? "✓ Filtering posts"
-                                : "Filter feed posts"}
+                              {isSelectedBrand ? "✓ Filtering posts" : "Filter feed posts"}
                             </button>
                             <Link
                               to="/brands/$slug"
@@ -968,8 +960,7 @@ function Feed() {
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {t("feed.emptyBody", {
-                        defaultValue:
-                          "Try another country, category, or search term.",
+                        defaultValue: "Try another country, category, or search term.",
                       })}
                     </p>
                     {hasActiveFilters && (
@@ -1000,10 +991,23 @@ function Feed() {
       <LiveBroadcastModal
         open={feedBroadcastOpen}
         onOpenChange={setFeedBroadcastOpen}
-        brandName={activeBrandObj?.name ?? (feedBroadcastPersona === "brand_owner" ? "Verified Brand Showcase" : "Community Feed Broadcast")}
+        brandName={
+          activeBrandObj?.name ??
+          (feedBroadcastPersona === "brand_owner"
+            ? "Verified Brand Showcase"
+            : "Community Feed Broadcast")
+        }
         brandSlug={activeBrandObj?.slug}
-        brandOwner={feedBroadcastPersona === "brand_owner" ? "Verified Brand Owner · Executive Studio" : "Public Consumer & Brand Feed"}
-        productName={feedBroadcastPersona === "brand_owner" ? "LIVE LAUNCH: New Product & Service Reveal" : "Live Product / Service Situation Broadcast"}
+        brandOwner={
+          feedBroadcastPersona === "brand_owner"
+            ? "Verified Brand Owner · Executive Studio"
+            : "Public Consumer & Brand Feed"
+        }
+        productName={
+          feedBroadcastPersona === "brand_owner"
+            ? "LIVE LAUNCH: New Product & Service Reveal"
+            : "Live Product / Service Situation Broadcast"
+        }
         defaultMode="broadcast"
         initialPersona={feedBroadcastPersona}
       />

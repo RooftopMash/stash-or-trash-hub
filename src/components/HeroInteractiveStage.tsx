@@ -9,10 +9,7 @@ import type { FeedItem } from "@/lib/stash";
 
 export type HeroTrashWindow = "hour" | "day" | "week";
 
-const TRASH_WINDOW_META: Record<
-  HeroTrashWindow,
-  { shortLabel: string; capacity: number }
-> = {
+const TRASH_WINDOW_META: Record<HeroTrashWindow, { shortLabel: string; capacity: number }> = {
   hour: { shortLabel: "Hour", capacity: 16 },
   day: { shortLabel: "Day", capacity: 80 },
   week: { shortLabel: "Week", capacity: 240 },
@@ -48,10 +45,7 @@ export function HeroInteractiveStage({
   const COIN_RADIUS = COIN_SIZE / 2;
   const COIN_THICKNESS = 10;
   const halfT = COIN_THICKNESS / 2;
-  const rimSlices = useMemo(
-    () => Array.from({ length: COIN_THICKNESS - 1 }, (_, i) => i + 1),
-    [],
-  );
+  const rimSlices = useMemo(() => Array.from({ length: COIN_THICKNESS - 1 }, (_, i) => i + 1), []);
 
   const [coinPose, setCoinPose] = useState({
     phi: 0, // vertical Y-axis spin / Euler cone precession (deg)
@@ -134,7 +128,7 @@ export function HeroInteractiveStage({
         const leanRad = (leanDeg * Math.PI) / 180;
         const flatProgress = leanDeg / 90;
         const camPitch = -20 * Math.sin((flatProgress * Math.PI) / 2);
-        const dropY = 18 * (1 - Math.cos(leanRad)) + (COIN_RADIUS * 0.08) * flatProgress;
+        const dropY = 18 * (1 - Math.cos(leanRad)) + COIN_RADIUS * 0.08 * flatProgress;
         const glintX = (((phi - psi) % 180) / 180) * 240 - 120;
 
         setCoinPose({
@@ -223,10 +217,7 @@ export function HeroInteractiveStage({
 
   const activeWindowMeta = TRASH_WINDOW_META[trashWindow];
   const windowTrashCount = liveWindowCounts[trashWindow];
-  const fillRatio = Math.max(
-    0,
-    Math.min(1.25, windowTrashCount / activeWindowMeta.capacity),
-  );
+  const fillRatio = Math.max(0, Math.min(1.25, windowTrashCount / activeWindowMeta.capacity));
   const fillPct = Math.round((windowTrashCount / activeWindowMeta.capacity) * 100);
   const isOverflowing = fillRatio >= 1;
 
@@ -313,7 +304,10 @@ export function HeroInteractiveStage({
                 )}
                 style={{ transformStyle: "preserve-3d" }}
               >
-                <div className="scale-[0.62] sm:scale-100" style={{ transformStyle: "preserve-3d" }}>
+                <div
+                  className="scale-[0.62] sm:scale-100"
+                  style={{ transformStyle: "preserve-3d" }}
+                >
                   <div
                     className="relative flex items-center justify-center"
                     style={{
@@ -498,8 +492,7 @@ export function HeroInteractiveStage({
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-0 z-15 h-full w-full object-contain select-none transition-all duration-500 ease-out"
                   style={{
-                    opacity:
-                      windowTrashCount <= 0 ? 0 : Math.min(1, 0.35 + fillRatio * 0.8),
+                    opacity: windowTrashCount <= 0 ? 0 : Math.min(1, 0.35 + fillRatio * 0.8),
                     transform: `translateY(${pileTranslateY}%) scaleX(${pileScaleX})`,
                   }}
                 />

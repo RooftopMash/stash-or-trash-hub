@@ -44,9 +44,9 @@ function PostDetail() {
   return (
     <div
       className={
-        data?.verdict === "stash"
+        data?.myVerdict === "stash"
           ? "min-h-screen bg-gradient-to-b from-amber-50/70 via-white to-slate-50 text-slate-900"
-          : data?.verdict === "trash"
+          : data?.myVerdict === "trash"
             ? "min-h-screen bg-gradient-to-b from-rose-50/70 via-white to-slate-50 text-slate-900"
             : "min-h-screen bg-slate-50 text-slate-900"
       }

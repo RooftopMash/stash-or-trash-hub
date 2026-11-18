@@ -78,13 +78,16 @@ export function QuickRateModal({
 
     setSubmitting(true);
     try {
-      const title = `${verdict === "stash" ? "★ Stash:" : "✕ Trash:"} ${brandName} ${productName || ""}`.trim();
+      const title =
+        `${verdict === "stash" ? "★ Stash:" : "✕ Trash:"} ${brandName} ${productName || ""}`.trim();
       const detailedReview = [
         comment.trim() || `Verified customer rating: ${stars}/5 Stars.`,
         `[CX Matrix: Quality ${qualityScore}/5 | Value ${valueScore}/5 | Corporate Ethics ${ethicsScore}/5]`,
         `Corporate Brand Owner: ${brandOwner}`,
         scanResult?.brandInfo.parentCompanyContext,
-        scanResult ? `[Forensic Authenticity: ${scanResult.authenticity.score}% - ${scanResult.authenticity.badgeLabel}]` : null,
+        scanResult
+          ? `[Forensic Authenticity: ${scanResult.authenticity.score}% - ${scanResult.authenticity.badgeLabel}]`
+          : null,
       ]
         .filter(Boolean)
         .join("\n");
@@ -101,7 +104,7 @@ export function QuickRateModal({
       });
 
       toast.success(
-        `Rating submitted! You ${verdict === "stash" ? "Stashed" : "Trashed"} ${brandName} (Owner: ${brandOwner})`
+        `Rating submitted! You ${verdict === "stash" ? "Stashed" : "Trashed"} ${brandName} (Owner: ${brandOwner})`,
       );
       onOpenChange(false);
       onRated?.();
@@ -136,7 +139,9 @@ export function QuickRateModal({
           <div className="p-3 rounded-lg bg-muted/40 border border-border/60 text-xs space-y-1">
             <div className="flex items-center justify-between font-bold text-foreground">
               <span>
-                <span translate="no" className="notranslate">{brandName}</span>{" "}
+                <span translate="no" className="notranslate">
+                  {brandName}
+                </span>{" "}
                 {productName && `— ${productName}`}
               </span>
               <Badge variant="secondary" className="text-[10px]">
@@ -147,7 +152,9 @@ export function QuickRateModal({
               <Building2 className="h-3.5 w-3.5" />
               <span>
                 Parent Company:{" "}
-                <strong translate="no" className="notranslate">{brandOwner}</strong>
+                <strong translate="no" className="notranslate">
+                  {brandOwner}
+                </strong>
               </span>
             </div>
             {scanResult && (
@@ -278,7 +285,9 @@ export function QuickRateModal({
 
           {/* Comment */}
           <div className="space-y-1.5">
-            <Label htmlFor="rate-comment" className="text-xs">Your Quick Review (Optional)</Label>
+            <Label htmlFor="rate-comment" className="text-xs">
+              Your Quick Review (Optional)
+            </Label>
             <Textarea
               id="rate-comment"
               rows={2}
@@ -300,7 +309,8 @@ export function QuickRateModal({
             disabled={submitting}
             className="gap-1.5 font-bold"
           >
-            <CheckCircle2 className="h-4 w-4" /> {submitting ? "Submitting..." : "Post Verified Rating"}
+            <CheckCircle2 className="h-4 w-4" />{" "}
+            {submitting ? "Submitting..." : "Post Verified Rating"}
           </Button>
         </DialogFooter>
       </DialogContent>

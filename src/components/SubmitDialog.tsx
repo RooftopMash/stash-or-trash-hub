@@ -78,7 +78,9 @@ export function SubmitDialog({
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const [receiptVerifierOpen, setReceiptVerifierOpen] = useState(false);
-  const [receiptVerification, setReceiptVerification] = useState<ReceiptVerificationData | null>(null);
+  const [receiptVerification, setReceiptVerification] = useState<ReceiptVerificationData | null>(
+    null,
+  );
   const [screeningBlocked, setScreeningBlocked] = useState(false);
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
@@ -86,7 +88,7 @@ export function SubmitDialog({
   const [brandId, setBrandId] = useState<string>(defaultBrandId ?? NO_BRAND);
   const [file, setFile] = useState<File | null>(initialValues?.file ?? null);
   const [aiScanResult, setAiScanResult] = useState<AiScanResult | null>(
-    initialValues?.aiScanResult ?? null
+    initialValues?.aiScanResult ?? null,
   );
   const [verdict, setVerdict] = useState<Verdict | null>(initialValues?.initialVerdict ?? null);
   const [submitting, setSubmitting] = useState(false);
@@ -128,12 +130,10 @@ export function SubmitDialog({
       setBrandId(data.matchedBrandId);
     }
     setTitle(
-      data.productName
-        ? `${data.brandName} — ${data.productName}`
-        : `${data.brandName} Experience`
+      data.productName ? `${data.brandName} — ${data.productName}` : `${data.brandName} Experience`,
     );
     setDescription(
-      `Product: ${data.productName || data.brandName}\nCorporate Owner: ${data.brandOwner}\n${data.scanResult.brandInfo.parentCompanyContext}\n[Forensic Authenticity Score: ${data.scanResult.authenticity.score}% - ${data.scanResult.authenticity.badgeLabel}]`
+      `Product: ${data.productName || data.brandName}\nCorporate Owner: ${data.brandOwner}\n${data.scanResult.brandInfo.parentCompanyContext}\n[Forensic Authenticity Score: ${data.scanResult.authenticity.score}% - ${data.scanResult.authenticity.badgeLabel}]`,
     );
     if (data.category) {
       setCategory(data.category);
@@ -145,9 +145,7 @@ export function SubmitDialog({
     if (data.initialVerdict) {
       setVerdict(data.initialVerdict);
     }
-    toast.success(
-      `Auto-filled: ${data.brandName} (Corporate Owner: ${data.brandOwner})`
-    );
+    toast.success(`Auto-filled: ${data.brandName} (Corporate Owner: ${data.brandOwner})`);
   };
 
   const handleSubmit = async () => {
@@ -161,7 +159,9 @@ export function SubmitDialog({
       return;
     }
     if (screeningBlocked) {
-      toast.error("Please rephrase flagged content identified by the Defamation & Legal Shield before publishing.");
+      toast.error(
+        "Please rephrase flagged content identified by the Defamation & Legal Shield before publishing.",
+      );
       return;
     }
     setSubmitting(true);
@@ -212,7 +212,8 @@ export function SubmitDialog({
                   <Scan className="h-3.5 w-3.5" /> Auto-Identify Brand & Owner
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Scan the product packaging, QR code, or barcode. AI detects the parent company and verifies authenticity.
+                  Scan the product packaging, QR code, or barcode. AI detects the parent company and
+                  verifies authenticity.
                 </p>
               </div>
               <Button
@@ -232,7 +233,8 @@ export function SubmitDialog({
                   <Receipt className="h-3.5 w-3.5" /> AI Receipt & Proof Authenticator
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Attach a till slip, invoice, or digital receipt to earn the certified "Verified Purchase ✓" badge.
+                  Attach a till slip, invoice, or digital receipt to earn the certified "Verified
+                  Purchase ✓" badge.
                 </p>
               </div>
               <Button
@@ -242,7 +244,8 @@ export function SubmitDialog({
                 onClick={() => setReceiptVerifierOpen(true)}
                 className="gap-1.5 text-xs font-semibold shrink-0 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10"
               >
-                <FileCheck className="h-3.5 w-3.5" /> {receiptVerification ? "Change Proof" : "Attach Proof"}
+                <FileCheck className="h-3.5 w-3.5" />{" "}
+                {receiptVerification ? "Change Proof" : "Attach Proof"}
               </Button>
             </div>
 
@@ -263,9 +266,24 @@ export function SubmitDialog({
                   </Button>
                 </div>
                 <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
-                  <span>Merchant: <strong className="text-foreground">{receiptVerification.storeName}</strong></span>
-                  {receiptVerification.date && <span>Date: <strong className="text-foreground">{receiptVerification.date}</strong></span>}
-                  {receiptVerification.totalAmount && <span>Total: <strong className="text-foreground">{receiptVerification.totalAmount}</strong></span>}
+                  <span>
+                    Merchant:{" "}
+                    <strong className="text-foreground">{receiptVerification.storeName}</strong>
+                  </span>
+                  {receiptVerification.purchaseDate && (
+                    <span>
+                      Date:{" "}
+                      <strong className="text-foreground">
+                        {receiptVerification.purchaseDate}
+                      </strong>
+                    </span>
+                  )}
+                  {receiptVerification.totalAmount && (
+                    <span>
+                      Total:{" "}
+                      <strong className="text-foreground">{receiptVerification.totalAmount}</strong>
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -275,7 +293,8 @@ export function SubmitDialog({
               <div className="rounded-xl border border-border bg-card p-3 space-y-2 shadow-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold flex items-center gap-1.5 text-primary">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> AI Verified Brand & Evidence
+                    <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> AI Verified Brand &
+                    Evidence
                   </span>
                   <Button
                     type="button"
@@ -337,9 +356,7 @@ export function SubmitDialog({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>{t("submit.brand")}</Label>
-                  <span className="text-[10px] text-muted-foreground">
-                    Auto-filled if scanned
-                  </span>
+                  <span className="text-[10px] text-muted-foreground">Auto-filled if scanned</span>
                 </div>
                 <BrandSearch
                   onSelectBrand={(b) => setBrandId(b.id)}
@@ -388,7 +405,8 @@ export function SubmitDialog({
                     verdict === "trash" && "verdict-dimmed",
                   )}
                 >
-                  <img src={coinIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.stash")}
+                  <img src={coinIcon} alt="" aria-hidden className="verdict-icon" />{" "}
+                  {t("vote.stash")}
                 </Button>
                 <Button
                   type="button"
@@ -404,7 +422,8 @@ export function SubmitDialog({
                     verdict === "stash" && "verdict-dimmed",
                   )}
                 >
-                  <img src={binIcon} alt="" aria-hidden className="verdict-icon" /> {t("vote.trash")}
+                  <img src={binIcon} alt="" aria-hidden className="verdict-icon" />{" "}
+                  {t("vote.trash")}
                 </Button>
               </div>
             </div>
@@ -447,7 +466,7 @@ export function SubmitDialog({
               <PrePublicationShield
                 content={`${title} ${description}`}
                 onSafetyEvaluated={(res) => {
-                  setScreeningBlocked(!res.safe && res.actionRecommended === "block");
+                  setScreeningBlocked(!res.isApproved);
                 }}
               />
             </div>
@@ -481,7 +500,11 @@ export function SubmitDialog({
               disabled={submitting || screeningBlocked}
               className="w-full"
             >
-              {submitting ? t("submit.posting") : screeningBlocked ? "Resolve Flagged Content to Publish" : t("submit.submit")}
+              {submitting
+                ? t("submit.posting")
+                : screeningBlocked
+                  ? "Resolve Flagged Content to Publish"
+                  : t("submit.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -500,7 +523,9 @@ export function SubmitDialog({
         onOpenChange={setReceiptVerifierOpen}
         onVerified={(verified) => {
           setReceiptVerification(verified);
-          toast.success(`Proof verified! "Verified Purchase" badge attached for ${verified.storeName}.`);
+          toast.success(
+            `Proof verified! "Verified Purchase" badge attached for ${verified.storeName}.`,
+          );
         }}
       />
     </>

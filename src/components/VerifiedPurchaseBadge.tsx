@@ -12,9 +12,11 @@ import type { ReceiptVerificationData } from "@/lib/ai-services";
 
 export function VerifiedPurchaseBadge({
   receiptData,
+  interactive: _interactive,
   className,
 }: {
   receiptData: ReceiptVerificationData | null | undefined;
+  interactive?: boolean;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -51,9 +53,7 @@ export function VerifiedPurchaseBadge({
                 SOT Forensic Anti-Fake Audit
               </span>
             </div>
-            <DialogTitle className="mt-1 text-xl font-black">
-              Verified Purchase Proof
-            </DialogTitle>
+            <DialogTitle className="mt-1 text-xl font-black">Verified Purchase Proof</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
               This verdict was verified by SOT AI Proof Authenticator against genuine retail proof.
             </DialogDescription>
@@ -111,7 +111,8 @@ export function VerifiedPurchaseBadge({
           </div>
 
           <p className="mt-2 text-center text-[11px] text-muted-foreground">
-            SOT guarantees review integrity by eliminating competitor bot attacks and fabricated verdicts.
+            SOT guarantees review integrity by eliminating competitor bot attacks and fabricated
+            verdicts.
           </p>
         </DialogContent>
       </Dialog>

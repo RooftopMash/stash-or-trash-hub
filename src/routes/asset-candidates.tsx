@@ -32,9 +32,27 @@ const WINDOW_CONFIG: Record<
   TrashWindow,
   { label: string; shortLabel: string; capacity: number; maxSlider: number; defaultPreview: number }
 > = {
-  hour: { label: "Trashes of the Hour", shortLabel: "Hour", capacity: 12, maxSlider: 16, defaultPreview: 3 },
-  day: { label: "Trashes of the Day", shortLabel: "Day", capacity: 40, maxSlider: 52, defaultPreview: 19 },
-  week: { label: "Trashes of the Week", shortLabel: "Week", capacity: 120, maxSlider: 150, defaultPreview: 82 },
+  hour: {
+    label: "Trashes of the Hour",
+    shortLabel: "Hour",
+    capacity: 12,
+    maxSlider: 16,
+    defaultPreview: 3,
+  },
+  day: {
+    label: "Trashes of the Day",
+    shortLabel: "Day",
+    capacity: 40,
+    maxSlider: 52,
+    defaultPreview: 19,
+  },
+  week: {
+    label: "Trashes of the Week",
+    shortLabel: "Week",
+    capacity: 120,
+    maxSlider: 150,
+    defaultPreview: 82,
+  },
 };
 
 function AssetCandidatesPage() {
@@ -121,7 +139,7 @@ function AssetCandidatesPage() {
         const dPhi = omegaPhi * dt;
         phi += dPhi;
         setSpinPhaseLabel("90° upright spin on milled edge…");
-      } else if (progress < 0.90) {
+      } else if (progress < 0.9) {
         // Phase 2: Conish overhead precession as coin leans down & rolling rim speeds up (Euler's Disk)
         const u = (progress - 0.42) / 0.48;
         // Lean drops smoothly from 86deg -> 1.5deg
@@ -144,7 +162,7 @@ function AssetCandidatesPage() {
         );
       } else {
         // Phase 3: Final edge buzz & clean upright alignment down to dead 0deg table-flat standstill
-        const w = (progress - 0.90) / 0.10;
+        const w = (progress - 0.9) / 0.1;
         if (lockedNetStart === null) {
           lockedNetStart = phi + psi;
           lockedNetTarget = Math.round(lockedNetStart / 360) * 360;
@@ -205,9 +223,7 @@ function AssetCandidatesPage() {
     });
     setStackedCoins((prev) => {
       const next = Math.min(4, prev + 1);
-      setSpinPhaseLabel(
-        `${next + 1} flat SOrT Krugerrands stacked flush on the table`,
-      );
+      setSpinPhaseLabel(`${next + 1} flat SOrT Krugerrands stacked flush on the table`);
       return next;
     });
   }, [FLAT_CENTER_Z, stopCoinAnimation]);
@@ -291,16 +307,8 @@ function AssetCandidatesPage() {
     : fillRatio <= 0.35
       ? 0
       : -Math.min(7.5, (fillRatio - 0.35) * 8.2);
-  const lidShiftX = lidOpen
-    ? 3
-    : fillRatio > 0.9
-      ? (Math.min(1.2, fillRatio) - 0.9) * 3.5
-      : 0;
-  const lidTiltDeg = lidOpen
-    ? -15
-    : fillRatio <= 0.9
-      ? 0
-      : (Math.min(1.2, fillRatio) - 0.9) * 14;
+  const lidShiftX = lidOpen ? 3 : fillRatio > 0.9 ? (Math.min(1.2, fillRatio) - 0.9) * 3.5 : 0;
+  const lidTiltDeg = lidOpen ? -15 : fillRatio <= 0.9 ? 0 : (Math.min(1.2, fillRatio) - 0.9) * 14;
 
   const setActiveCount = useCallback(
     (updater: number | ((prev: number) => number)) => {
@@ -358,10 +366,7 @@ function AssetCandidatesPage() {
     const halfT = COIN_THICKNESS / 2;
     const rimSlices = Array.from({ length: COIN_THICKNESS - 1 }, (_, i) => i + 1);
     return (
-      <div
-        className="relative h-full w-full"
-        style={{ transformStyle: "preserve-3d" }}
-      >
+      <div className="relative h-full w-full" style={{ transformStyle: "preserve-3d" }}>
         {/* Solid 22k Copper-Gold Milled Edge Slices (+4.5px down to -4.5px around coin center) */}
         {rimSlices.map((idx) => {
           const zOffset = halfT - idx;
@@ -452,12 +457,14 @@ function AssetCandidatesPage() {
               Refined SOrT Krugerrand &amp; Reactive Option A Trash Can
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Test both brought-to-life hero assets right here before we apply them across the app: exact{" "}
+              Test both brought-to-life hero assets right here before we apply them across the app:
+              exact{" "}
               <strong translate="no" className="notranslate">
                 SOrT
               </strong>{" "}
               casing, Option B/C gold blend spinning continuously to a{" "}
-              <strong>table-flat stackable rest</strong>, and Option A&apos;s lifting lid &amp; daily overflow state.
+              <strong>table-flat stackable rest</strong>, and Option A&apos;s lifting lid &amp;
+              daily overflow state.
             </p>
           </div>
 
@@ -510,7 +517,9 @@ function AssetCandidatesPage() {
                 SOrT 22k Krugerrand
               </h2>
               <p className="mt-1 hidden sm:block text-xs opacity-75">
-                Starts with 3–4 clean upright rim spins, slows into a top-down <strong>Euler cone</strong> as its edges buzz rapidly, and settles <strong>table-flat</strong> to a standstill so coins stack flush on top.
+                Starts with 3–4 clean upright rim spins, slows into a top-down{" "}
+                <strong>Euler cone</strong> as its edges buzz rapidly, and settles{" "}
+                <strong>table-flat</strong> to a standstill so coins stack flush on top.
               </p>
             </div>
 
@@ -631,7 +640,9 @@ function AssetCandidatesPage() {
                     variant="ghost"
                     onClick={() => {
                       setStackedCoins(0);
-                      setSpinPhaseLabel("Table-flat standstill · Ready to stack another coin on top");
+                      setSpinPhaseLabel(
+                        "Table-flat standstill · Ready to stack another coin on top",
+                      );
                     }}
                     className="h-8 px-2 text-[11px] sm:text-xs font-bold"
                   >
@@ -640,7 +651,11 @@ function AssetCandidatesPage() {
                 ) : null}
               </div>
               <span className="hidden sm:inline text-[11px] font-semibold opacity-75">
-                Engraved: <strong translate="no" className="notranslate">SOrT</strong> + <strong>$</strong>
+                Engraved:{" "}
+                <strong translate="no" className="notranslate">
+                  SOrT
+                </strong>{" "}
+                + <strong>$</strong>
               </span>
             </div>
           </div>
@@ -652,7 +667,9 @@ function AssetCandidatesPage() {
                 <span className="inline-flex items-center gap-1 rounded-md bg-rose-600 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs font-extrabold text-white">
                   <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                   <span className="sm:hidden">TRASH · Bin A</span>
-                  <span className="hidden sm:inline">Option A Vintage Bin · Live Progressive Volume</span>
+                  <span className="hidden sm:inline">
+                    Option A Vintage Bin · Live Progressive Volume
+                  </span>
                 </span>
                 <span
                   className={cn(
@@ -705,7 +722,9 @@ function AssetCandidatesPage() {
               </div>
 
               <p className="mt-1 hidden sm:block text-xs opacity-75">
-                Rubbish level &amp; steel lid move simultaneously as <strong>{activeConfig.label.toLowerCase()}</strong> climb from 0% empty through mid-fill to 100%+ overflow.
+                Rubbish level &amp; steel lid move simultaneously as{" "}
+                <strong>{activeConfig.label.toLowerCase()}</strong> climb from 0% empty through
+                mid-fill to 100%+ overflow.
               </p>
             </div>
 
@@ -884,7 +903,8 @@ function AssetCandidatesPage() {
                 Actual Size &amp; Future SOrT Krugerrand Award Preview
               </h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                How your chosen Option C+ SOrT Krugerrand and Option A Vintage Bin scale across Stash/Trash vote pills and the Annual Krugerrand Honour trophy.
+                How your chosen Option C+ SOrT Krugerrand and Option A Vintage Bin scale across
+                Stash/Trash vote pills and the Annual Krugerrand Honour trophy.
               </p>
             </div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1 text-xs font-extrabold text-[#b88914]">
@@ -906,7 +926,9 @@ function AssetCandidatesPage() {
                     referrerPolicy="no-referrer"
                     className="h-12 w-12 sm:h-14 sm:w-14 object-contain drop-shadow-sm"
                   />
-                  <span className="font-display text-lg sm:text-xl font-black text-[#d6a928]">STASH</span>
+                  <span className="font-display text-lg sm:text-xl font-black text-[#d6a928]">
+                    STASH
+                  </span>
                 </div>
               </div>
 
@@ -927,7 +949,9 @@ function AssetCandidatesPage() {
                     referrerPolicy="no-referrer"
                     className="h-12 w-12 sm:h-14 sm:w-14 object-contain drop-shadow-sm"
                   />
-                  <span className="font-display text-lg sm:text-xl font-black text-rose-500">TRASH</span>
+                  <span className="font-display text-lg sm:text-xl font-black text-rose-500">
+                    TRASH
+                  </span>
                 </div>
               </div>
             </div>

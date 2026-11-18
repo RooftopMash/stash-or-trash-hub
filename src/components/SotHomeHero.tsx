@@ -1,7 +1,23 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { ArrowRight, BadgeCheck, Coins, Handshake, Lightbulb, Recycle, Rocket, ShieldCheck, Trophy, AlertTriangle, Sparkles, TrendingUp, Layers, Gauge, ChevronRight } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Coins,
+  Handshake,
+  Lightbulb,
+  Recycle,
+  Rocket,
+  ShieldCheck,
+  Trophy,
+  AlertTriangle,
+  Sparkles,
+  TrendingUp,
+  Layers,
+  Gauge,
+  ChevronRight,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFeed } from "@/lib/stash";
 import { fetchBrands } from "@/lib/brands";
@@ -34,25 +50,255 @@ interface FallingCoinSpec {
   opacity: number;
 }
 
-const CHAOTIC_FALLING_COINS: FallingCoinSpec[] = [
-  // Horizontal flat-spinning coins catching air drag (scaled 16-26px like real small coins vs trash cans)
-  { id: "h-1", leftPct: 8, sizePx: 24, animationName: "sot-fall-coin-horiz-cw", durationSec: 11.3, delaySec: -1.7, opacity: 0.9 },
-  { id: "h-2", leftPct: 68, sizePx: 20, animationName: "sot-fall-coin-horiz-ccw", durationSec: 9.7, delaySec: -4.9, opacity: 0.8 },
-  { id: "h-3", leftPct: 36, sizePx: 22, animationName: "sot-fall-coin-horiz-cw", durationSec: 13.1, delaySec: -6.1, opacity: 0.85 },
-  { id: "h-4", leftPct: 84, sizePx: 19, animationName: "sot-fall-coin-horiz-ccw", durationSec: 10.9, delaySec: -2.3, opacity: 0.78 },
+const BASE_CHAOTIC_COINS: FallingCoinSpec[] = [
+  // Horizontal flat-spinning coins catching air drag (12-20px smaller than Option A bins)
+  {
+    id: "h-1",
+    leftPct: 5,
+    sizePx: 18,
+    animationName: "sot-fall-coin-horiz-cw",
+    durationSec: 9.8,
+    delaySec: -1.7,
+    opacity: 0.9,
+  },
+  {
+    id: "h-2",
+    leftPct: 67,
+    sizePx: 15,
+    animationName: "sot-fall-coin-horiz-ccw",
+    durationSec: 8.7,
+    delaySec: -4.9,
+    opacity: 0.85,
+  },
+  {
+    id: "h-3",
+    leftPct: 35,
+    sizePx: 17,
+    animationName: "sot-fall-coin-horiz-cw",
+    durationSec: 11.1,
+    delaySec: -6.1,
+    opacity: 0.88,
+  },
+  {
+    id: "h-4",
+    leftPct: 86,
+    sizePx: 14,
+    animationName: "sot-fall-coin-horiz-ccw",
+    durationSec: 9.9,
+    delaySec: -2.3,
+    opacity: 0.82,
+  },
+  {
+    id: "h-5",
+    leftPct: 51,
+    sizePx: 16,
+    animationName: "sot-fall-coin-horiz-cw",
+    durationSec: 10.4,
+    delaySec: -7.9,
+    opacity: 0.86,
+  },
+  {
+    id: "h-6",
+    leftPct: 19,
+    sizePx: 13,
+    animationName: "sot-fall-coin-horiz-ccw",
+    durationSec: 9.2,
+    delaySec: -3.8,
+    opacity: 0.8,
+  },
   // Irregular unpatterned off-axis 3D tumblers
-  { id: "e-1", leftPct: 48, sizePx: 18, animationName: "sot-fall-coin-erratic-a", durationSec: 10.1, delaySec: -7.2, opacity: 0.75 },
-  { id: "e-2", leftPct: 14, sizePx: 26, animationName: "sot-fall-coin-erratic-b", durationSec: 12.7, delaySec: -3.4, opacity: 0.92 },
-  { id: "e-3", leftPct: 78, sizePx: 17, animationName: "sot-fall-coin-erratic-c", durationSec: 8.3, delaySec: -0.8, opacity: 0.72 },
-  { id: "e-4", leftPct: 54, sizePx: 25, animationName: "sot-fall-coin-erratic-b", durationSec: 14.3, delaySec: -9.5, opacity: 0.88 },
-  { id: "e-5", leftPct: 41, sizePx: 18, animationName: "sot-fall-coin-erratic-c", durationSec: 7.9, delaySec: -4.1, opacity: 0.76 },
-  { id: "e-6", leftPct: 19, sizePx: 16, animationName: "sot-fall-coin-erratic-a", durationSec: 11.9, delaySec: -8.3, opacity: 0.7 },
-  // Collision Pair 1: converge mid-air (~47% height) & ricochet apart
-  { id: "c1-l", leftPct: 21, sizePx: 22, animationName: "sot-fall-collide-1-left", durationSec: 9.2, delaySec: -2.1, opacity: 0.92 },
-  { id: "c1-r", leftPct: 27, sizePx: 21, animationName: "sot-fall-collide-1-right", durationSec: 9.2, delaySec: -2.1, opacity: 0.92 },
-  // Collision Pair 2: converge lower-mid air (~57% height) & ricochet apart
-  { id: "c2-l", leftPct: 57, sizePx: 20, animationName: "sot-fall-collide-2-left", durationSec: 11.6, delaySec: -6.4, opacity: 0.9 },
-  { id: "c2-r", leftPct: 64, sizePx: 22, animationName: "sot-fall-collide-2-right", durationSec: 11.6, delaySec: -6.4, opacity: 0.9 },
+  {
+    id: "e-1",
+    leftPct: 44,
+    sizePx: 14,
+    animationName: "sot-fall-coin-erratic-a",
+    durationSec: 9.1,
+    delaySec: -7.2,
+    opacity: 0.82,
+  },
+  {
+    id: "e-2",
+    leftPct: 12,
+    sizePx: 20,
+    animationName: "sot-fall-coin-erratic-b",
+    durationSec: 11.7,
+    delaySec: -3.4,
+    opacity: 0.92,
+  },
+  {
+    id: "e-3",
+    leftPct: 76,
+    sizePx: 13,
+    animationName: "sot-fall-coin-erratic-c",
+    durationSec: 7.9,
+    delaySec: -0.8,
+    opacity: 0.78,
+  },
+  {
+    id: "e-4",
+    leftPct: 56,
+    sizePx: 19,
+    animationName: "sot-fall-coin-erratic-b",
+    durationSec: 12.3,
+    delaySec: -9.5,
+    opacity: 0.9,
+  },
+  {
+    id: "e-5",
+    leftPct: 39,
+    sizePx: 15,
+    animationName: "sot-fall-coin-erratic-c",
+    durationSec: 7.5,
+    delaySec: -4.1,
+    opacity: 0.8,
+  },
+  {
+    id: "e-6",
+    leftPct: 17,
+    sizePx: 13,
+    animationName: "sot-fall-coin-erratic-a",
+    durationSec: 10.9,
+    delaySec: -8.3,
+    opacity: 0.78,
+  },
+  {
+    id: "e-7",
+    leftPct: 92,
+    sizePx: 17,
+    animationName: "sot-fall-coin-erratic-a",
+    durationSec: 9.5,
+    delaySec: -2.9,
+    opacity: 0.84,
+  },
+  {
+    id: "e-8",
+    leftPct: 29,
+    sizePx: 18,
+    animationName: "sot-fall-coin-erratic-c",
+    durationSec: 11.4,
+    delaySec: -5.6,
+    opacity: 0.88,
+  },
+  {
+    id: "e-9",
+    leftPct: 72,
+    sizePx: 14,
+    animationName: "sot-fall-coin-erratic-b",
+    durationSec: 8.6,
+    delaySec: -1.3,
+    opacity: 0.82,
+  },
+  {
+    id: "e-10",
+    leftPct: 8,
+    sizePx: 15,
+    animationName: "sot-fall-coin-erratic-c",
+    durationSec: 10.1,
+    delaySec: -5.2,
+    opacity: 0.84,
+  },
+  {
+    id: "e-11",
+    leftPct: 81,
+    sizePx: 18,
+    animationName: "sot-fall-coin-erratic-b",
+    durationSec: 11.8,
+    delaySec: -6.9,
+    opacity: 0.88,
+  },
+  {
+    id: "e-12",
+    leftPct: 48,
+    sizePx: 12,
+    animationName: "sot-fall-coin-erratic-a",
+    durationSec: 8.2,
+    delaySec: -2.7,
+    opacity: 0.76,
+  },
+  // Collision Pair 1: converge mid-air & ricochet apart
+  {
+    id: "c1-l",
+    leftPct: 22,
+    sizePx: 18,
+    animationName: "sot-fall-collide-1-left",
+    durationSec: 8.8,
+    delaySec: -2.1,
+    opacity: 0.92,
+  },
+  {
+    id: "c1-r",
+    leftPct: 28,
+    sizePx: 17,
+    animationName: "sot-fall-collide-1-right",
+    durationSec: 8.8,
+    delaySec: -2.1,
+    opacity: 0.92,
+  },
+  // Collision Pair 2: converge lower-mid air & ricochet apart
+  {
+    id: "c2-l",
+    leftPct: 59,
+    sizePx: 17,
+    animationName: "sot-fall-collide-2-left",
+    durationSec: 10.6,
+    delaySec: -6.4,
+    opacity: 0.9,
+  },
+  {
+    id: "c2-r",
+    leftPct: 65,
+    sizePx: 18,
+    animationName: "sot-fall-collide-2-right",
+    durationSec: 10.6,
+    delaySec: -6.4,
+    opacity: 0.9,
+  },
+];
+
+// Expand deterministically to 55 coins/band across 12 bands (660 coins total ≈ 3.75x)
+const CHAOTIC_FALLING_COINS: FallingCoinSpec[] = [
+  ...BASE_CHAOTIC_COINS,
+  ...BASE_CHAOTIC_COINS.map((coin, idx): FallingCoinSpec => {
+    // Keep collision pairs aligned horizontally and synchronized in phase/duration
+    const isRightPartner = coin.id.endsWith("-r");
+    const timingIdx = isRightPartner ? idx - 1 : idx;
+    const basePairLeft = isRightPartner ? coin.leftPct - 6 : coin.leftPct;
+    const wrappedPairLeft = ((basePairLeft + 34) % 82) + 3;
+    const leftPct = isRightPartner ? wrappedPairLeft + 6 : wrappedPairLeft;
+    return {
+      id: `w2-${coin.id}`,
+      leftPct,
+      sizePx: Math.max(12, Math.min(20, coin.sizePx + ((idx % 3) - 1))),
+      animationName: coin.animationName,
+      durationSec: Number((coin.durationSec * (0.92 + (timingIdx % 4) * 0.05)).toFixed(2)),
+      delaySec: Number((coin.delaySec - 3.9 - (timingIdx % 5) * 0.85).toFixed(2)),
+      opacity: coin.opacity,
+    };
+  }),
+  ...BASE_CHAOTIC_COINS.slice(0, 11).map((coin, idx): FallingCoinSpec => ({
+    id: `w3-${coin.id}`,
+    leftPct: ((coin.leftPct + 61 + idx * 5) % 88) + 4,
+    sizePx: Math.max(12, Math.min(19, coin.sizePx - 1 + (idx % 2))),
+    animationName: coin.animationName,
+    durationSec: Number((coin.durationSec * (0.88 + (idx % 3) * 0.08)).toFixed(2)),
+    delaySec: Number((coin.delaySec - 6.7 - (idx % 4) * 0.9).toFixed(2)),
+    opacity: Math.max(0.75, coin.opacity - 0.04),
+  })),
+];
+
+const COIN_SKY_BANDS = [
+  { id: "band-top", topPct: -14, phaseShiftSec: -4.2, shiftPct: 3 },
+  { id: "band-0", topPct: -4, phaseShiftSec: -1.4, shiftPct: -4 },
+  { id: "band-1", topPct: 6, phaseShiftSec: 0, shiftPct: 5 },
+  { id: "band-2", topPct: 16, phaseShiftSec: -3.1, shiftPct: -2 },
+  { id: "band-3", topPct: 26, phaseShiftSec: -6.4, shiftPct: 4 },
+  { id: "band-4", topPct: 36, phaseShiftSec: -2.2, shiftPct: -5 },
+  { id: "band-5", topPct: 46, phaseShiftSec: -5.1, shiftPct: 6 },
+  { id: "band-6", topPct: 56, phaseShiftSec: -1.9, shiftPct: -3 },
+  { id: "band-7", topPct: 66, phaseShiftSec: -4.7, shiftPct: 3 },
+  { id: "band-8", topPct: 76, phaseShiftSec: -2.5, shiftPct: -4 },
+  { id: "band-9", topPct: 85, phaseShiftSec: -5.8, shiftPct: 5 },
+  { id: "band-10", topPct: 94, phaseShiftSec: -3.6, shiftPct: -2 },
 ];
 
 const cascade = [
@@ -154,7 +400,11 @@ export function SotHomeHero() {
       sublabel: "Keep what serves you · Loading Stashes of the Day",
       duration: 2600,
     });
-    setStatusMessage(t("hero.spinningZwepe", { defaultValue: "Spinning Zwepe... watching it lean, chatter and settle flat!" }));
+    setStatusMessage(
+      t("hero.spinningZwepe", {
+        defaultValue: "Spinning Zwepe... watching it lean, chatter and settle flat!",
+      }),
+    );
     window.setTimeout(() => {
       navigate({ to: "/feed", search: { filter: "stash" } });
     }, 2800);
@@ -163,7 +413,11 @@ export function SotHomeHero() {
   const handleTrashClick = () => {
     playTrashSound();
     setActiveObject("bin");
-    setStatusMessage(t("hero.droppingBin", { defaultValue: "Randy the Hungry Trash Can chomps! Loading Trashes of the Day..." }));
+    setStatusMessage(
+      t("hero.droppingBin", {
+        defaultValue: "Randy the Hungry Trash Can chomps! Loading Trashes of the Day...",
+      }),
+    );
     window.setTimeout(() => {
       navigate({ to: "/feed", search: { filter: "trash" } });
     }, 1150);
@@ -205,29 +459,37 @@ export function SotHomeHero() {
           }}
         />
 
-        {/* Left Half: Realistic Non-Uniform Falling SOrT Gold Krugerrands (horizontal spins, erratic tumbles & mid-air collisions) */}
+        {/* Left Half: Realistic Non-Uniform Falling SOrT Gold Krugerrands across the entire section height */}
         <div
-          className="motion-reduce:hidden absolute inset-y-0 left-0 w-1/2 opacity-[0.15] sm:opacity-[0.23] [perspective:900px]"
+          className="motion-reduce:hidden absolute inset-y-0 left-0 w-1/2 overflow-hidden opacity-[0.22] sm:opacity-[0.29] drop-shadow-[0_3px_6px_rgba(180,130,20,0.24)] [perspective:900px]"
           style={{
             maskImage: "linear-gradient(to right, black 68%, transparent 100%)",
             WebkitMaskImage: "linear-gradient(to right, black 68%, transparent 100%)",
           }}
         >
-          {CHAOTIC_FALLING_COINS.map((coin) => (
-            <img
-              key={coin.id}
-              src={coinIcon}
-              alt=""
-              aria-hidden="true"
-              className="sot-falling-coin-item absolute top-0 select-none drop-shadow-[0_4px_8px_rgba(180,130,20,0.28)]"
-              style={{
-                left: `${coin.leftPct}%`,
-                width: `${coin.sizePx}px`,
-                height: `${coin.sizePx}px`,
-                opacity: coin.opacity,
-                animation: `${coin.animationName} ${coin.durationSec}s linear ${coin.delaySec}s infinite`,
-              }}
-            />
+          {COIN_SKY_BANDS.map((band) => (
+            <div key={band.id} className="absolute inset-x-0" style={{ top: `${band.topPct}%` }}>
+              {CHAOTIC_FALLING_COINS.map((coin) => {
+                const shiftedLeft = Math.max(3, Math.min(93, coin.leftPct + band.shiftPct));
+                return (
+                  <img
+                    key={`${band.id}-${coin.id}`}
+                    src={coinIcon}
+                    alt=""
+                    aria-hidden="true"
+                    decoding="async"
+                    className="sot-falling-coin-item absolute top-0 select-none"
+                    style={{
+                      left: `${shiftedLeft}%`,
+                      width: `${coin.sizePx}px`,
+                      height: `${coin.sizePx}px`,
+                      opacity: coin.opacity,
+                      animation: `${coin.animationName} ${coin.durationSec}s linear ${coin.delaySec + band.phaseShiftSec}s infinite`,
+                    }}
+                  />
+                );
+              })}
+            </div>
           ))}
         </div>
 
@@ -236,7 +498,7 @@ export function SotHomeHero() {
           className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-[0.14] sm:opacity-20"
           style={{
             backgroundImage: `url(${binsWatermark})`,
-            backgroundSize: "140px 140px",
+            backgroundSize: "188px 188px",
             backgroundRepeat: "repeat",
             maskImage: "linear-gradient(to left, black 65%, transparent 100%)",
             WebkitMaskImage: "linear-gradient(to left, black 65%, transparent 100%)",
@@ -265,10 +527,16 @@ export function SotHomeHero() {
           </h1>
 
           <p className="mx-auto mt-4 max-w-2xl text-base font-bold leading-7 text-slate-900 sm:text-lg">
-            {t("hero.subtitle", { defaultValue: "Vote Stash or Trash on your real brand experiences — the CX & PR signal that matters." })}
+            {t("hero.subtitle", {
+              defaultValue:
+                "Vote Stash or Trash on your real brand experiences — the CX & PR signal that matters.",
+            })}
           </p>
           <p className="mx-auto mt-1.5 max-w-xl text-sm font-medium leading-6 text-slate-600 sm:text-base">
-            {t("hero.tagline", { defaultValue: "Every verdict brings brands closer to the people they serve. Cast yours. 🔥" })}
+            {t("hero.tagline", {
+              defaultValue:
+                "Every verdict brings brands closer to the people they serve. Cast yours. 🔥",
+            })}
           </p>
         </div>
 
@@ -387,7 +655,8 @@ export function SotHomeHero() {
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
             <span className="inline-flex items-center gap-1.5 font-semibold">
               <BadgeCheck className="h-4 w-4 text-[#d6a928]" />
-              Represent an auto-sourced brand? Claim &amp; verify ownership using your official company email domain.
+              Represent an auto-sourced brand? Claim &amp; verify ownership using your official
+              company email domain.
             </span>
             <Link to="/brands" className="font-extrabold text-slate-950 hover:underline">
               Find &amp; Claim Your Brand →
@@ -401,10 +670,14 @@ export function SotHomeHero() {
             <div className="flex flex-col justify-between rounded-3xl border-2 border-[#d6a928] bg-slate-950 p-6 text-white shadow-md sm:flex-row sm:items-center gap-6">
               <div>
                 <span className="inline-block text-xs font-black uppercase tracking-[0.16em] text-[#f5d061]">
-                  {t("hero.brandAccountActive", { defaultValue: "🏛️ Official Registered Brand Account Active" })}
+                  {t("hero.brandAccountActive", {
+                    defaultValue: "🏛️ Official Registered Brand Account Active",
+                  })}
                 </span>
                 <h3 className="mt-2 font-display text-2xl font-black text-white">
-                  {t("hero.brandSuiteTitle", { defaultValue: "Open Your Dedicated Brand Command & Launch Suite" })}
+                  {t("hero.brandSuiteTitle", {
+                    defaultValue: "Open Your Dedicated Brand Command & Launch Suite",
+                  })}
                 </h3>
                 <p className="mt-1.5 max-w-2xl text-xs font-medium leading-relaxed text-slate-300 sm:text-sm">
                   {t("hero.brandSuiteDesc", {
@@ -419,7 +692,8 @@ export function SotHomeHero() {
                   onClick={() => navigate({ to: "/dashboard" })}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-[#d6a928] px-4 py-2.5 text-xs font-black text-slate-950 transition hover:bg-[#e5b935] cursor-pointer"
                 >
-                  {t("hero.openBrandSuite", { defaultValue: "Open Brand Command Suite" })} <ArrowRight className="h-3.5 w-3.5" />
+                  {t("hero.openBrandSuite", { defaultValue: "Open Brand Command Suite" })}{" "}
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </button>
                 <button
                   type="button"
@@ -434,10 +708,14 @@ export function SotHomeHero() {
             <div className="flex flex-col justify-between rounded-3xl border-2 border-[#d6a928]/60 bg-gradient-to-b from-[#fffbeb] to-white p-6 shadow-sm sm:flex-row sm:items-center gap-6">
               <div>
                 <span className="inline-block text-xs font-black uppercase tracking-[0.16em] text-amber-800">
-                  {t("hero.consumerFreeBadge", { defaultValue: "🎉 100% Free Forever for Everyday Consumers & Voters" })}
+                  {t("hero.consumerFreeBadge", {
+                    defaultValue: "🎉 100% Free Forever for Everyday Consumers & Voters",
+                  })}
                 </span>
                 <h3 className="mt-2 font-display text-2xl font-black text-slate-950">
-                  {t("hero.consumerFreeTitle", { defaultValue: "Vote Stash or Trash, Scan Barcodes & Claim Live Launch Perks" })}
+                  {t("hero.consumerFreeTitle", {
+                    defaultValue: "Vote Stash or Trash, Scan Barcodes & Claim Live Launch Perks",
+                  })}
                 </h3>
                 <p className="mt-1.5 max-w-2xl text-xs font-medium leading-relaxed text-slate-700 sm:text-sm">
                   {t("hero.consumerFreeDesc", {
@@ -451,7 +729,8 @@ export function SotHomeHero() {
                   to="/profile"
                   className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-black text-[#f5d061] transition hover:bg-slate-900"
                 >
-                  {t("hero.openMyProfile", { defaultValue: "Open My Personal Profile" })} <ArrowRight className="h-3.5 w-3.5" />
+                  {t("hero.openMyProfile", { defaultValue: "Open My Personal Profile" })}{" "}
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
                 <Link
                   to="/scan"
@@ -477,7 +756,10 @@ export function SotHomeHero() {
               </h2>
             </div>
             <div className="flex items-center gap-3 text-xs font-bold text-slate-600">
-              <span>{totalVotes.toLocaleString()} {t("hero.realPeopleVerdicts", { defaultValue: "Total Community Votes" })}</span>
+              <span>
+                {totalVotes.toLocaleString()}{" "}
+                {t("hero.realPeopleVerdicts", { defaultValue: "Total Community Votes" })}
+              </span>
               <span className="h-3 w-px bg-slate-300" />
               <Link to="/awards" className="text-slate-950 hover:underline">
                 {t("hero.seeStandings", { defaultValue: "View Awards Leaderboard →" })}
@@ -490,11 +772,13 @@ export function SotHomeHero() {
             <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider">
               <span className="flex items-center gap-1.5 text-amber-700">
                 <Coins className="h-4 w-4 text-[#d6a928]" />
-                {stashPct}% {t("vote.stash", { defaultValue: "Stash" })} ({totalStashes.toLocaleString()})
+                {stashPct}% {t("vote.stash", { defaultValue: "Stash" })} (
+                {totalStashes.toLocaleString()})
               </span>
               <span className="flex items-center gap-1.5 text-slate-700">
                 <Recycle className="h-4 w-4 text-slate-500" />
-                {trashPct}% {t("vote.trash", { defaultValue: "Trash" })} ({totalTrashes.toLocaleString()})
+                {trashPct}% {t("vote.trash", { defaultValue: "Trash" })} (
+                {totalTrashes.toLocaleString()})
               </span>
             </div>
             <div className="mt-2 flex h-3.5 w-full overflow-hidden rounded-full bg-slate-200 p-0.5 shadow-inner">
@@ -516,20 +800,28 @@ export function SotHomeHero() {
                 <div className="flex items-center gap-2">
                   <Layers className="h-4 w-4 text-primary" />
                   <h3 className="font-display text-sm font-extrabold uppercase tracking-wider text-slate-950">
-                    {t("hero.barometerSegmentation", { defaultValue: "Barometer Tier Segmentation" })}
+                    {t("hero.barometerSegmentation", {
+                      defaultValue: "Barometer Tier Segmentation",
+                    })}
                   </h3>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                     {barometerBrands.length} {t("nav.brands", { defaultValue: "Brands" })}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-slate-500">
-                  {t("hero.liveSentimentDesc", { defaultValue: "Filter and compare brand sentiments within defined market tiers." })}
+                  {t("hero.liveSentimentDesc", {
+                    defaultValue:
+                      "Filter and compare brand sentiments within defined market tiers.",
+                  })}
                 </p>
               </div>
 
               {/* Sorting Control */}
               <div className="flex items-center gap-2">
-                <label htmlFor="barometer-sort-select" className="text-xs font-semibold text-slate-500">
+                <label
+                  htmlFor="barometer-sort-select"
+                  className="text-xs font-semibold text-slate-500"
+                >
                   {t("hero.sortBy", { defaultValue: "Sort Barometer:" })}
                 </label>
                 <select
@@ -539,9 +831,15 @@ export function SotHomeHero() {
                   onChange={(e) => setBarometerSort(e.target.value as "trust" | "tier" | "name")}
                   className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-800 outline-none hover:bg-slate-100 transition-colors"
                 >
-                  <option value="trust">{t("hero.trustScore", { defaultValue: "Highest Trust Score" })}</option>
-                  <option value="tier">{t("hero.brandTier", { defaultValue: "By Tier (Luxury → Budget)" })}</option>
-                  <option value="name">{t("hero.alphabetical", { defaultValue: "Brand Name (A-Z)" })}</option>
+                  <option value="trust">
+                    {t("hero.trustScore", { defaultValue: "Highest Trust Score" })}
+                  </option>
+                  <option value="tier">
+                    {t("hero.brandTier", { defaultValue: "By Tier (Luxury → Budget)" })}
+                  </option>
+                  <option value="name">
+                    {t("hero.alphabetical", { defaultValue: "Brand Name (A-Z)" })}
+                  </option>
                 </select>
               </div>
             </div>
@@ -629,7 +927,9 @@ export function SotHomeHero() {
 
                     <div className="mt-3 border-t border-slate-100 pt-2.5">
                       <div className="flex items-center justify-between text-[11px] font-bold">
-                        <span className="text-slate-500">{t("hero.trustScore", { defaultValue: "Trust score" })}:</span>
+                        <span className="text-slate-500">
+                          {t("hero.trustScore", { defaultValue: "Trust score" })}:
+                        </span>
                         <span
                           className={
                             trust >= 75
@@ -664,13 +964,16 @@ export function SotHomeHero() {
             {/* Action link */}
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
               <span className="text-slate-500">
-                {t("hero.realPeopleVerdicts", { defaultValue: "Real consumer verdicts shaping trust scores in real time." })}
+                {t("hero.realPeopleVerdicts", {
+                  defaultValue: "Real consumer verdicts shaping trust scores in real time.",
+                })}
               </span>
               <Link
                 to="/brands"
                 className="font-bold text-primary hover:underline inline-flex items-center gap-1"
               >
-                {t("hero.searchOrBrowse", { defaultValue: "Search brands or browse below" })} <ChevronRight className="size-3.5" />
+                {t("hero.searchOrBrowse", { defaultValue: "Search brands or browse below" })}{" "}
+                <ChevronRight className="size-3.5" />
               </Link>
             </div>
           </div>
@@ -686,11 +989,15 @@ export function SotHomeHero() {
                     {t("hero.topStashedTitle", { defaultValue: "Top Stashed of the Day" })}
                   </span>
                   <span className="font-display text-sm font-black text-amber-700">
-                    +{topStashedItem?.stashCount ?? 0} {t("hero.stashes", { defaultValue: "Stashes" })}
+                    +{topStashedItem?.stashCount ?? 0}{" "}
+                    {t("hero.stashes", { defaultValue: "Stashes" })}
                   </span>
                 </div>
                 <h3 className="mt-3 font-display text-base font-bold text-slate-950 line-clamp-1">
-                  {topStashedItem?.title ?? t("hero.communityFavoriteFallback", { defaultValue: "Community Favorite Brand" })}
+                  {topStashedItem?.title ??
+                    t("hero.communityFavoriteFallback", {
+                      defaultValue: "Community Favorite Brand",
+                    })}
                 </h3>
                 <p className="mt-1 text-xs text-slate-600 line-clamp-2">
                   {topStashedItem?.description ??
@@ -714,7 +1021,8 @@ export function SotHomeHero() {
                   search={{ filter: "stash" }}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-950 hover:underline"
                 >
-                  {t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })} <ArrowRight className="h-3.5 w-3.5" />
+                  {t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })}{" "}
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </div>
@@ -728,11 +1036,15 @@ export function SotHomeHero() {
                     {t("hero.topTrashedTitle", { defaultValue: "Top Trashed of the Day" })}
                   </span>
                   <span className="font-display text-sm font-black text-slate-900">
-                    {topTrashedItem?.trashCount ?? 0} {t("hero.trashes", { defaultValue: "Trashed" })}
+                    {topTrashedItem?.trashCount ?? 0}{" "}
+                    {t("hero.trashes", { defaultValue: "Trashed" })}
                   </span>
                 </div>
                 <h3 className="mt-3 font-display text-base font-bold text-slate-950 line-clamp-1">
-                  {topTrashedItem?.title ?? t("hero.criticalCalloutFallback", { defaultValue: "Critical Consumer Callout" })}
+                  {topTrashedItem?.title ??
+                    t("hero.criticalCalloutFallback", {
+                      defaultValue: "Critical Consumer Callout",
+                    })}
                 </h3>
                 <p className="mt-1 text-xs text-slate-600 line-clamp-2">
                   {topTrashedItem?.description ??
@@ -756,7 +1068,8 @@ export function SotHomeHero() {
                   search={{ filter: "trash" }}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-800 hover:text-slate-950 hover:underline"
                 >
-                  {t("feed.trashesOfDay", { defaultValue: "Trashes of the Day" })} <ArrowRight className="h-3.5 w-3.5" />
+                  {t("feed.trashesOfDay", { defaultValue: "Trashes of the Day" })}{" "}
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </div>
