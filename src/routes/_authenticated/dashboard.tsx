@@ -1860,7 +1860,7 @@ function BrandRow({
       <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Store className="h-4 w-4 text-[#d6a928]" />
               <span className="text-xs font-black uppercase tracking-wider text-[#b88914]">
                 {brand.name} · Branch, Store &amp; Regional Performance Matrix
@@ -1874,6 +1874,9 @@ function BrandRow({
                 )}
               >
                 {hasTier2 ? "✓ Tier 2+ Unlocked" : "🔒 Tier 2 Required"}
+              </span>
+              <span className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-black uppercase text-amber-700 dark:text-amber-400">
+                Sample Baseline Preview
               </span>
             </div>
             <h3 className="mt-1 font-display text-xl font-black">
@@ -1935,7 +1938,7 @@ function BrandRow({
       <section className="rounded-3xl border-2 border-[#d6a928]/50 bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-[#d6a928]" />
               <span className="text-xs font-black uppercase tracking-wider text-[#b88914]">
                 {brand.name} · Counterfeit &amp; Grey-Market Barcode Scan Radar
@@ -1949,6 +1952,9 @@ function BrandRow({
                 )}
               >
                 {hasTier3 ? "✓ Tier 3 Enterprise Active" : "🔒 Tier 3 Enterprise Required"}
+              </span>
+              <span className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-black uppercase text-amber-700 dark:text-amber-400">
+                Sample Baseline Preview
               </span>
             </div>
             <h3 className="mt-1 font-display text-xl font-black">

@@ -31,6 +31,7 @@ import {
   type BrandInboundContactSettings,
 } from "@/lib/brand-operators";
 import { sendMessage } from "@/lib/messages";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BrandCallRequestModalProps {
   open: boolean;
@@ -80,7 +81,7 @@ export function BrandCallRequestModal({
       `Customer ${user?.id ? user.id.slice(0, 6) : "Guest"}`;
 
     try {
-      submitInboundCallRequest({
+      const created = submitInboundCallRequest({
         brandSlug,
         brandName,
         customerId: user?.id || "guest-caller",
@@ -91,6 +92,28 @@ export function BrandCallRequestModal({
         urgency,
         requestedCallMode,
       });
+
+      if (typeof BroadcastChannel !== "undefined") {
+        try {
+          const bc = new BroadcastChannel("sot-inbound-call-request");
+          bc.postMessage(created);
+          bc.close();
+        } catch {
+          // ignore
+        }
+      }
+
+      try {
+        const ch = supabase.channel(`sot-call-ring-desk-${brandSlug}`);
+        await ch.send({
+          type: "broadcast",
+          event: "inbound-call-request",
+          payload: created,
+        });
+        void supabase.removeChannel(ch);
+      } catch {
+        // non-blocking realtime broadcast
+      }
 
       // Send automated message in thread to brand owner
       if (user?.id) {

@@ -51,6 +51,7 @@ import {
   getBrandContactSettings,
   saveBrandContactSettings,
   getInboundCallRequests,
+  ingestInboundCallRequest,
   updateInboundCallRequestStatus,
   setActiveBrandPlanTier,
   type BrandDeskOperator,
@@ -63,6 +64,7 @@ import {
   type InboundCustomerCallRequest,
 } from "@/lib/brand-operators";
 import { getLiveBroadcastSessions } from "@/lib/live-broadcasts";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 /**
@@ -405,6 +407,18 @@ export function BrandCxDataAndAwardsMatrix({
               >
                 {hasTier2Matrix ? "✓ Unlocked on Active Tier" : "🔒 Requires Tier 2 (CX & Launch Matrix)"}
               </span>
+              <span
+                className={cn(
+                  "rounded-md border px-2 py-0.5 text-[10px] font-black uppercase",
+                  records.some((r) => !["cx-101", "cx-102", "cx-103"].includes(r.id))
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600"
+                    : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                )}
+              >
+                {records.some((r) => !["cx-101", "cx-102", "cx-103"].includes(r.id))
+                  ? "Live Operator Turnarounds"
+                  : "Sample Baseline Scenarios"}
+              </span>
             </div>
             <h2 className="mt-1 font-display text-2xl font-black">
               {brandName} Full-Cycle CX Matrix: Launch Broadcast ➔ Scan/Complaint ➔ Voucher ➔ Stash Flip
@@ -647,8 +661,68 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
     setProcessing(true);
 
     try {
-      // If Google Pay is selected and browser supports PaymentRequest API, invoke native sheet or fallback cleanly
-      if (selectedGateway === "google_pay" && typeof window !== "undefined" && "PaymentRequest" in window) {
+      const amountVal =
+        currency === "ZAR" ? checkoutPlan.priceZarMonthly : checkoutPlan.priceUsdMonthly;
+
+      // Call server-side B2B checkout endpoint (Paystack / Stripe when keys configured, or transparent sandbox pro-forma preview)
+      const apiRes = await fetch("/api/b2b-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brandName,
+          planId: checkoutPlan.id,
+          planName: checkoutPlan.name,
+          paymentMethod: selectedGateway,
+          currency,
+          amount: amountVal,
+          billingEmail,
+          companyRegName,
+          vatNumber,
+          origin: typeof window !== "undefined" ? window.location.origin : "",
+        }),
+      });
+
+      const checkoutPayload = (await apiRes.json().catch(() => null)) as {
+        error?: string;
+        mode?: "live_gateway" | "sandbox_preview" | "pro_forma_invoice";
+        gateway?: string;
+        status?: "active" | "pro_forma_issued";
+        referenceCode?: string;
+        authorizationUrl?: string;
+        checkoutUrl?: string;
+        message?: string;
+      } | null;
+
+      if (!apiRes.ok) {
+        toast.error(
+          checkoutPayload?.error || "Payment initialization failed. Please try Corporate Invoice or retry.",
+        );
+        return;
+      }
+
+      // Redirect to live Paystack / Stripe hosted checkout when merchant keys are configured
+      const redirectUrl = checkoutPayload?.authorizationUrl || checkoutPayload?.checkoutUrl;
+      if (checkoutPayload?.mode === "live_gateway" && redirectUrl) {
+        recordBrandSubscriptionPayment({
+          brandName,
+          planId: checkoutPlan.id,
+          paymentMethod: selectedGateway,
+          currency,
+          referenceCode: checkoutPayload.referenceCode,
+          status: "pro_forma_issued",
+        });
+        toast.info(`Redirecting to secure ${checkoutPayload.gateway?.toUpperCase()} checkout...`);
+        window.location.assign(redirectUrl);
+        return;
+      }
+
+      // If Google Pay is selected and browser supports PaymentRequest API in live contexts
+      if (
+        selectedGateway === "google_pay" &&
+        checkoutPayload?.mode === "live_gateway" &&
+        typeof window !== "undefined" &&
+        "PaymentRequest" in window
+      ) {
         try {
           const supportedInstruments: PaymentMethodData[] = [
             {
@@ -679,8 +753,6 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
               },
             },
           ];
-          const amountVal =
-            currency === "ZAR" ? checkoutPlan.priceZarMonthly : checkoutPlan.priceUsdMonthly;
           const details: PaymentDetailsInit = {
             total: {
               label: `${checkoutPlan.name} — Monthly B2B Subscription`,
@@ -690,19 +762,24 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
           const request = new PaymentRequest(supportedInstruments, details);
           const canPay = await request.canMakePayment().catch(() => false);
           if (canPay) {
-            // Only trigger native sheet if not blocked by iframe permissions policy
             await request.show().then((res) => res.complete("success")).catch(() => {});
           }
         } catch {
-          // Iframe sandbox fallback to tokenized instant confirmation
+          // Iframe permissions policy fallback handled cleanly below
         }
       }
 
+      const isSandboxPreview = checkoutPayload?.mode === "sandbox_preview";
       const receipt = recordBrandSubscriptionPayment({
         brandName,
         planId: checkoutPlan.id,
         paymentMethod: selectedGateway,
         currency,
+        referenceCode: checkoutPayload?.referenceCode,
+        status:
+          selectedGateway === "corporate_invoice" || isSandboxPreview
+            ? "pro_forma_issued"
+            : "active",
       });
 
       if (selectedGateway === "corporate_invoice") {
@@ -737,7 +814,11 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
         a.click();
         URL.revokeObjectURL(url);
         toast.success(
-          `📄 Corporate Pro-Forma Tax Invoice (${receipt.referenceCode}) downloaded & plan activated!`,
+          `Corporate Pro-Forma Tax Invoice (${receipt.referenceCode}) downloaded & plan preview activated.`,
+        );
+      } else if (isSandboxPreview) {
+        toast.info(
+          `Sandbox Pro-Forma Preview issued (${receipt.referenceCode}). Live card/EFT billing activates once PAYSTACK_SECRET_KEY or STRIPE_SECRET_KEY is configured on host.`,
         );
       } else {
         const methodLabels = {
@@ -747,7 +828,7 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
           corporate_invoice: "Corporate Tax Invoice",
         };
         toast.success(
-          `✅ ${checkoutPlan.name} activated for ${brandName} via ${methodLabels[selectedGateway]}! Ref: ${receipt.referenceCode}`,
+          `${checkoutPlan.name} activated for ${brandName} via ${methodLabels[selectedGateway]}! Ref: ${receipt.referenceCode}`,
         );
       }
 
@@ -1130,10 +1211,36 @@ export function BrandInboundContactSettingsPanel({
     const handleSync = () => {
       setRequests(getInboundCallRequests(brandSlug));
     };
+    const handleInboundBroadcast = (incoming: InboundCustomerCallRequest) => {
+      if (!incoming || !incoming.brandSlug) return;
+      if (incoming.brandSlug.toLowerCase() !== brandSlug.toLowerCase()) return;
+      if (ingestInboundCallRequest(incoming)) {
+        setRequests(getInboundCallRequests(brandSlug));
+        toast.info(`New callback request from ${incoming.customerName}: "${incoming.issueTopic}"`);
+      }
+    };
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== "undefined") {
+      bc = new BroadcastChannel("sot-inbound-call-request");
+      bc.onmessage = (ev) => {
+        if (ev.data) handleInboundBroadcast(ev.data as InboundCustomerCallRequest);
+      };
+    }
+
+    const chan = supabase
+      .channel(`sot-call-ring-desk-${brandSlug}`)
+      .on("broadcast", { event: "inbound-call-request" }, ({ payload }) => {
+        if (payload) handleInboundBroadcast(payload as InboundCustomerCallRequest);
+      })
+      .subscribe();
+
     window.addEventListener("sot-brand-contact-settings-updated", handleSettingsUpdate);
     window.addEventListener("sot-inbound-call-request-created", handleSync);
     window.addEventListener("sot-inbound-call-request-updated", handleSync);
     return () => {
+      bc?.close();
+      void supabase.removeChannel(chan);
       window.removeEventListener("sot-brand-contact-settings-updated", handleSettingsUpdate);
       window.removeEventListener("sot-inbound-call-request-created", handleSync);
       window.removeEventListener("sot-inbound-call-request-updated", handleSync);

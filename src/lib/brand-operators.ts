@@ -749,6 +749,8 @@ export function recordBrandSubscriptionPayment(params: {
   planId: BrandPlanTierId;
   paymentMethod: BrandSubscriptionReceipt["paymentMethod"];
   currency: "ZAR" | "USD";
+  referenceCode?: string;
+  status?: BrandSubscriptionReceipt["status"];
 }): BrandSubscriptionReceipt {
   const plan = B2B_BRAND_PLANS.find((p) => p.id === params.planId) ?? B2B_BRAND_PLANS[1];
   const activeOp = getActiveDeskOperator();
@@ -764,9 +766,11 @@ export function recordBrandSubscriptionPayment(params: {
     planName: plan.name,
     paymentMethod: params.paymentMethod,
     amountDisplay,
-    referenceCode: `SOT-B2B-${Math.floor(100000 + Math.random() * 899999)}`,
+    referenceCode: params.referenceCode || `SOT-B2B-${Math.floor(100000 + Math.random() * 899999)}`,
     operatorOnDuty: `${activeOp.name} (${activeOp.roleTitle})`,
-    status: params.paymentMethod === "corporate_invoice" ? "pro_forma_issued" : "active",
+    status:
+      params.status ??
+      (params.paymentMethod === "corporate_invoice" ? "pro_forma_issued" : "active"),
     createdAt: new Date().toISOString(),
   };
 
@@ -920,6 +924,23 @@ export function submitInboundCallRequest(
   }
   emitOperatorUpdate();
   return created;
+}
+
+export function ingestInboundCallRequest(request: InboundCustomerCallRequest): boolean {
+  if (typeof window === "undefined" || !request?.id) return false;
+  try {
+    const all = getInboundCallRequests();
+    if (all.some((r) => r.id === request.id)) return false;
+    const updated = [request, ...all].slice(0, 100);
+    window.localStorage.setItem(INBOUND_CALL_REQUESTS_KEY, JSON.stringify(updated));
+    window.dispatchEvent(
+      new CustomEvent("sot-inbound-call-request-created", { detail: request }),
+    );
+    emitOperatorUpdate();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function updateInboundCallRequestStatus(
