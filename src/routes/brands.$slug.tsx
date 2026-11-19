@@ -76,6 +76,11 @@ import {
   isBrandAutoSourced,
   isBrandClaimable,
 } from "@/lib/brand-domain-verification";
+import {
+  verifyBatchAndLocationAgainstRegistry,
+  type BatchVerificationVerdict,
+} from "@/lib/oem-registry";
+import { detectDefaultRegionFromBrowser } from "@/lib/global-regions";
 
 export const Route = createFileRoute("/brands/$slug")({
   component: BrandPage,
@@ -180,34 +185,53 @@ function BrandPage() {
   const [cpaGuideModalOpen, setCpaGuideModalOpen] = useState(false);
   const [batchCodeInput, setBatchCodeInput] = useState("");
   const [retailerInput, setRetailerInput] = useState("");
+  const [batchVerifyBusy, setBatchVerifyBusy] = useState(false);
   const [batchVerifyResult, setBatchVerifyResult] = useState<{
     status: "genuine" | "flagged";
     code: string;
     retailer: string;
     voucherCode: string;
+    verdict?: BatchVerificationVerdict;
   } | null>(null);
 
-  const handleVerifyBrandBatch = (e: React.FormEvent) => {
+  const handleVerifyBrandBatch = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleaned = batchCodeInput.trim().toUpperCase();
     if (!cleaned) {
-      toast.error("Enter a barcode, batch number, or serial code to verify.");
+      toast.error("Enter a barcode, batch number, OEM part #, or serial code to verify.");
       return;
     }
-    const isFlagged = cleaned.includes("FAKE") || cleaned.includes("BOGUS") || cleaned.includes("000") || cleaned.length < 5;
-    const prefix = (brand?.name || "SOT").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4) || "BRAND";
-    const voucherCode = `SOT_GENUINE_${prefix}_${Math.floor(100 + Math.random() * 899)}`;
-    setBatchVerifyResult({
-      status: isFlagged ? "flagged" : "genuine",
-      code: cleaned,
-      retailer: retailerInput.trim() || "Unspecified Retailer",
-      voucherCode,
-    });
-    toast.success(
-      isFlagged
-        ? "Bogus/Counterfeit batch flagged! Brand revenue-recovery voucher unlocked."
-        : "Authentic batch verified against brand registry!"
-    );
+    if (!brand) return;
+    setBatchVerifyBusy(true);
+    try {
+      const verdict = await verifyBatchAndLocationAgainstRegistry({
+        brandSlug: brand.slug,
+        brandName: brand.name,
+        code: cleaned,
+        city: retailerInput.trim() || undefined,
+        countryCode: brand.country || detectDefaultRegionFromBrowser(),
+        reporterUid: user?.id,
+      });
+      const prefix =
+        (brand.name || "SOT").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4) || "BRAND";
+      const voucherCode = `SOT_${verdict.authentic ? "OEM5X" : "RECOVER"}_${prefix}_${Math.floor(100 + Math.random() * 899)}`;
+      setBatchVerifyResult({
+        status: verdict.authentic ? "genuine" : "flagged",
+        code: cleaned,
+        retailer: retailerInput.trim() || "Direct Serial Check",
+        voucherCode,
+        verdict,
+      });
+      if (verdict.authentic) {
+        toast.success(verdict.headline);
+      } else {
+        toast.warning(verdict.headline);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not verify batch against OEM registry.");
+    } finally {
+      setBatchVerifyBusy(false);
+    }
   };
 
   // QR Simulator States
@@ -797,6 +821,7 @@ function BrandPage() {
                   {/* Moody's Grade AI Barometer Card */}
                   <BrandMoodyRatingCard
                     brandName={brand.name}
+                    brandSlug={brand.slug}
                     stashPct={
                       feed && feed.length > 0
                         ? Math.round(
@@ -811,6 +836,7 @@ function BrandPage() {
                         ? feed.reduce((acc, it) => acc + it.stashCount + it.trashCount, 0) || feed.length
                         : 0
                     }
+                    corporateDomainVerified={Boolean(brand.verified)}
                     sampleReviews={feed?.map((f) => f.title) ?? []}
                   />
 
@@ -932,22 +958,23 @@ function BrandPage() {
                       <input
                         value={batchCodeInput}
                         onChange={(e) => setBatchCodeInput(e.target.value)}
-                        placeholder={`Enter ${brand.name} barcode or batch # (e.g. ZA-8841 or BOGUS-000)`}
+                        placeholder={`Enter ${brand.name} SKU, VIN, OEM part, or barcode (e.g. CW2288-111, 90915-YZZD2, 126610LN)`}
                         className="h-10 rounded-xl border border-border bg-background px-3 text-xs outline-none"
                       />
                       <input
                         value={retailerInput}
                         onChange={(e) => setRetailerInput(e.target.value)}
-                        placeholder="Store / Spaza / Retailer where purchased"
+                        placeholder="City / Store / Dealer (for grey-market geo verification)"
                         className="h-10 rounded-xl border border-border bg-background px-3 text-xs outline-none"
                       />
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                       <p className="text-[11px] text-muted-foreground">
-                        Helps <span translate="no" className="notranslate">{brand.name}</span> map grey-market/bogus supply leaks while rewarding you with genuine replacement vouchers.
+                        Cross-checks <span translate="no" className="notranslate">{brand.name}</span>&apos;s OEM batch &amp; authorized dealer registry in real time and logs grey-market leaks.
                       </p>
-                      <Button type="submit" size="sm" className="font-bold gap-1.5">
-                        <ShieldCheck className="h-3.5 w-3.5" /> Verify Batch Now
+                      <Button type="submit" size="sm" disabled={batchVerifyBusy} className="font-bold gap-1.5">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        {batchVerifyBusy ? "Checking OEM Registry..." : "Verify Batch Now"}
                       </Button>
                     </div>
                   </form>
@@ -960,7 +987,7 @@ function BrandPage() {
                           : "border-emerald-500/40 bg-emerald-500/10"
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                         <div>
                           <span
                             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
@@ -969,18 +996,22 @@ function BrandPage() {
                                 : "bg-emerald-600 text-white"
                             }`}
                           >
-                            {batchVerifyResult.status === "flagged"
-                              ? "Suspected Bogus / Unverified Batch Flagged"
-                              : "Verified Genuine Brand Batch"}
+                            {batchVerifyResult.verdict?.headline ||
+                              (batchVerifyResult.status === "flagged"
+                                ? "Suspected Bogus / Unverified Batch Flagged"
+                                : "Verified Genuine Brand Batch")}
                           </span>
                           <h4 className="mt-1.5 font-display text-sm font-bold text-foreground">
-                            Batch #{batchVerifyResult.code} · {batchVerifyResult.retailer}
+                            Code {batchVerifyResult.code} · {batchVerifyResult.retailer} ({batchVerifyResult.verdict?.confidencePct ?? 85}% confidence)
                           </h4>
                           <p className="mt-0.5 text-xs text-muted-foreground">
-                            {batchVerifyResult.status === "flagged"
-                              ? `${brand.name}'s Brand Protection & Revenue Recovery window has logged this seller lead so the genuine brand can win back your loyalty.`
-                              : `This batch matches ${brand.name}'s legitimate distribution standards. Thank you for verifying before consuming!`}
+                            {batchVerifyResult.verdict?.explanation}
                           </p>
+                          {batchVerifyResult.verdict?.nextAction && (
+                            <p className="mt-1 text-[11px] font-semibold text-foreground">
+                              Next Step: {batchVerifyResult.verdict.nextAction}
+                            </p>
+                          )}
                         </div>
                         <Button
                           size="sm"

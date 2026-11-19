@@ -326,7 +326,7 @@ function Feed() {
   return (
     <div
       className={cn(
-        "min-h-screen transition-colors duration-300",
+        "min-h-screen overflow-x-clip transition-colors duration-300",
         verdictFilter === "stash"
           ? "bg-gradient-to-b from-[#fefce8] via-white to-[#fffbeb] text-slate-900"
           : verdictFilter === "trash"
@@ -620,7 +620,7 @@ function Feed() {
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <div>
+          <div className="min-w-0">
             {/* Country, Category & Verdict Filter Controls */}
             <section className="mb-5 rounded-2xl border border-border bg-card p-4 shadow-sm">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

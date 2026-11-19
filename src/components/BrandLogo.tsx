@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /**
  * Shared brand logo renderer. Logos are fitted (never cropped) on a neutral pad
- * so wide wordmarks and pale marks both stay readable.
+ * so wide wordmarks and pale marks both stay readable, with automatic monogram fallback
+ * if an external CDN image fails or is rate-limited.
  */
 export function BrandLogo({
   name,
@@ -15,6 +17,14 @@ export function BrandLogo({
   className?: string;
   imgClassName?: string;
 }) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [url]);
+
+  const showImg = Boolean(url && !imgFailed);
+
   return (
     <div
       translate="no"
@@ -23,17 +33,18 @@ export function BrandLogo({
         className,
       )}
     >
-      {url ? (
+      {showImg ? (
         <img
-          src={url}
+          src={url!}
           alt={name}
           translate="no"
           loading="lazy"
+          onError={() => setImgFailed(true)}
           className={cn("notranslate h-full w-full object-contain", imgClassName)}
         />
       ) : (
         <span translate="no" className="notranslate" aria-hidden>
-          {name.charAt(0).toUpperCase()}
+          {name.charAt(0).toUpperCase() || "B"}
         </span>
       )}
     </div>

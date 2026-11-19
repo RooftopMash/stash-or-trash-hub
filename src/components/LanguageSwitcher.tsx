@@ -79,15 +79,15 @@ export function TopLanguageStrip() {
       role="region"
       aria-label="Language switcher"
       suppressHydrationWarning
-      className="w-full border-b border-[#d6a928]/25 bg-slate-950 text-white"
+      className="w-full overflow-hidden border-b border-[#d6a928]/25 bg-slate-950 text-white"
     >
-      <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-2 overflow-x-auto px-4 py-1 sm:px-6 lg:px-8 no-scrollbar">
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-2 px-4 py-1 sm:px-6 lg:px-8">
         <div className="flex shrink-0 items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#d6a928]">
           <Globe className="h-3 w-3 shrink-0 text-[#d6a928]" aria-hidden="true" />
           <span className="hidden sm:inline">Language</span>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto no-scrollbar sm:flex-initial">
           {APP_CORE_LOCALES.map((locale) => {
             const isActive = activeCode === locale.code;
             return (

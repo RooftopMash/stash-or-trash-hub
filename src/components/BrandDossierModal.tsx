@@ -92,12 +92,6 @@ export function BrandDossierModal({
   const gradeInfo = getGrade(trustScore);
 
   const handlePrintDossier = () => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast.info("Please allow popups to export the brand dossier.");
-      return;
-    }
-
     const html = `
       <!DOCTYPE html>
       <html>
@@ -159,14 +153,39 @@ export function BrandDossierModal({
         <div class="footer">
           Issued by Stash Or Trash AI Forensic & Brand Intelligence System • Timestamp: ${new Date().toISOString()}
         </div>
-        <script>
-          window.onload = function() { window.print(); }
-        </script>
       </body>
       </html>
     `;
-    printWindow.document.write(html);
-    printWindow.document.close();
+
+    try {
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      iframe.srcdoc = html;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } finally {
+          setTimeout(() => iframe.remove(), 1500);
+        }
+      };
+      toast.success(`Prepared printable dossier for ${brandName}.`);
+    } catch {
+      const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `SOT_Brand_Dossier_${brandName.replace(/[^a-z0-9]+/gi, "_")}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Downloaded ${brandName} Brand Dossier report.`);
+    }
   };
 
   const handleCopyDossier = () => {

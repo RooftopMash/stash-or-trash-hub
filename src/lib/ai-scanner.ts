@@ -49,6 +49,9 @@ export interface BrandIdentification {
   countryOfOrigin: string;
   confidence: number;
   qrOrBarcodeDecoded?: string;
+  industrySector?: string;
+  serialOrPartNumberDetected?: string;
+  regulatoryComplianceMarks?: string;
   summary: string;
 }
 
@@ -857,6 +860,8 @@ export async function runAiScan(params: {
   mimeType?: string;
   qrData?: string;
   barcode?: string;
+  serialOrPartCode?: string;
+  industrySector?: string;
   inspectionMode?: "barcode" | "qr_code" | "logo" | "full_product" | "general";
   mediaType?: "image" | "video_frame";
 }): Promise<AiScanResult> {

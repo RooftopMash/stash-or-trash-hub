@@ -48,6 +48,11 @@ import {
 } from "@/lib/ai-scanner";
 import { searchBrands, type Brand } from "@/lib/brands";
 import { BrandDossierModal } from "@/components/BrandDossierModal";
+import {
+  verifyBatchAndLocationAgainstRegistry,
+  type BatchVerificationVerdict,
+} from "@/lib/oem-registry";
+import { detectDefaultRegionFromBrowser } from "@/lib/global-regions";
 import { toast } from "sonner";
 
 export type InspectionMode = "barcode" | "qr_code" | "logo" | "full_product";
@@ -106,6 +111,10 @@ export function ProductAuthenticityCameraScanner({
   const [qrVerdict, setQrVerdict] = useState<QrAuthenticityVerdict | null>(null);
   const [manualQrInput, setManualQrInput] = useState("");
   const [manualInputTab, setManualInputTab] = useState<"barcode" | "qr_code">("barcode");
+  const [industrySector, setIndustrySector] = useState<string>("auto");
+  const [serialOrPartInput, setSerialOrPartInput] = useState("");
+  const [storeCityInput, setStoreCityInput] = useState("");
+  const [oemRegistryVerdict, setOemRegistryVerdict] = useState<BatchVerificationVerdict | null>(null);
   const [userVerdict, setUserVerdict] = useState<"stash" | "trash" | null>(null);
   const [showBrandDossierModal, setShowBrandDossierModal] = useState(false);
 
@@ -433,17 +442,48 @@ export function ProductAuthenticityCameraScanner({
           : "Analyzing typography, stitching density & micro-embossing..."
       );
 
+      const activeBarcode =
+        barcodeData || (detectedCode?.format !== "qr_code" ? detectedCode?.rawValue : undefined);
+      const activeSerial =
+        serialOrPartInput.trim() ||
+        (activeBarcode && !/^\d{8,14}$/.test(activeBarcode) ? activeBarcode : undefined);
+
       const result = await runAiScan({
         image: base64,
         mimeType: mime,
-        barcode: barcodeData || (detectedCode?.format !== "qr_code" ? detectedCode?.rawValue : undefined),
+        barcode: activeBarcode,
         qrData: effectiveQr,
+        serialOrPartCode: activeSerial,
+        industrySector: industrySector !== "auto" ? industrySector : undefined,
         inspectionMode: mode,
         mediaType: "image",
       });
 
-      setAnalyzingStep("Verifying corporate brand ownership & counterfeit risk...");
+      setAnalyzingStep("Cross-checking corporate OEM batch & authorized dealer registry...");
       setScanResult(result);
+
+      const codeToCheck =
+        activeSerial || result.brandInfo?.serialOrPartNumberDetected || activeBarcode;
+      if (result.brandInfo?.brandName && codeToCheck) {
+        try {
+          const slug = result.brandInfo.brandName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
+          const oemVerdict = await verifyBatchAndLocationAgainstRegistry({
+            brandSlug: slug,
+            brandName: result.brandInfo.brandName,
+            code: codeToCheck,
+            city: storeCityInput.trim() || undefined,
+            countryCode: detectDefaultRegionFromBrowser(),
+          });
+          setOemRegistryVerdict(oemVerdict);
+        } catch {
+          setOemRegistryVerdict(null);
+        }
+      } else {
+        setOemRegistryVerdict(null);
+      }
 
       // Check if this brand exists in Stash or Trash database
       if (result.brandInfo?.brandName) {
@@ -594,6 +634,7 @@ export function ProductAuthenticityCameraScanner({
     setCapturedImage(null);
     setCapturedFile(null);
     setScanResult(null);
+    setOemRegistryVerdict(null);
     setMatchedBrand(null);
     setDetectedCode(null);
     setParsedQr(null);
@@ -1074,6 +1115,45 @@ Verified on Stash Or Trash Brand Barometer`;
               </span>
             </div>
 
+            {/* Global Multi-Industry Selector + OEM Part/VIN + Store City Geo-Check */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <label className="flex flex-col gap-1 text-[11px] font-semibold text-muted-foreground">
+                <span>Industry / Product Category</span>
+                <select
+                  value={industrySector}
+                  onChange={(e) => setIndustrySector(e.target.value)}
+                  className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs font-medium text-foreground"
+                >
+                  <option value="auto">Auto-Detect All Global Sectors</option>
+                  <option value="groceries_fmcg">Groceries &amp; Beverages (GS1)</option>
+                  <option value="automotive_parts">Automotive OEM Parts &amp; 17-Char VINs</option>
+                  <option value="athletic_footwear">Sneakers &amp; Apparel (Nike / Adidas / Puma)</option>
+                  <option value="luxury_watches">Luxury Watches (Rolex / Omega Refs)</option>
+                  <option value="electronics_appliances">Electrical Appliances &amp; Electronics (CE/UL)</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-[11px] font-semibold text-muted-foreground">
+                <span>OEM Part # / Style SKU / Watch Ref / VIN</span>
+                <input
+                  type="text"
+                  value={serialOrPartInput}
+                  onChange={(e) => setSerialOrPartInput(e.target.value)}
+                  placeholder="e.g. 90915-YZZD2, CW2288-111, 126610LN"
+                  className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[11px] font-semibold text-muted-foreground">
+                <span>Store / City Purchased (Grey-Market Geo)</span>
+                <input
+                  type="text"
+                  value={storeCityInput}
+                  onChange={(e) => setStoreCityInput(e.target.value)}
+                  placeholder="e.g. Johannesburg, London, Tokyo"
+                  className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </label>
+            </div>
+
             {manualInputTab === "barcode" ? (
               <form onSubmit={handleManualBarcodeSubmit} className="flex flex-col gap-2">
                 <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
@@ -1081,7 +1161,7 @@ Verified on Stash Or Trash Brand Barometer`;
                     <Tag className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                       type="text"
-                      placeholder="Enter UPC-A, EAN-13, or serial (e.g. 6001087000140 for Coca-Cola 2L)..."
+                      placeholder="Enter GS1 barcode, Toyota OEM #, Nike SKU, Rolex Ref, or 17-char VIN..."
                       value={manualBarcode}
                       onChange={(e) => setManualBarcode(e.target.value)}
                       className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
@@ -1093,52 +1173,59 @@ Verified on Stash Or Trash Brand Barometer`;
                     disabled={!manualBarcode.trim()}
                     className="w-full sm:w-auto text-xs h-8 px-4 font-semibold"
                   >
-                    {t("scanner.verifyBarcode", { defaultValue: "Verify Barcode" })}
+                    {t("scanner.verifyBarcode", { defaultValue: "Verify Code" })}
                   </Button>
                 </div>
 
-                {/* Quick barcode shortcuts including Coca-Cola 2L */}
+                {/* Quick multi-industry OEM & barcode shortcuts */}
                 <div className="w-full flex items-center gap-1.5 flex-wrap pt-1 text-[11px] text-muted-foreground">
-                  <span className="font-semibold text-foreground/80">Quick test:</span>
+                  <span className="font-semibold text-foreground/80">Quick global test:</span>
                   <button
                     type="button"
                     onClick={() => {
-                      setManualBarcode("6001087000140");
-                      processImageForAuthenticity("", "image/jpeg", "", null, "6001087000140", "barcode");
-                    }}
-                    className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
-                  >
-                    Coca-Cola 2L (SA: 6001087000140)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
+                      setIndustrySector("groceries_fmcg");
                       setManualBarcode("5449000000996");
                       processImageForAuthenticity("", "image/jpeg", "", null, "5449000000996", "barcode");
                     }}
                     className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
                   >
-                    Coca-Cola 2L (Global: 5449000000996)
+                    Coca-Cola GS1 (5449000000996)
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setManualBarcode("049000050103");
-                      processImageForAuthenticity("", "image/jpeg", "", null, "049000050103", "barcode");
+                      setIndustrySector("automotive_parts");
+                      setSerialOrPartInput("90915-YZZD2");
+                      setManualBarcode("90915-YZZD2");
+                      processImageForAuthenticity("", "image/jpeg", "", null, "90915-YZZD2", "barcode");
                     }}
                     className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
                   >
-                    Coca-Cola 2L (US: 049000050103)
+                    Toyota OEM Filter (90915-YZZD2)
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setManualBarcode("6001087000034");
-                      processImageForAuthenticity("", "image/jpeg", "", null, "6001087000034", "barcode");
+                      setIndustrySector("athletic_footwear");
+                      setSerialOrPartInput("CW2288-111");
+                      setManualBarcode("CW2288-111");
+                      processImageForAuthenticity("", "image/jpeg", "", null, "CW2288-111", "barcode");
                     }}
                     className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
                   >
-                    Sprite 2L (SA: 6001087000034)
+                    Nike Air Force SKU (CW2288-111)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIndustrySector("luxury_watches");
+                      setSerialOrPartInput("126610LN");
+                      setManualBarcode("126610LN");
+                      processImageForAuthenticity("", "image/jpeg", "", null, "126610LN", "barcode");
+                    }}
+                    className="px-2 py-0.5 rounded bg-background hover:bg-muted border border-border text-foreground transition-colors font-mono text-[10px]"
+                  >
+                    Rolex Submariner Ref (126610LN)
                   </button>
                 </div>
               </form>
@@ -1319,6 +1406,48 @@ Verified on Stash Or Trash Brand Barometer`;
                   </Button>
                 </div>
               </div>
+
+              {(scanResult.brandInfo.industrySector ||
+                scanResult.brandInfo.serialOrPartNumberDetected ||
+                scanResult.brandInfo.regulatoryComplianceMarks ||
+                oemRegistryVerdict) && (
+                <div className="mt-4 pt-3 border-t border-border/30 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                  <div className="rounded-xl border border-border/50 bg-background/70 p-2.5">
+                    <span className="block font-mono text-[10px] uppercase text-muted-foreground">
+                      Sector &amp; OEM Code
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {scanResult.brandInfo.industrySector || "Global Retail"} ·{" "}
+                      {scanResult.brandInfo.serialOrPartNumberDetected ||
+                        scanResult.brandInfo.qrOrBarcodeDecoded ||
+                        "Standard GTIN"}
+                    </span>
+                  </div>
+                  <div className="rounded-xl border border-border/50 bg-background/70 p-2.5">
+                    <span className="block font-mono text-[10px] uppercase text-muted-foreground">
+                      Regulatory Compliance Marks
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {scanResult.brandInfo.regulatoryComplianceMarks ||
+                        "GS1 / ISO-3779 / CE / UL Standard"}
+                    </span>
+                  </div>
+                  {oemRegistryVerdict && (
+                    <div
+                      className={`rounded-xl border p-2.5 ${
+                        oemRegistryVerdict.authentic
+                          ? "border-emerald-500/40 bg-emerald-500/10"
+                          : "border-rose-500/40 bg-rose-500/10"
+                      }`}
+                    >
+                      <span className="block font-mono text-[10px] uppercase text-muted-foreground">
+                        OEM &amp; Dealer Whitelist Check
+                      </span>
+                      <span className="font-bold text-foreground">{oemRegistryVerdict.headline}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* ======================================================== */}

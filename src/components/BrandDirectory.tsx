@@ -12,7 +12,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { ProductScannerModal } from "@/components/ProductScannerModal";
 import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
 import { brandCategory, categoryClass, categoryOptions, matchesCategory } from "@/lib/categories";
-import { countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
+import { countryFlag, countryName, countryOptions, normalizeCountryCode } from "@/lib/geo";
 import { BRAND_TIERS, type BrandTierFilter, getBrandTier, getTierInfo, matchesTier, compareBrandTiers } from "@/lib/brandTiers";
 import { publishBrandsFromWikidata, SUPPORTED_IMPORT_COUNTRIES } from "@/lib/wikidata-import";
 import { extractRegistrableDomain, isBrandAutoSourced } from "@/lib/brand-domain-verification";
@@ -28,29 +28,16 @@ const fallbackCountries: Country[] = countryOptions([]).map((cca2) => ({
 }));
 
 async function fetchCountries(): Promise<Country[]> {
-  const response = await fetch("https://restcountries.com/v3.1/all?fields=cca2,name,flags");
-  if (!response.ok) throw new Error("Country service unavailable");
-  return response.json();
+  return fallbackCountries;
 }
 
-function Flag({ country, className }: { country?: Country; className?: string }) {
-  const flags = country?.flags;
-  const source = flags?.svg ?? flags?.png;
-  if (!source)
-    return (
-      <span aria-hidden="true" className={cn("text-lg", className)}>
-        🌐
-      </span>
-    );
+function Flag({ country, code, className }: { country?: Country; code?: string | null; className?: string }) {
+  const iso = country?.cca2 ?? code ?? null;
+  const emoji = countryFlag(iso);
   return (
-    <img
-      src={source}
-      alt=""
-      className={cn("size-6 rounded-sm object-cover", className)}
-      onError={(event) => {
-        event.currentTarget.style.display = "none";
-      }}
-    />
+    <span aria-hidden="true" className={cn("text-lg leading-none", className)}>
+      {emoji || "🌐"}
+    </span>
   );
 }
 
@@ -153,8 +140,8 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
   }, [brands, category, countryCode, tier, query, sortBy]);
 
   return (
-    <section className="flex flex-col gap-6">
-      <div className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-6">
+    <section className="flex flex-col gap-6 overflow-x-clip">
+      <div className="min-w-0 rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
@@ -234,7 +221,7 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
           ))}
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <div className="flex min-w-0 max-w-full items-center gap-2 overflow-x-auto pb-1">
             <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground">
               <Layers className="size-3.5 text-primary" /> Tier:
             </span>
@@ -364,7 +351,7 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
                     }
                     className="size-14 rounded-2xl text-lg"
                   />
-                  <Flag country={country} className="size-8" />
+                  <Flag country={country} code={code} className="size-8" />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
@@ -407,7 +394,7 @@ export function BrandDirectory({ brands, user }: { brands: Brand[]; user: unknow
                   </div>
 
                   <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                    <Flag country={country} />
+                    <Flag country={country} code={code} />
                     {country?.name.common ?? countryName(code) ?? "Global"}
                     <span className="text-xs">{code}</span>
                   </p>

@@ -41,18 +41,23 @@ import {
 import {
   B2B_BRAND_PLANS,
   addAndSwitchDeskOperator,
+  createVerifiedBrandOperatorDurable,
+  fetchCxLifecycleMatrixDurable,
+  fetchInboundCallRequestsDurable,
   getActiveBrandSubscription,
   getActiveDeskOperator,
   getBrandDeskOperators,
   getCxLifecycleMatrix,
   getOperatorShiftLogs,
   recordBrandSubscriptionPayment,
+  revokeBrandOperatorDurable,
   switchActiveDeskOperator,
+  syncBrandOperatorsFromDb,
   getBrandContactSettings,
   saveBrandContactSettings,
   getInboundCallRequests,
   ingestInboundCallRequest,
-  updateInboundCallRequestStatus,
+  updateInboundCallRequestStatusDurable,
   setActiveBrandPlanTier,
   type BrandDeskOperator,
   type BrandPlanTierId,
@@ -65,6 +70,12 @@ import {
 } from "@/lib/brand-operators";
 import { getLiveBroadcastSessions } from "@/lib/live-broadcasts";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  calculateRegionalBrandRoi,
+  formatRegionalCurrency,
+  getRegionConfig,
+  type GlobalRegionCode,
+} from "@/lib/global-regions";
 import { cn } from "@/lib/utils";
 
 /**
@@ -72,14 +83,28 @@ import { cn } from "@/lib/utils";
  * Ensures a Brand Owner can share Brand login credentials with an employee
  * without ANY personal user profile data ever mixing with the Brand Account.
  */
-export function BrandOperatorHandoverBar({ brandName = "Official Brand Account" }: { brandName?: string }) {
+export function BrandOperatorHandoverBar({
+  brandName = "Official Brand Account",
+  brandSlug = "official-brand",
+  ownerUid = "owner",
+  canAllocateOperators = false,
+  regionCode = "GLOBAL",
+}: {
+  brandName?: string;
+  brandSlug?: string;
+  ownerUid?: string;
+  canAllocateOperators?: boolean;
+  regionCode?: GlobalRegionCode;
+}) {
   const [operators, setOperators] = useState<BrandDeskOperator[]>(() => getBrandDeskOperators());
   const [activeOp, setActiveOp] = useState<BrandDeskOperator>(() => getActiveDeskOperator());
   const [logs, setLogs] = useState<OperatorShiftLogEntry[]>(() => getOperatorShiftLogs());
+  const [dbSynced, setDbSynced] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
   const [newRole, setNewRole] = useState("");
-  const [newShift, setNewShift] = useState("Day Shift CX Desk");
+  const [newShift, setNewShift] = useState("Global Shift A (08:00–17:00)");
 
   const syncState = () => {
     setOperators(getBrandDeskOperators());
@@ -88,9 +113,18 @@ export function BrandOperatorHandoverBar({ brandName = "Official Brand Account" 
   };
 
   useEffect(() => {
+    let active = true;
+    syncBrandOperatorsFromDb(brandSlug).then((res) => {
+      if (!active) return;
+      setDbSynced(res.syncedToPostgres);
+      syncState();
+    });
     window.addEventListener("sot-brand-operator-updated", syncState);
-    return () => window.removeEventListener("sot-brand-operator-updated", syncState);
-  }, []);
+    return () => {
+      active = false;
+      window.removeEventListener("sot-brand-operator-updated", syncState);
+    };
+  }, [brandSlug]);
 
   const handleSelectOperator = (opId: string) => {
     const switched = switchActiveDeskOperator(opId);
@@ -100,55 +134,76 @@ export function BrandOperatorHandoverBar({ brandName = "Official Brand Account" 
     );
   };
 
-  const handleAddOperator = (e: React.FormEvent) => {
+  const handleAddOperator = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim()) {
-      toast.error("Enter the corporate desk operator's name or seat ID.");
-      return;
-    }
-    if (newName.includes("@") || newRole.includes("@")) {
+    if (!canAllocateOperators) {
       toast.error(
-        "Security Policy: Employees cannot attach personal SOrT handles or personal email profiles to a Brand Account. Enter a corporate desk name/seat only.",
+        "Corporate domain verification is required before a Brand Owner can allocate verified shift operators.",
       );
       return;
     }
-    const created = addAndSwitchDeskOperator({
-      name: newName,
-      roleTitle: newRole || "Authorized Corporate CX Desk Seat",
-      shiftLabel: newShift,
+    if (!newName.trim() || !newEmail.trim()) {
+      toast.error("Enter both the operator's corporate name and corporate email address.");
+      return;
+    }
+    const res = await createVerifiedBrandOperatorDurable({
+      brandSlug,
+      ownerUid,
+      operatorEmail: newEmail.trim(),
+      operatorName: newName.trim(),
+      roleTitle: newRole.trim() || "Authorized Corporate CX Specialist",
+      shiftLabel: newShift.trim() || "Global Shift",
+      countryCode: regionCode,
     });
     setNewName("");
+    setNewEmail("");
     setNewRole("");
     setShowAddForm(false);
     syncState();
     toast.success(
-      `Activated corporate desk seat: ${created.name} (${created.roleTitle}). Zero personal profile attachment enforced for ${brandName}.`,
+      res.syncedToPostgres
+        ? `Owner-allocated desk operator ${res.operator.name} persisted to Postgres.`
+        : `Activated operator ${res.operator.name} locally (DB migration pending push).`,
     );
   };
 
+  const handleRevokeActive = async () => {
+    if (!canAllocateOperators) {
+      toast.error("Verified Brand Owner clearance required to revoke operators.");
+      return;
+    }
+    if (operators.length <= 1) {
+      toast.warning("At least one active operator seat must remain assigned to the desk.");
+      return;
+    }
+    await revokeBrandOperatorDurable(activeOp.id);
+    syncState();
+    toast.success(`Revoked operator access for ${activeOp.name}.`);
+  };
+
   return (
-    <section className="rounded-2xl border-2 border-[#d6a928]/60 bg-slate-950 p-5 text-white shadow-md">
+    <section className="rounded-2xl border border-[#d6a928]/60 bg-slate-950 p-5 text-white">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-md bg-[#d6a928] px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider text-slate-950">
               <UserCheck className="h-3.5 w-3.5" />
-              Corporate Desk Operator Roster · Shared Brand Login
+              Owner-Allocated Shift Desk · Multi-Device Roster
             </span>
-            <span className="text-xs text-emerald-400 font-bold">
-              🔒 Strict Non-Attachment: Employees Cannot Link Personal SOrT Profiles
+            <span className="text-xs text-emerald-400 font-semibold font-mono">
+              {dbSynced ? "POSTGRES SYNCED" : "LOCAL AUDIT MODE"}
             </span>
           </div>
 
           <h3 className="mt-2 font-display text-lg font-black text-white">
-            {brandName} — Active Corporate Desk Seat:{" "}
+            {brandName} — Active Desk Operator:{" "}
             <span className="text-[#f5d061]">{activeOp.name}</span>{" "}
             <span className="text-sm font-semibold text-slate-300">
               ({activeOp.roleTitle} · {activeOp.shiftLabel})
             </span>
           </h3>
           <p className="mt-1 text-xs text-slate-300">
-            Employees operating SOrT for <strong>{brandName}</strong> work exclusively under the Brand’s corporate login via isolated desk seats. Personal user profiles can never be attached, linked, or used on the Brand’s profile.
+            Verified Brand Owners allocate and revoke shift operators for <strong>{brandName}</strong>. Personal profiles remain isolated while closed-tab callbacks persist in Postgres.
           </p>
         </div>
 
@@ -161,7 +216,7 @@ export function BrandOperatorHandoverBar({ brandName = "Official Brand Account" 
           >
             {operators.map((op) => (
               <option key={op.id} value={op.id}>
-                Switch Operator: {op.name} — {op.roleTitle} ({op.sotOperatorScore} pts)
+                Operator: {op.name} — {op.roleTitle} ({op.sotOperatorScore} pts)
               </option>
             ))}
           </select>
@@ -169,43 +224,64 @@ export function BrandOperatorHandoverBar({ brandName = "Official Brand Account" 
           <Button
             type="button"
             size="sm"
+            disabled={!canAllocateOperators}
             onClick={() => setShowAddForm((v) => !v)}
-            className="h-10 gap-1.5 bg-[#d6a928] font-black text-slate-950 hover:bg-[#e5b935]"
+            className="h-10 gap-1.5 bg-[#d6a928] font-black text-slate-950 hover:bg-[#e5b935] disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
-            Add Staff Operator
+            Allocate Operator
           </Button>
+          {canAllocateOperators && operators.length > 1 && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => void handleRevokeActive()}
+              className="h-10 border-rose-500/40 bg-slate-900 text-xs font-bold text-rose-300 hover:bg-rose-950"
+            >
+              Revoke Seat
+            </Button>
+          )}
         </div>
       </div>
 
       {showAddForm && (
         <form
           onSubmit={handleAddOperator}
-          className="mt-4 grid gap-2.5 rounded-xl border border-slate-800 bg-slate-900 p-3.5 sm:grid-cols-4"
+          className="mt-4 grid gap-2.5 rounded-xl border border-slate-800 bg-slate-900 p-3.5 sm:grid-cols-5"
         >
           <Input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Employee Full Name (e.g. Kabelo M.)"
+            placeholder="Operator Name (e.g. Sarah K.)"
             className="border-slate-700 bg-slate-950 text-xs text-white"
+            required
+          />
+          <Input
+            type="email"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            placeholder="Corporate Email (e.g. sarah@nike.com)"
+            className="border-slate-700 bg-slate-950 text-xs text-white"
+            required
           />
           <Input
             value={newRole}
             onChange={(e) => setNewRole(e.target.value)}
-            placeholder="Role (e.g. Night Shift CX Officer)"
+            placeholder="Role (e.g. EMEA Escalations)"
             className="border-slate-700 bg-slate-950 text-xs text-white"
           />
           <Input
             value={newShift}
             onChange={(e) => setNewShift(e.target.value)}
-            placeholder="Shift / Desk (e.g. Sandton Desk)"
+            placeholder="Shift / Region (e.g. London Desk)"
             className="border-slate-700 bg-slate-950 text-xs text-white"
           />
           <Button
             type="submit"
             className="bg-emerald-600 text-xs font-black text-white hover:bg-emerald-500"
           >
-            Save &amp; Activate Operator
+            Allocate Seat
           </Button>
         </form>
       )}
@@ -225,7 +301,7 @@ export function BrandOperatorHandoverBar({ brandName = "Official Brand Account" 
           ))}
         </div>
         <span className="font-mono text-[#f5d061] tabular-nums">
-          Operator Score: {activeOp.sotOperatorScore}/100 · {activeOp.trashesTurnedToStash} Trashes Flipped to Stash
+          Operator Score: {activeOp.sotOperatorScore}/100 · {activeOp.trashesTurnedToStash} Trashes Flipped
         </span>
       </div>
     </section>
@@ -239,9 +315,13 @@ export function BrandOperatorHandoverBar({ brandName = "Official Brand Account" 
  */
 export function BrandCxDataAndAwardsMatrix({
   brandName = "Verified Brand",
+  brandSlug = "verified-brand",
+  regionCode = "GLOBAL",
   onUpgradeRequest,
 }: {
   brandName?: string;
+  brandSlug?: string;
+  regionCode?: GlobalRegionCode;
   onUpgradeRequest?: () => void;
 }) {
   const [records, setRecords] = useState<CxLifecycleRecord[]>(() =>
@@ -249,10 +329,17 @@ export function BrandCxDataAndAwardsMatrix({
   );
   const [operators, setOperators] = useState<BrandDeskOperator[]>(() => getBrandDeskOperators());
   const [subState, setSubState] = useState(() => getActiveBrandSubscription());
+  const regionCfg = getRegionConfig(regionCode);
 
   useEffect(() => {
-    setRecords(getCxLifecycleMatrix(brandName));
-  }, [brandName]);
+    let active = true;
+    fetchCxLifecycleMatrixDurable(brandSlug, brandName).then((res) => {
+      if (active) setRecords(res.records);
+    });
+    return () => {
+      active = false;
+    };
+  }, [brandSlug, brandName]);
 
   useEffect(() => {
     const sync = () => {
@@ -269,8 +356,18 @@ export function BrandCxDataAndAwardsMatrix({
   const hasTier2Matrix = activeTier === "cx_launch_matrix" || activeTier === "enterprise_intelligence";
   const hasTier3Awards = activeTier === "enterprise_intelligence";
 
-  const totalRetainedZar = records.reduce((s, r) => s + r.revenueRetainedZar, 0);
+  const totalRetainedUsd = records.reduce(
+    (s, r) => s + Math.round(Number(r.revenueRetainedZar || 0) / 18.2),
+    0,
+  );
   const totalFlips = operators.reduce((s, o) => s + o.trashesTurnedToStash, 0);
+  const roiSummary = calculateRegionalBrandRoi(brandName, {
+    regionCode,
+    deflectedComplaintsCount: records.filter((r) => r.finalVerdict === "stash").length,
+    suspectedCounterfeitScansCount: 0,
+    turnaroundCount: records.length,
+    directRetainedUsd: totalRetainedUsd,
+  });
 
   const handleExportCsv = () => {
     if (!hasTier2Matrix) {
@@ -484,10 +581,10 @@ export function BrandCxDataAndAwardsMatrix({
               </div>
               <div className="rounded-xl border border-[#d6a928]/40 bg-[#d6a928]/5 p-3.5">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Estimated Revenue Retained
+                  Estimated Revenue Retained ({regionCfg.currencyCode})
                 </p>
                 <p className="mt-1 font-display text-2xl font-black text-[#b88914] tabular-nums">
-                  R{totalRetainedZar.toLocaleString()}
+                  {formatRegionalCurrency(totalRetainedUsd, regionCode, false)}
                 </p>
               </div>
               <div className="rounded-xl border border-border bg-background p-3.5">
@@ -500,10 +597,10 @@ export function BrandCxDataAndAwardsMatrix({
               </div>
               <div className="rounded-xl border border-border bg-background p-3.5">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  CPA First-Right Resolution
+                  {regionCfg.regulationShort} Pre-Escalation Shield
                 </p>
                 <p className="mt-1 font-display text-2xl font-black text-emerald-600 tabular-nums">
-                  {resolvedPct}% ({pendingCount} Pending)
+                  {resolvedPct}% ({roiSummary.regulatoryPenaltiesAvoidedFormatted} Avoided)
                 </p>
               </div>
             </div>
@@ -1199,17 +1296,23 @@ export function BrandInboundContactSettingsPanel({
   const [requests, setRequests] = useState<InboundCustomerCallRequest[]>(() =>
     getInboundCallRequests(brandSlug),
   );
+  const [queueInPostgres, setQueueInPostgres] = useState(false);
   const activeOp = getActiveDeskOperator();
-  const syncRequests = () => {
-    setRequests(getInboundCallRequests(brandSlug));
+
+  const refreshDurableQueue = async () => {
+    const res = await fetchInboundCallRequestsDurable(brandSlug);
+    setRequests(res.requests);
+    setQueueInPostgres(res.syncedToPostgres);
   };
 
   useEffect(() => {
+    void refreshDurableQueue();
+
     const handleSettingsUpdate = () => {
       setSettings(getBrandContactSettings(brandSlug));
     };
     const handleSync = () => {
-      setRequests(getInboundCallRequests(brandSlug));
+      void refreshDurableQueue();
     };
     const handleInboundBroadcast = (incoming: InboundCustomerCallRequest) => {
       if (!incoming || !incoming.brandSlug) return;
@@ -1233,6 +1336,18 @@ export function BrandInboundContactSettingsPanel({
       .on("broadcast", { event: "inbound-call-request" }, ({ payload }) => {
         if (payload) handleInboundBroadcast(payload as InboundCustomerCallRequest);
       })
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "inbound_call_requests",
+          filter: `brand_slug=eq.${brandSlug.toLowerCase()}`,
+        },
+        () => {
+          void refreshDurableQueue();
+        },
+      )
       .subscribe();
 
     window.addEventListener("sot-brand-contact-settings-updated", handleSettingsUpdate);
@@ -1281,9 +1396,14 @@ export function BrandInboundContactSettingsPanel({
     );
   };
 
-  const handleCallCustomerBack = (req: InboundCustomerCallRequest, mode: "voice" | "video") => {
-    updateInboundCallRequestStatus(req.id, "operator_calling", `Called by ${activeOp.name}`);
-    syncRequests();
+  const handleCallCustomerBack = async (req: InboundCustomerCallRequest, mode: "voice" | "video") => {
+    await updateInboundCallRequestStatusDurable(
+      req.id,
+      "operator_calling",
+      `Called by ${activeOp.name}`,
+      activeOp.id,
+    );
+    await refreshDurableQueue();
     if (onInitiateCall) {
       onInitiateCall({
         id: req.customerId,
@@ -1296,10 +1416,15 @@ export function BrandInboundContactSettingsPanel({
     }
   };
 
-  const handleDismissRequest = (reqId: string) => {
-    updateInboundCallRequestStatus(reqId, "resolved", `Resolved by ${activeOp.name}`);
-    syncRequests();
-    toast.success("Call request marked as resolved.");
+  const handleDismissRequest = async (reqId: string) => {
+    await updateInboundCallRequestStatusDurable(
+      reqId,
+      "resolved",
+      `Resolved by ${activeOp.name}`,
+      activeOp.id,
+    );
+    await refreshDurableQueue();
+    toast.success("Call request marked as resolved in persistent queue.");
   };
 
   return (
@@ -1312,7 +1437,7 @@ export function BrandInboundContactSettingsPanel({
               <PhoneCall className="h-4 w-4" />
             </span>
             <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
-              Inbound Customer Calling &amp; Contact Permissions
+              Inbound Customer Calling &amp; Persistent Queue ({queueInPostgres ? "Postgres Tab-Independent" : "Local Sync"})
             </span>
           </div>
           <h2 className="mt-1 font-display text-2xl font-black text-white">

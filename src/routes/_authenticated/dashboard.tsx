@@ -122,7 +122,23 @@ import {
 } from "@/lib/live-broadcasts";
 import { BrandEcosystemHub } from "@/components/BrandEcosystemHub";
 import { BrandOwnershipClaimModal } from "@/components/BrandOwnershipClaimModal";
+import { BrandOemRegistryPanel } from "@/components/BrandOemRegistryPanel";
 import { fetchMyCollabApplications } from "@/lib/brand-ecosystem";
+import { auth } from "@/lib/firebase";
+import {
+  canOperateBrandDesk,
+  getLocalClaimedBrandOverride,
+} from "@/lib/brand-domain-verification";
+import {
+  GLOBAL_REGIONS,
+  calculateRegionalBrandRoi,
+  detectDefaultRegionFromBrowser,
+  formatRegionalCurrency,
+  getRegionConfig,
+  setActiveRegionPreference,
+  type GlobalRegionCode,
+} from "@/lib/global-regions";
+import { fetchCounterfeitScanEvents } from "@/lib/oem-registry";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -130,6 +146,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 type DashboardTab =
   | "command"
+  | "oem_registry"
   | "launch_studio"
   | "ecosystem"
   | "client_desk"
@@ -145,6 +162,9 @@ function DashboardPage() {
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<DashboardTab>("command");
+  const [regionCode, setRegionCode] = useState<GlobalRegionCode>(() =>
+    detectDefaultRegionFromBrowser(),
+  );
   const [registeredBrand, setRegisteredBrand] = useState<RegisteredBrandIdentity>(() =>
     getRegisteredBrandIdentity(),
   );
@@ -225,6 +245,26 @@ function DashboardPage() {
   const activePlan = useMemo(
     () => B2B_BRAND_PLANS.find((p) => p.id === subState.activePlanId) ?? B2B_BRAND_PLANS[1],
     [subState.activePlanId],
+  );
+
+  const deskAccess = useMemo(
+    () =>
+      canOperateBrandDesk({
+        userEmail: user?.email,
+        brandWebsite: activeBrand.website,
+        brandVerified: activeBrand.verified,
+        brandSlug: activeBrand.slug,
+        isDeveloper,
+        firebaseEmailVerified: auth.currentUser?.emailVerified,
+        hasApprovedClaim: Boolean(getLocalClaimedBrandOverride(activeBrand.slug)),
+      }),
+    [
+      user?.email,
+      activeBrand.website,
+      activeBrand.verified,
+      activeBrand.slug,
+      isDeveloper,
+    ],
   );
 
   const hasTier2 = isTierEntitled(subState.activePlanId, "cx_launch_matrix");
@@ -308,12 +348,14 @@ function DashboardPage() {
       category: brandCategoryDraft.trim() || "Consumer Brand",
       country: brandCountryDraft.trim().toUpperCase().slice(0, 2) || "ZA",
       website: brandWebsiteDraft.trim(),
-      verified: true,
+      verified: deskAccess.allowed,
     });
     setRegisteredBrand(updated);
     setEditingBrand(false);
     toast.success(
-      `Registered Brand updated to ${updated.name}. All dashboard data is now exclusively scoped to ${updated.name}.`,
+      deskAccess.allowed
+        ? `Registered Brand updated to ${updated.name}. Corporate desk privileges confirmed.`
+        : `Workspace scoped to ${updated.name}. Verify your corporate domain email or DNS TXT record to unlock live actions.`,
     );
   };
 
@@ -679,8 +721,28 @@ function DashboardPage() {
                     </span>
                     <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/20 px-2.5 py-1 text-xs font-black text-emerald-300">
                       <CreditCard className="h-3.5 w-3.5" />
-                      Active Tier: {activePlan.name} (R{activePlan.priceZarMonthly.toLocaleString()}/mo)
+                      Active Tier: {activePlan.name} (
+                      {formatRegionalCurrency(activePlan.priceUsdMonthly, regionCode, false)}/mo)
                     </span>
+                    <label className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200">
+                      <Globe className="h-3.5 w-3.5 text-[#d6a928]" />
+                      <select
+                        aria-label="Active Global Market & Currency"
+                        value={regionCode}
+                        onChange={(e) => {
+                          const next = e.target.value as GlobalRegionCode;
+                          setRegionCode(next);
+                          setActiveRegionPreference(next);
+                        }}
+                        className="bg-transparent text-xs font-bold text-white outline-none cursor-pointer"
+                      >
+                        {Object.values(GLOBAL_REGIONS).map((reg) => (
+                          <option key={reg.code} value={reg.code} className="bg-slate-950 text-white">
+                            {reg.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -699,9 +761,17 @@ function DashboardPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => setClaimModalOpen(true)}
-                      className="h-8 gap-1.5 border-emerald-500/40 bg-emerald-950/60 text-xs font-bold text-emerald-300 hover:bg-emerald-900/60"
+                      className={cn(
+                        "h-8 gap-1.5 text-xs font-bold",
+                        deskAccess.allowed
+                          ? "border-emerald-500/40 bg-emerald-950/60 text-emerald-300 hover:bg-emerald-900/60"
+                          : "border-rose-500/60 bg-rose-950/70 text-rose-200 hover:bg-rose-900/70",
+                      )}
                     >
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Verify Ownership via Corporate Domain
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      {deskAccess.allowed
+                        ? `Corporate Gate Verified (${deskAccess.emailHost || "Sandbox"})`
+                        : "Verify Corporate Domain / DNS TXT"}
                     </Button>
                   </div>
 
@@ -712,6 +782,7 @@ function DashboardPage() {
 
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <Button
+                    disabled={!deskAccess.allowed}
                     onClick={() => {
                       setStudioCategory("product_launch");
                       setStudioModalOpen(true);
@@ -736,6 +807,27 @@ function DashboardPage() {
                   </Button>
                 </div>
               </div>
+
+              {/* Crack #1 Hardened Corporate Domain Verification Gate Banner */}
+              {!deskAccess.allowed && (
+                <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-rose-500/50 bg-rose-950/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-rose-300">
+                      <ShieldAlert className="h-4 w-4 text-rose-400" />
+                      <span>Corporate Domain Authentication Gate Active · Read-Only Preview</span>
+                    </div>
+                    <p className="text-xs font-bold text-white">{deskAccess.headline}</p>
+                    <p className="text-xs text-slate-300">{deskAccess.explanation}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => setClaimModalOpen(true)}
+                    className="shrink-0 bg-[#d6a928] font-black text-slate-950 hover:bg-[#e5b935]"
+                  >
+                    Verify Corporate Domain Now →
+                  </Button>
+                </div>
+              )}
 
               {/* Inline Searchable Brand Catalog Picker & Identity Editor */}
               {editingBrand && (
@@ -872,7 +964,8 @@ function DashboardPage() {
                         )}
                       >
                         {isCurrent ? "✓ " : ""}
-                        {plan.name.split(" (")[0]} (R{plan.priceZarMonthly.toLocaleString()}/mo)
+                        {plan.name.split(" (")[0]} (
+                        {formatRegionalCurrency(plan.priceUsdMonthly, regionCode, false)}/mo)
                       </button>
                     );
                   })}
@@ -882,7 +975,13 @@ function DashboardPage() {
 
             {/* Switch Active Operator / Shift Handover Bar for Shared Brand Logins */}
             <div className="mt-4">
-              <BrandOperatorHandoverBar brandName={activeBrand.name} />
+              <BrandOperatorHandoverBar
+                brandName={activeBrand.name}
+                brandSlug={activeBrand.slug}
+                ownerUid={user?.id ?? "owner"}
+                canAllocateOperators={deskAccess.allowed}
+                regionCode={regionCode}
+              />
             </div>
 
             {/* EXECUTIVE WORKSPACE NAVIGATION BAR */}
@@ -890,6 +989,7 @@ function DashboardPage() {
               {(
                 [
                   ["command", `📊 ${activeBrand.name} Intelligence & Barometer`],
+                  ["oem_registry", `🛡️ OEM Batches & Dealers`],
                   ["launch_studio", `🚀 ${activeBrand.name} Launch & Broadcast Studio`],
                   ["ecosystem", `🤝 Releases, Innovations & Collabs`],
                   [
@@ -900,7 +1000,7 @@ function DashboardPage() {
                     "cx_awards",
                     `🏆 ${activeBrand.name} CX Matrix & Staff Awards ${hasTier2 ? "" : "🔒 Tier 2+"}`,
                   ],
-                  ["b2b_pricing", "💳 Payment Tiers & Checkout (Google Pay / EFT)"],
+                  ["b2b_pricing", "💳 Payment Tiers & Checkout (Card / EFT / Global)"],
                   ...(hasAdminView ? ([["admin_sourcing", "🌍 Platform Admin Sourcing"]] as const) : []),
                 ] as const
               ).map(([tabKey, tabLabel]) => (
@@ -929,7 +1029,12 @@ function DashboardPage() {
                   key={activeBrand.id}
                   brand={activeBrand}
                   activePlanId={subState.activePlanId}
+                  regionCode={regionCode}
                   onVerify={() => {
+                    if (!deskAccess.allowed) {
+                      setClaimModalOpen(true);
+                      return;
+                    }
                     const next = setRegisteredBrandIdentity({
                       name: activeBrand.name,
                       verified: true,
@@ -964,10 +1069,11 @@ function DashboardPage() {
                           Tier 3 Entitlement · Enterprise Intelligence &amp; Awards Suite
                         </span>
                         <h3 className="mt-2 font-display text-xl font-black">
-                          Unlock AI CX Copilot, 14–20 Day CPA Pre-Escalation Shield &amp; Official Staff Awards for {activeBrand.name}
+                          Unlock AI CX Copilot, 14–20 Day Pre-Escalation Shield &amp; Official Staff Awards for {activeBrand.name}
                         </h3>
                         <p className="mt-1 text-xs text-slate-300">
-                          Your account is currently on <strong>{activePlan.name}</strong>. Upgrade to Plan 03 (Enterprise Intelligence · R14,900/mo) to unlock automated AI crisis drafting and downloadable SOrT Employee Recognition certificates.
+                          Your account is currently on <strong>{activePlan.name}</strong>. Upgrade to Plan 03 (Enterprise Intelligence ·{" "}
+                          {formatRegionalCurrency(890, regionCode, false)}/mo) to unlock automated AI crisis drafting and downloadable SOrT Employee Recognition certificates.
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -988,6 +1094,22 @@ function DashboardPage() {
                     </div>
                   </section>
                 )}
+              </div>
+            )}
+
+            {/* =====================================================================
+                TAB 1B: OEM BATCHES, AUTHORIZED DEALERS & GREY-MARKET INTERCEPT PROBE
+               ===================================================================== */}
+            {activeTab === "oem_registry" && (
+              <div className="mt-6">
+                <BrandOemRegistryPanel
+                  brandSlug={activeBrand.slug}
+                  brandName={activeBrand.name}
+                  ownerUid={user?.id || "owner"}
+                  regionCode={regionCode}
+                  canWrite={deskAccess.allowed}
+                  gateReason={deskAccess.headline}
+                />
               </div>
             )}
 
@@ -1303,6 +1425,8 @@ function DashboardPage() {
               <div className="mt-6">
                 <BrandCxDataAndAwardsMatrix
                   brandName={activeBrand.name}
+                  brandSlug={activeBrand.slug}
+                  regionCode={regionCode}
                   onUpgradeRequest={() => setActiveTab("b2b_pricing")}
                 />
               </div>
@@ -1621,19 +1745,20 @@ function DashboardPage() {
 function BrandRow({
   brand,
   activePlanId,
+  regionCode = "GLOBAL",
   onVerify,
   onOpenLaunchStudio,
   onUpgradeTier,
 }: {
   brand: Brand;
   activePlanId: BrandPlanTierId;
+  regionCode?: GlobalRegionCode;
   onVerify: () => void;
   onOpenLaunchStudio: (cat: BrandBroadcastCategory) => void;
   onUpgradeTier: () => void;
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [localVerified, setLocalVerified] = useState(brand.verified);
   const [commOpen, setCommOpen] = useState(false);
 
   const hasTier2 = isTierEntitled(activePlanId, "cx_launch_matrix");
@@ -1654,9 +1779,33 @@ function BrandRow({
     queryFn: () => fetchBrandKpis(brand.id, 30),
   });
 
+  const { data: scanEventsRes } = useQuery({
+    queryKey: ["brand-scan-events", brand.slug],
+    queryFn: () => fetchCounterfeitScanEvents(brand.slug),
+  });
+
+  const scanEvents = useMemo(
+    () => scanEventsRes?.events ?? [],
+    [scanEventsRes?.events],
+  );
+  const suspectedIntercepts = scanEvents.filter(
+    (e) => e.scan_outcome !== "matched_oem",
+  ).length;
+
   const brandTelemetry = useMemo(
-    () => getBrandSpecificTelemetry(brand.name),
-    [brand.name],
+    () => getBrandSpecificTelemetry(brand.name, regionCode, scanEvents),
+    [brand.name, regionCode, scanEvents],
+  );
+
+  const regionalRoi = useMemo(
+    () =>
+      calculateRegionalBrandRoi(brand.name, {
+        regionCode,
+        deflectedComplaintsCount: Math.max(stats?.trash ? Math.min(stats.trash, 12) : 0, 4),
+        suspectedCounterfeitScansCount: suspectedIntercepts,
+        turnaroundCount: 6,
+      }),
+    [brand.name, regionCode, stats?.trash, suspectedIntercepts],
   );
 
   const askVerify = async () => {
@@ -1664,10 +1813,9 @@ function BrandRow({
       await requestVerification({
         brandId: brand.id,
         userId: user?.id ?? "brand-operator",
-        message: "Requested from Brand Dashboard",
+        message: "Requested corporate verification from Brand Dashboard",
       });
-      setLocalVerified(true);
-      toast.success(t("brand.verificationPending", { defaultValue: "Verification requested!" }));
+      toast.info("Complete Corporate Domain Email or DNS TXT check to activate verified desk privileges.");
       onVerify();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Error");
@@ -1679,7 +1827,8 @@ function BrandRow({
   const total = stashCount + trashCount;
   const trustScore = Number(brand.trust_score) > 0 ? Number(brand.trust_score) : 0;
   const stashPct = total > 0 ? Math.round((100 * stashCount) / total) : trustScore;
-  const isVerified = localVerified || brand.verified;
+  const isVerified = Boolean(brand.verified);
+  const regionCfg = getRegionConfig(regionCode);
 
   return (
     <div className="space-y-6">
@@ -1973,38 +2122,56 @@ function BrandRow({
         </div>
 
         {hasTier3 ? (
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {brandTelemetry.counterfeitRadar.map((alert) => (
-              <div
-                key={alert.id}
-                className="flex flex-col justify-between rounded-2xl border border-border bg-background p-4 text-xs"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono font-black text-foreground">{alert.batchCode}</span>
-                    <span
-                      className={cn(
-                        "rounded px-2 py-0.5 text-[10px] font-black",
-                        alert.scanStatus === "Verified Authentic Batch"
-                          ? "bg-emerald-500/15 text-emerald-600"
-                          : "bg-rose-500/15 text-rose-600",
-                      )}
-                    >
-                      {alert.scanStatus}
-                    </span>
-                  </div>
-                  <p className="mt-2 font-bold text-foreground">{alert.location}</p>
-                  <p className="mt-1 text-muted-foreground">{alert.actionRecommended}</p>
-                </div>
-                <p className="mt-3 border-t border-border pt-2 font-mono text-[11px] font-bold text-[#b88914] tabular-nums">
-                  {alert.scansCount} Consumer Scans Logged on /scan
+          <div className="mt-4 space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3.5 text-xs">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                  {regionCfg.label} · Counterfeit &amp; Grey-Market Revenue Shield
                 </p>
+                <p className="mt-1 font-bold text-foreground">{regionalRoi.counterfeitHeadline}</p>
               </div>
-            ))}
+              <div className="rounded-xl border border-[#d6a928]/40 bg-[#d6a928]/10 p-3.5 text-xs">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#b88914]">
+                  {regionCfg.regulatorName} ({regionCfg.regulationShort}) Deflection
+                </p>
+                <p className="mt-1 font-bold text-foreground">{regionalRoi.deflectionHeadline}</p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {brandTelemetry.counterfeitRadar.map((alert) => (
+                <div
+                  key={alert.id}
+                  className="flex flex-col justify-between rounded-2xl border border-border bg-background p-4 text-xs"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono font-black text-foreground">{alert.batchCode}</span>
+                      <span
+                        className={cn(
+                          "rounded px-2 py-0.5 text-[10px] font-black",
+                          alert.scanStatus === "Verified Authentic Batch"
+                            ? "bg-emerald-500/15 text-emerald-600"
+                            : "bg-rose-500/15 text-rose-600",
+                        )}
+                      >
+                        {alert.scanStatus}
+                      </span>
+                    </div>
+                    <p className="mt-2 font-bold text-foreground">{alert.location}</p>
+                    <p className="mt-1 text-muted-foreground">{alert.actionRecommended}</p>
+                  </div>
+                  <p className="mt-3 border-t border-border pt-2 font-mono text-[11px] font-bold text-[#b88914] tabular-nums">
+                    {alert.scansCount} Consumer Scans Logged on /scan
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <p className="mt-4 text-xs text-muted-foreground">
-            Upgrade to <strong>Plan 03: Enterprise Intelligence &amp; Awards Suite</strong> to unlock batch-level barcode counterfeit detection and grey-market store alerts for {brand.name}.
+            Upgrade to <strong>Plan 03: Enterprise Intelligence &amp; Awards Suite</strong> (
+            {formatRegionalCurrency(890, regionCode, false)}/mo) to unlock batch-level barcode counterfeit detection and grey-market store alerts for {brand.name}.
           </p>
         )}
       </section>

@@ -48,6 +48,7 @@ export function ItemCard({
   const [busy, setBusy] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(defaultCommentsOpen);
   const [stashCelebration, setStashCelebration] = useState(false);
+  const [mediaFailed, setMediaFailed] = useState(false);
   const [broadcastSituationOpen, setBroadcastSituationOpen] = useState(false);
   const [brandCallReqOpen, setBrandCallReqOpen] = useState(false);
 
@@ -126,16 +127,17 @@ export function ItemCard({
         label="STASHED!"
         sublabel="Keep what serves you · Gold standard"
       />
-      {item.signedImageUrl ? (
+      {item.signedImageUrl && !mediaFailed ? (
         <Link to="/items/$id" params={{ id: item.id }}>
           <img
             src={item.signedImageUrl}
             alt={item.title}
             className="aspect-video w-full object-cover"
             loading="lazy"
+            onError={() => setMediaFailed(true)}
           />
         </Link>
-      ) : item.brandLogoUrl ? (
+      ) : item.brandLogoUrl && !mediaFailed ? (
         <Link
           to="/items/$id"
           params={{ id: item.id }}
@@ -146,7 +148,21 @@ export function ItemCard({
             alt={item.brandName ?? ""}
             className="max-h-full max-w-[60%] object-contain"
             loading="lazy"
+            onError={() => setMediaFailed(true)}
           />
+        </Link>
+      ) : (item.signedImageUrl || item.brandLogoUrl) && mediaFailed ? (
+        <Link
+          to="/items/$id"
+          params={{ id: item.id }}
+          className="flex aspect-video w-full items-center justify-center bg-secondary/40 p-8 text-center"
+        >
+          <span
+            translate="no"
+            className="notranslate font-display text-2xl font-black tracking-tight text-muted-foreground"
+          >
+            {item.brandName || item.title}
+          </span>
         </Link>
       ) : null}
 

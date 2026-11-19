@@ -199,14 +199,16 @@ export const Route = (createFileRoute("/api/ai-scan") as any)({
             mimeType?: string;
             qrData?: string;
             barcode?: string;
-            inspectionMode?: "barcode" | "logo" | "full_product" | "general";
+            serialOrPartCode?: string;
+            industrySector?: string;
+            inspectionMode?: "barcode" | "qr_code" | "logo" | "full_product" | "general";
             mode?: "full" | "brand" | "authenticity";
             mediaType?: "image" | "video_frame";
           } | null;
 
-          if (!body?.image && !body?.qrData && !body?.barcode) {
+          if (!body?.image && !body?.qrData && !body?.barcode && !body?.serialOrPartCode) {
             return Response.json(
-              { error: "Image, video frame, or QR/barcode data is required for scanning." },
+              { error: "Image, video frame, barcode, QR payload, or serial/OEM part number is required for scanning." },
               { status: 400 }
             );
           }
@@ -225,90 +227,244 @@ export const Route = (createFileRoute("/api/ai-scan") as any)({
             }
           }
 
-          // Pre-fetch barcode details from Open Food Facts & known registries
+          // Multi-registry global lookup + deterministic OEM/VIN/Luxury serial decoder
           let barcodeVerifiedInfo: {
             brandName?: string;
             brandOwner?: string;
             productName?: string;
             category?: string;
+            marketTier?: string;
+            countryOfOrigin?: string;
             rawDetails?: string;
           } | null = null;
 
-          const rawCode = (body?.barcode || body?.qrData || "").trim().replace(/\D/g, "");
+          const rawDigits = (body?.barcode || body?.qrData || "").trim().replace(/\D/g, "");
+          const rawAlphaCode = (body?.serialOrPartCode || body?.barcode || body?.qrData || "")
+            .trim()
+            .toUpperCase();
 
-          if (rawCode && KNOWN_BARCODES[rawCode]) {
-            const kb = KNOWN_BARCODES[rawCode];
+          // 1. Deterministic global OEM / VIN / Luxury / Footwear format classifier
+          const classifyIndustrialCode = (code: string): typeof barcodeVerifiedInfo => {
+            if (!code || code.length < 5) return null;
+            // 17-character ISO 3779 Automotive VIN (exclude I, O, Q)
+            if (/^[A-HJ-NPR-Z0-9]{17}$/.test(code)) {
+              const wmi = code.slice(0, 3);
+              const wmiMap: Record<string, { brand: string; owner: string; country: string }> = {
+                JTD: { brand: "Toyota", owner: "Toyota Motor Corporation", country: "Japan" },
+                JTM: { brand: "Toyota", owner: "Toyota Motor Corporation", country: "Japan" },
+                AHT: { brand: "Toyota South Africa", owner: "Toyota Motor Corporation", country: "South Africa" },
+                WBA: { brand: "BMW", owner: "BMW AG", country: "Germany" },
+                WBS: { brand: "BMW M", owner: "BMW AG", country: "Germany" },
+                WDB: { brand: "Mercedes-Benz", owner: "Mercedes-Benz Group AG", country: "Germany" },
+                WAU: { brand: "Audi", owner: "Volkswagen Group", country: "Germany" },
+                WVW: { brand: "Volkswagen", owner: "Volkswagen Group", country: "Germany" },
+                "1G1": { brand: "Chevrolet", owner: "General Motors", country: "United States" },
+                "5YJ": { brand: "Tesla", owner: "Tesla, Inc.", country: "United States" },
+              };
+              const match = wmiMap[wmi];
+              return {
+                brandName: match?.brand || `ISO 3779 VIN (${wmi})`,
+                brandOwner: match?.owner || "OEM Automotive Manufacturer",
+                productName: `Automotive Chassis / VIN ${code}`,
+                category: "Automotive Parts & Vehicles",
+                marketTier: "Premium",
+                countryOfOrigin: match?.country || "Global ISO 3779",
+                rawDetails: `17-char ISO 3779 VIN decoded (WMI: ${wmi}). Verify stamped firewall plate matches registration disc.`,
+              };
+            }
+            // Toyota / Lexus 10-char OEM part format (e.g., 90915-YZZD2 or 04465-0K240)
+            if (/^(90915|04465|17801|89661|48510)[-\s]?[A-Z0-9]{5}$/.test(code)) {
+              return {
+                brandName: "Toyota Genuine Parts",
+                brandOwner: "Toyota Motor Corporation",
+                productName: `Toyota OEM Component ${code}`,
+                category: "Automotive Parts",
+                marketTier: "OEM Original",
+                countryOfOrigin: "Japan / Global OEM",
+                rawDetails: `Matches Toyota Genuine Parts 5+5 OEM part syntax (${code}). Inspect red/white holographic Denso/Toyota seal.`,
+              };
+            }
+            // Nike Style-Color SKU (e.g., CW2288-111, DZ5485-612)
+            if (/^[A-Z]{2}\d{4}-\d{3}$/.test(code)) {
+              return {
+                brandName: "Nike",
+                brandOwner: "Nike, Inc.",
+                productName: `Nike Footwear / Apparel Style ${code}`,
+                category: "Footwear & Sneakers",
+                marketTier: "Premium",
+                countryOfOrigin: "United States (Beaverton, OR)",
+                rawDetails: `Matches Nike 9-char Style-Color taxonomy (${code}). Must match both tongue size tag and box label font.`,
+              };
+            }
+            // Adidas Art. No. (e.g., HQ4276, IF6514)
+            if (/^(HQ|IF|GZ|GW|FY|FV|EE|EG|BD|B7)[0-9]{4}$/.test(code)) {
+              return {
+                brandName: "Adidas",
+                brandOwner: "Adidas AG",
+                productName: `Adidas Originals / Performance Art. ${code}`,
+                category: "Footwear & Sneakers",
+                marketTier: "Premium",
+                countryOfOrigin: "Germany (Herzogenaurach)",
+                rawDetails: `Matches Adidas 6-char Art. No. syntax (${code}). Check left/right shoe staggered PO # serials.`,
+              };
+            }
+            // Rolex 5/6-digit Reference (e.g., 126610LN, 126500LN, 116610LV, 16610)
+            if (/^(116610|126610|126500|116500|126710|116710|124060|126334|228238|16610)[A-Z]{0,4}$/.test(code)) {
+              return {
+                brandName: "Rolex",
+                brandOwner: "Rolex SA (Hans Wilsdorf Foundation)",
+                productName: `Rolex Oyster Perpetual Ref. ${code}`,
+                category: "Luxury Watches & Horology",
+                marketTier: "Luxury",
+                countryOfOrigin: "Switzerland (Geneva)",
+                rawDetails: `Matches Rolex Geneva reference ${code}. Verify 6 o'clock rehaut serial engraving, laser-etched crown at 6 o'clock sapphire, and 2.5x cyclops magnification.`,
+              };
+            }
+            // Apple Model Axxxx
+            if (/^A\d{4}$/.test(code)) {
+              return {
+                brandName: "Apple",
+                brandOwner: "Apple Inc.",
+                productName: `Apple Hardware Model ${code}`,
+                category: "Electronics & Appliances",
+                marketTier: "Luxury",
+                countryOfOrigin: "United States (Cupertino, CA)",
+                rawDetails: `Matches Apple regulatory A-model format (${code}). Verify CE/FCC marks and engraved serial on checkcoverage.apple.com.`,
+              };
+            }
+            return null;
+          };
+
+          if (rawDigits && KNOWN_BARCODES[rawDigits]) {
+            const kb = KNOWN_BARCODES[rawDigits];
             barcodeVerifiedInfo = {
               brandName: kb.brand,
               brandOwner: kb.owner,
               productName: kb.product,
               category: kb.category,
+              marketTier: kb.marketTier,
+              countryOfOrigin: kb.country,
               rawDetails: `Direct registry match: ${kb.product} manufactured by ${kb.owner}.`,
             };
-          } else if (rawCode && rawCode.length >= 8) {
+          } else {
+            const industrialMatch = classifyIndustrialCode(rawAlphaCode);
+            if (industrialMatch) {
+              barcodeVerifiedInfo = industrialMatch;
+            }
+          }
+
+          // 2. Parallel global barcode lookups (Food, Non-Food Household/Appliances, Beauty, UPCitemdb)
+          if (!barcodeVerifiedInfo && rawDigits && rawDigits.length >= 8) {
+            const safeJsonFetch = async (url: string) => {
+              const res = await fetch(url, {
+                headers: { "User-Agent": "StashOrTrash-UniversalVerifier/2.0" },
+                signal: AbortSignal.timeout(2500),
+              });
+              if (!res.ok) return null;
+              return res.json();
+            };
+
+            const [offFood, offProducts, offBeauty, upcDb] = await Promise.allSettled([
+              safeJsonFetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(rawDigits)}.json`),
+              safeJsonFetch(`https://world.openproductsfacts.org/api/v2/product/${encodeURIComponent(rawDigits)}.json`),
+              safeJsonFetch(`https://world.openbeautyfacts.org/api/v2/product/${encodeURIComponent(rawDigits)}.json`),
+              safeJsonFetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(rawDigits)}`),
+            ]);
+
+            const extractOff = (settled: PromiseSettledResult<any>, defaultCat: string, sourceLabel: string) => {
+              if (settled.status !== "fulfilled" || !settled.value) return null;
+              const j = settled.value;
+              if (j?.status === 1 && j.product) {
+                const p = j.product;
+                const bName = p.brands || p.brand_owner || "Identified Brand";
+                const pName = p.product_name || p.product_name_en || `Product #${rawDigits}`;
+                return {
+                  brandName: bName,
+                  brandOwner: p.brand_owner || (bName.toLowerCase().includes("coca") ? "The Coca-Cola Company" : bName),
+                  productName: pName,
+                  category: p.categories || defaultCat,
+                  rawDetails: `${sourceLabel} verified: ${pName} (${bName}).`,
+                };
+              }
+              return null;
+            };
+
+            barcodeVerifiedInfo =
+              extractOff(offFood, "Food & Beverage", "Open Food Facts GS1") ||
+              extractOff(offProducts, "Household & Electrical Appliances", "Open Products Facts GS1") ||
+              extractOff(offBeauty, "Cosmetics & Personal Care", "Open Beauty Facts GS1");
+
+            if (!barcodeVerifiedInfo && upcDb.status === "fulfilled" && upcDb.value?.items?.[0]) {
+              const item = upcDb.value.items[0];
+              barcodeVerifiedInfo = {
+                brandName: item.brand || "Verified UPC Brand",
+                brandOwner: item.brand || "Global Brand Manufacturer",
+                productName: item.title || `Retail Product #${rawDigits}`,
+                category: item.category || "Consumer Goods & Electronics",
+                rawDetails: `UPCitemdb Global Registry matched: ${item.title} (${item.brand || "OEM"}).`,
+              };
+            }
+          }
+
+          // 3. Optional Supabase OEM batch prefix lookup (if migration applied & public read allowed)
+          let oemBatchNote = "";
+          if (rawAlphaCode.length >= 4) {
             try {
-              const offRes = await fetch(
-                `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(rawCode)}.json`,
+              const sbUrl = process.env.VITE_SUPABASE_URL || "https://gbdqylnvbtmkrvoxzmfj.supabase.co";
+              const sbKey =
+                process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+                process.env.SUPABASE_ANON_KEY ||
+                "sb_publishable_laxSV6WZcW-QGNze_wliRA_mBvluj0T";
+              const oemRes = await fetch(
+                `${sbUrl}/rest/v1/brand_oem_batches?select=brand_name,sku_code,batch_prefix,status,industry_sector,authentic_portal_domain&limit=50`,
                 {
-                  headers: { "User-Agent": "StashOrTrash-AuthenticityScanner/1.0" },
-                  signal: AbortSignal.timeout(3000),
-                }
+                  headers: { apikey: sbKey },
+                  signal: AbortSignal.timeout(1800),
+                },
               );
-              if (offRes.ok) {
-                const offJson = (await offRes.json()) as any;
-                if (offJson?.status === 1 && offJson.product) {
-                  const p = offJson.product;
-                  const bName = p.brands || p.brand_owner || "Identified Product";
-                  const pName = p.product_name || p.product_name_en || "Consumer Product";
-                  barcodeVerifiedInfo = {
-                    brandName: bName,
-                    brandOwner: p.brand_owner || (bName.toLowerCase().includes("coca") ? "The Coca-Cola Company" : bName),
-                    productName: pName,
-                    category: p.categories || "Food & Beverage",
-                    rawDetails: `Open Food Facts GS1 verified: ${pName} (${bName}).`,
-                  };
+              if (oemRes.ok) {
+                const rows = (await oemRes.json()) as any[];
+                if (Array.isArray(rows)) {
+                  const hit = rows.find((r) =>
+                    rawAlphaCode.includes(String(r.batch_prefix || "").toUpperCase()),
+                  );
+                  if (hit) {
+                    oemBatchNote = `Brand OEM Registry HIT: ${hit.brand_name} SKU ${hit.sku_code} (status: ${hit.status}, portal: ${hit.authentic_portal_domain || "official"}).`;
+                  }
                 }
               }
             } catch {
-              // Ignore network timeout on Open Food Facts
+              // ignore if migration pending
             }
           }
 
           const prompt = `
-Analyze this consumer product submission for Stash Or Trash (The Brand Barometer & Authenticity Verifier).
+Analyze this consumer product submission for Stash Or Trash (The Universal Brand Barometer & Anti-Counterfeit Verifier).
 User Inspection Mode: ${body?.inspectionMode || "general"}
+Requested Industry Focus: ${body?.industrySector || "auto_detect_all_industries"}
 
-Perform a comprehensive multi-tier forensic evaluation:
+Perform an institutional, Moody's-level multi-industry forensic evaluation covering ALL global product categories (Groceries & FMCG, Electrical Appliances, Automotive OEM Parts & VINs, Athletic Footwear/Apparel, and Luxury Watches e.g. Rolex/Omega):
 
 1. BRAND & CORPORATE OWNER IDENTIFICATION:
-   - Identify the consumer brand name (e.g., Coca-Cola, Nike, Gucci, Louis Vuitton, Zara, Chanel, Rolex, Apple, Oreo, Sprite, Audi, Nivea, PlayStation, KitKat).
-   - Crucial: Identify the CORPORATE BRAND OWNER / PARENT COMPANY (e.g., Coca-Cola/Sprite/Fanta -> The Coca-Cola Company; Gucci/Balenciaga -> Kering; Louis Vuitton/Dior -> LVMH; Nike/Jordan -> Nike, Inc.; Zara -> Inditex; Oreo -> Mondelēz International; Audi -> Volkswagen Group; Nivea -> Beiersdorf; Ray-Ban -> EssilorLuxottica; PlayStation -> Sony Group Corporation; Ben & Jerry's -> Unilever). The consumer must not have to search for the brand owner; pinpoint the exact corporate parent company, holding company, or parent conglomerate.
-   - Extract the specific product name or model/variant shown (e.g., if a 2-litre bottle of Coca-Cola or Coca-Cola barcode is present, state "Coca-Cola 2 Litre Original" or the exact bottle variant).
-   - Classify the category (e.g., Food & Beverage, Fashion & Apparel, Luxury & Leather Goods, Footwear & Sneakers, Consumer Electronics, Cosmetics & Perfume, Automotive, Retail).
-   - Classify the market tier: "Budget", "Mass Market", "Premium", or "Luxury".
-   - Identify the country of origin / corporate headquarters.
-   ${body?.qrData ? `Additional QR Code payload detected: "${body.qrData}". Incorporate this into brand/product identification.` : ""}
-   ${body?.barcode ? `Additional Barcode detected: "${body.barcode}". Incorporate this into product lookup and GS1 validation.` : ""}
-   ${barcodeVerifiedInfo ? `Verified GS1 / Barcode Database Record: Brand: "${barcodeVerifiedInfo.brandName}", Owner: "${barcodeVerifiedInfo.brandOwner}", Product: "${barcodeVerifiedInfo.productName}". ${barcodeVerifiedInfo.rawDetails}` : ""}
+   - Identify the consumer brand name and exact CORPORATE BRAND OWNER / PARENT COMPANY (e.g., Coca-Cola/Sprite -> The Coca-Cola Company; Rolex -> Rolex SA / Hans Wilsdorf Foundation; Toyota/Lexus -> Toyota Motor Corporation; Nike/Jordan -> Nike, Inc.; Gucci/Balenciaga -> Kering; Louis Vuitton/Dior -> LVMH; Apple -> Apple Inc.; Bosch -> Robert Bosch GmbH).
+   - Extract the specific product name, model number, watch reference (e.g., Ref. 126610LN), automotive part number (e.g., 90915-YZZD2), sneaker style SKU (e.g., CW2288-111), or appliance model code.
+   - Classify industrySector ("groceries_fmcg" | "luxury_watches" | "athletic_footwear" | "automotive_parts" | "electronics_appliances" | "general_retail") and marketTier ("Budget" | "Mass Market" | "Premium" | "Luxury").
+   ${body?.qrData ? `Additional QR Code payload detected: "${body.qrData}".` : ""}
+   ${body?.barcode ? `Additional Barcode detected: "${body.barcode}".` : ""}
+   ${body?.serialOrPartCode ? `User-supplied Serial / OEM Part / Reference Code: "${body.serialOrPartCode}".` : ""}
+   ${barcodeVerifiedInfo ? `Verified Global Registry / OEM Decoder Record: Brand: "${barcodeVerifiedInfo.brandName}", Owner: "${barcodeVerifiedInfo.brandOwner}", Product: "${barcodeVerifiedInfo.productName}". ${barcodeVerifiedInfo.rawDetails}` : ""}
+   ${oemBatchNote ? `Brand Dashboard OEM Registry Result: ${oemBatchNote}` : ""}
 
-2. PHYSICAL PRODUCT COUNTERFEIT VS. LEGIT VERIFICATION:
-   - Provide a granular Anti-Counterfeit assessment for consumer goods, beverages, fashion, luxury, and electronics.
-   - Specifically differentiate between ORIGINAL (GENUINE) and COUNTERFEIT (REPLICA/BOOTLEG):
-     * If inspection mode is "qr_code" or QR payload is provided: Analyze the QR code destination and integrity. Authentic goods use official brand security domains (e.g., certilogo.com, apple.com, gucci.com, or GS1 Digital Link /01/ GTINs). Counterfeits use spoofed lookalike domains, unencrypted HTTP, or generic web links. Check print sharpness (fine thermal/laser transfer vs blurry photocopy).
-     * Logo Inspection: Examine logo typography, font weight, kerning, debossing/embossing, symmetry, alignment.
-     * Barcode, Serial & Care Tag Inspection: Check if the barcode standard matches the brand (UPC-A/EAN-13 GS1 standard), if serial tags follow authentic syntax.
-     * Craftsmanship & Material Inspection: Analyze bottle/packaging finish (PET plastic quality, tamper-evident cap ring, label printing alignment, contour grooves, stitching/hardware for fashion).
-   - Client & Buyer Verification Guide: Give 3-4 specific, actionable tips on how clients can verify whether this specific product is theirs / authentic (e.g., "Check the tamper-evident twist ring on the cap", "Inspect the embossed brand trademark", "Confirm the GS1 country prefix on the barcode", "Check the lot production code stamped near the neck").
-   - Brand Protection Tracking: Identify typical authorized sales channels and give advice to protect clients from unauthorized fakes.
-   - Key Differences To Look For: Provide clear, contrasting cues showing exactly what authentic original pieces exhibit vs what cheap replicas get wrong.
+2. UNIVERSAL SECTOR-SPECIFIC COUNTERFEIT & AUTHENTICITY FORENSICS:
+   - For Luxury Watches (e.g., Rolex): Inspect rehaut ROLEXROLEX engraving alignment with minute markers, 6 o'clock etched coronet crystal watermark, cyclops 2.5x magnification & AR coating, dial serif font spacing ("SUPERLATIVE CHRONOMETER"), bezel pearl symmetry, and lug/SEL tolerances.
+   - For Automotive Parts (e.g., Toyota, Bosch, BMW): Check OEM 5+5 part typography, security hologram shifting ink, weld/casting burr quality, and ISO 3779 WMI chassis prefix.
+   - For Electrical Appliances & Electronics: Inspect regulatory safety stamps (CE, UL, FCC, SABS, NRCS, UKCA), crisp laser-etched vs cheap paper serial stickers, and plug/insulation build quality.
+   - For Sneakers & Luxury Fashion: Inspect size-tag font weight, SKU box font, tongue/heel stitching density (SPI), and Certilogo / RFID NFC portals.
+   - For Groceries & Pharmaceuticals: Inspect GS1 prefix consistency, neck laser-printed lot/expiry dates, and tamper-evident cap/foil bridges.
    - Counterfeit Verdict: "legit" | "likely_legit" | "suspected_counterfeit" | "high_risk_fake" | "inconclusive".
-   - Counterfeit Risk Score: 0 (completely genuine) to 100 (confirmed replica/fake). Authenticity Score: 0 to 100 (100 = verified authentic).
 
 3. FORENSIC MEDIA LEGITIMACY (DEEPFAKE & TAMPERING SHIELD):
-   - Scrutinize this ${body?.mediaType === "video_frame" ? "video frame / clip capture" : "picture / visual evidence"} for digital integrity.
-   - Detect signs of AI Generation / Synthetic Media (Midjourney, Stable Diffusion, Flux, Sora artifacts, synthetic plastic skin, distorted background text, impossible reflections).
-   - Detect signs of Digital Tampering / Photoshop Manipulation (cloned textures, spliced serial numbers, warped seams, inconsistent lighting vectors).
-   - Provide forensic details, verdict status, reasons, and flags.
+   - Scrutinize this ${body?.mediaType === "video_frame" ? "video frame / clip capture" : "picture / visual evidence"} for AI generation or photo splicing/tampered serial numbers.
 `;
 
           const parts: any[] = [];
@@ -338,6 +494,9 @@ Perform a comprehensive multi-tier forensic evaluation:
                   countryOfOrigin: { type: Type.STRING, description: "Headquarters country of brand owner" },
                   confidence: { type: Type.NUMBER, description: "0-100 confidence score" },
                   qrOrBarcodeDecoded: { type: Type.STRING, description: "Decoded barcode or QR details if visible" },
+                  industrySector: { type: Type.STRING, description: "groceries_fmcg | luxury_watches | athletic_footwear | automotive_parts | electronics_appliances | general_retail" },
+                  serialOrPartNumberDetected: { type: Type.STRING, description: "Detected OEM part number, VIN, watch reference/serial, or shoe SKU" },
+                  regulatoryComplianceMarks: { type: Type.STRING, description: "CE, UL, FCC, SABS, NRCS, GS1, or Swiss Made hallmarks detected" },
                   summary: { type: Type.STRING, description: "Concise summary of identified product and brand" },
                 },
                 required: [
@@ -524,10 +683,10 @@ Perform a comprehensive multi-tier forensic evaluation:
           const hasBarcodeMatch = Boolean(barcodeVerifiedInfo);
           const hasQrInput = qrStr.length > 0;
 
-          if (!hasBarcodeMatch && !hasQrInput) {
+          if (!hasBarcodeMatch && !hasQrInput && !oemBatchNote) {
             const reasonDetail = !ai
-              ? "Visual forensic AI requires GEMINI_API_KEY on the server, or provide a GS1 barcode or QR payload for deterministic registry lookup."
-              : `Visual AI models could not process this scan (${lastModelError?.message || "service busy"}). Try supplying the barcode digits directly.`;
+              ? "Visual forensic AI requires GEMINI_API_KEY on the server, or provide a GS1 barcode, QR payload, or OEM/VIN serial for deterministic registry lookup."
+              : `Visual AI models could not process this scan (${lastModelError?.message || "service busy"}). Try supplying the barcode or serial digits directly.`;
             return Response.json(
               {
                 error: reasonDetail,
@@ -549,49 +708,54 @@ Perform a comprehensive multi-tier forensic evaluation:
 
           const bName =
             barcodeVerifiedInfo?.brandName ||
-            (isCertilogo ? "Certilogo-Protected Brand" : "Unverified QR Brand");
+            (isCertilogo ? "Certilogo-Protected Brand" : oemBatchNote ? "Verified Brand OEM Registry" : "Unverified QR Brand");
           const bOwner =
             barcodeVerifiedInfo?.brandOwner ||
             (isCertilogo ? "Verified Brand Registrar (Certilogo)" : "Unresolved Domain Registrar");
           const pName =
             barcodeVerifiedInfo?.productName ||
-            (hasQrInput ? `QR Target (${qrStr.slice(0, 48)})` : `GS1 Barcode #${rawCode}`);
+            (hasQrInput ? `QR Target (${qrStr.slice(0, 48)})` : `GS1 / OEM Code #${rawDigits || rawAlphaCode}`);
           const cat = barcodeVerifiedInfo?.category || "Consumer Goods";
-          const bcLabel = body?.barcode || rawCode || (hasQrInput ? "QR-2D" : "GS1-REGISTRY");
+          const bcLabel = body?.barcode || rawDigits || rawAlphaCode || (hasQrInput ? "QR-2D" : "GS1-REGISTRY");
 
           const verdict: "legit" | "high_risk_fake" | "inconclusive" = isPhishingQr
             ? "high_risk_fake"
-            : hasBarcodeMatch || isCertilogo || isGs1DigitalLink
+            : hasBarcodeMatch || isCertilogo || isGs1DigitalLink || Boolean(oemBatchNote)
               ? "legit"
               : "inconclusive";
-          const authScore = isPhishingQr ? 22 : hasBarcodeMatch ? 88 : isCertilogo || isGs1DigitalLink ? 84 : 50;
+          const authScore = isPhishingQr ? 22 : hasBarcodeMatch || oemBatchNote ? 89 : isCertilogo || isGs1DigitalLink ? 84 : 50;
           const fakeScore = 100 - authScore;
           const badgeLabel = isPhishingQr
             ? "Suspicious QR Domain Risk"
-            : hasBarcodeMatch
-              ? "GS1 Registry Matched (Deterministic)"
-              : isCertilogo || isGs1DigitalLink
-                ? "Verified Protocol Link"
-                : "Inconclusive QR (Manual Visual Check)";
+            : oemBatchNote
+              ? "OEM Whitelist Matched"
+              : hasBarcodeMatch
+                ? "Global Registry / OEM Format Matched"
+                : isCertilogo || isGs1DigitalLink
+                  ? "Verified Protocol Link"
+                  : "Inconclusive Code (Visual Inspection Recommended)";
 
           const deterministicResult = {
             brandInfo: {
-              identified: hasBarcodeMatch || isCertilogo || isGs1DigitalLink,
+              identified: hasBarcodeMatch || isCertilogo || isGs1DigitalLink || Boolean(oemBatchNote),
               brandName: bName,
               brandOwner: bOwner,
               parentCompanyContext: hasBarcodeMatch
-                ? `${bName} matched against Open Food Facts / GS1 prefix registry (${bOwner}).`
-                : "Evaluated via deterministic QR host inspection (visual AI check skipped because GEMINI_API_KEY is not active).",
+                ? `${bName} matched against global GS1 / UPC / Industrial OEM decoder (${bOwner}).`
+                : "Evaluated via deterministic QR host inspection.",
               productName: pName,
               category: cat,
-              marketTier: "Mass Market",
-              countryOfOrigin: "International GS1",
-              confidence: hasBarcodeMatch ? 86 : 55,
+              marketTier: barcodeVerifiedInfo?.marketTier || "Mass Market",
+              countryOfOrigin: barcodeVerifiedInfo?.countryOfOrigin || "International GS1 / OEM",
+              confidence: hasBarcodeMatch || oemBatchNote ? 88 : 55,
               qrOrBarcodeDecoded: qrStr || bcLabel,
+              industrySector: body?.industrySector || "general_retail",
+              serialOrPartNumberDetected: rawAlphaCode || bcLabel,
+              regulatoryComplianceMarks: "GS1 / OEM Serial Taxonomy Checked",
               summary: isPhishingQr
                 ? "Alert: QR destination uses an unencrypted HTTP scheme or non-standard domain often flagged in phishing/counterfeit links."
                 : hasBarcodeMatch
-                  ? `GS1 / Open Food Facts matched ${pName} (${bName}). Physical packaging visual forensics requires GEMINI_API_KEY.`
+                  ? `${barcodeVerifiedInfo?.rawDetails || ""} ${oemBatchNote}`.trim()
                   : "QR URL structure checked without visual AI. Confirm the printed domain matches the manufacturer's official site.",
             },
             authenticity: {

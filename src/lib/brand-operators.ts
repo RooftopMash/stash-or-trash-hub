@@ -1,3 +1,10 @@
+import { supabase } from "@/integrations/supabase/client";
+import {
+  getRegionConfig,
+  type GlobalRegionCode,
+} from "@/lib/global-regions";
+import type { CounterfeitScanEvent } from "@/lib/oem-registry";
+
 export interface BrandDeskOperator {
   id: string;
   name: string;
@@ -11,6 +18,12 @@ export interface BrandDeskOperator {
   liveBroadcastsHosted: number;
   sotOperatorScore: number;
   awardBadge: string;
+  operatorEmail?: string;
+  brandSlug?: string;
+  ownerUid?: string;
+  verifiedByOwner?: boolean;
+  countryCode?: string;
+  status?: "online" | "busy" | "offline" | "revoked";
 }
 
 export interface OperatorShiftLogEntry {
@@ -83,6 +96,8 @@ export interface RegisteredBrandIdentity {
   trust_score: number;
   verified: boolean;
   ownerEmail?: string;
+  verifiedDomain?: string;
+  verificationStatus?: "verified_corporate" | "unverified_pending" | "sandbox_preview";
 }
 
 const DEFAULT_REGISTERED_BRAND: RegisteredBrandIdentity = {
@@ -93,7 +108,8 @@ const DEFAULT_REGISTERED_BRAND: RegisteredBrandIdentity = {
   country: "ZA",
   website: "https://www.nandos.co.za",
   trust_score: 86,
-  verified: true,
+  verified: false,
+  verificationStatus: "sandbox_preview",
 };
 
 export function getRegisteredBrandIdentity(): RegisteredBrandIdentity {
@@ -142,10 +158,10 @@ export function setRegisteredBrandIdentity(
     name: cleanName,
     slug: cleanSlug,
     category: partial.category || current.category || "Consumer Brand",
-    country: partial.country || current.country || "ZA",
+    country: partial.country || current.country || "GLOBAL",
     website: partial.website ?? current.website,
     trust_score: Number(partial.trust_score) > 0 ? Number(partial.trust_score) : current.trust_score,
-    verified: partial.verified ?? true,
+    verified: partial.verified ?? false,
   };
   if (typeof window !== "undefined") {
     try {
@@ -219,77 +235,105 @@ export interface BrandCounterfeitAlert {
   actionRecommended: string;
 }
 
-export function getBrandSpecificTelemetry(brandName: string): {
+export function getBrandSpecificTelemetry(
+  brandName: string,
+  regionCode: GlobalRegionCode = "GLOBAL",
+  scanEvents: CounterfeitScanEvent[] = [],
+): {
   branches: BrandBranchMetric[];
   counterfeitRadar: BrandCounterfeitAlert[];
 } {
   const clean = brandName.trim() || "Registered Brand";
   const prefix = clean.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5) || "BRAND";
+  const regionCfg = getRegionConfig(regionCode);
+  const hubs = regionCfg.majorHubs;
+
+  const branches: BrandBranchMetric[] = [
+    {
+      branchName: `${clean} — ${hubs[0] || "Primary"} Flagship & Digital Hub`,
+      region: `${regionCfg.code} · Primary Metro`,
+      stashCount: 184,
+      trashCount: 14,
+      trustPct: 93,
+      openEscalations: 0,
+      topSignal: "Fast 14-day cure resolution & verified batch adoption",
+    },
+    {
+      branchName: `${clean} — ${hubs[1] || "Regional"} Authorized Network`,
+      region: `${regionCfg.code} · Tier-1 Hub`,
+      stashCount: 142,
+      trashCount: 19,
+      trustPct: 88,
+      openEscalations: 1,
+      topSignal: "Packaging & serial checks resolved inside 15m SLA",
+    },
+    {
+      branchName: `${clean} — ${hubs[2] || "Distribution"} Omni-Channel Desk`,
+      region: `${regionCfg.code} · Retail & Direct`,
+      stashCount: 168,
+      trashCount: 11,
+      trustPct: 94,
+      openEscalations: 0,
+      topSignal: "Top-rated customer recovery desk this cycle",
+    },
+    {
+      branchName: `${clean} — ${hubs[3] || "National"} Fulfillment Partner`,
+      region: `${regionCfg.code} · Partner Channel`,
+      stashCount: 119,
+      trashCount: 21,
+      trustPct: 85,
+      openEscalations: 2,
+      topSignal: "Peak demand fulfillment monitoring active",
+    },
+  ];
+
+  const liveRadar: BrandCounterfeitAlert[] = scanEvents.slice(0, 6).map((evt) => ({
+    id: evt.id,
+    batchCode: evt.sku_or_batch,
+    location: `${evt.city_or_store} (${evt.country_code})`,
+    scanStatus:
+      evt.scan_outcome === "matched_oem"
+        ? "Verified Authentic Batch"
+        : evt.scan_outcome === "suspected_grey_market_leak"
+          ? "Suspected Grey-Market Leak"
+          : "Packaging Seal Flagged",
+    scansCount: 1,
+    actionRecommended:
+      evt.scan_outcome === "matched_oem"
+        ? "Verified against official OEM whitelist — 5× proof vote eligible"
+        : "Intercept active — route buyer to official authorized dealer & issue recovery voucher",
+  }));
+
+  const defaultRadar: BrandCounterfeitAlert[] = [
+    {
+      id: "cf-1",
+      batchCode: `#${prefix}-LOT-884`,
+      location: `${hubs[0] || "Metro"} Unauthorized Marketplace Cluster (${regionCfg.code})`,
+      scanStatus: "Suspected Grey-Market Leak",
+      scansCount: 14,
+      actionRecommended: "Redirect buyer to official store & notify brand IP protection team",
+    },
+    {
+      id: "cf-2",
+      batchCode: `#${prefix}-LOT-910`,
+      location: `${hubs[1] || "Regional"} Third-Party Reseller (${regionCfg.code})`,
+      scanStatus: "Packaging Seal Flagged",
+      scansCount: 6,
+      actionRecommended: "Video-inspect serial with customer via Zero-Phone-Number Call",
+    },
+    {
+      id: "cf-3",
+      batchCode: `#${prefix}-LOT-945`,
+      location: `${regionCfg.label} Authorized Distribution`,
+      scanStatus: "Verified Authentic Batch",
+      scansCount: 412,
+      actionRecommended: "100% authentic OEM scans — 94% Stash conversion",
+    },
+  ];
+
   return {
-    branches: [
-      {
-        branchName: `${clean} — Sandton Flagship & Digital Hub`,
-        region: "Gauteng · JHB North",
-        stashCount: 184,
-        trashCount: 14,
-        trustPct: 93,
-        openEscalations: 0,
-        topSignal: "Fast turnaround & high launch voucher redemption",
-      },
-      {
-        branchName: `${clean} — Rosebank & Mall of Africa`,
-        region: "Gauteng · Metro",
-        stashCount: 142,
-        trashCount: 19,
-        trustPct: 88,
-        openEscalations: 1,
-        topSignal: "2 packaging seal checks resolved within 15 mins",
-      },
-      {
-        branchName: `${clean} — V&A Waterfront & Canal Walk`,
-        region: "Western Cape · CPT",
-        stashCount: 168,
-        trashCount: 11,
-        trustPct: 94,
-        openEscalations: 0,
-        topSignal: "Top-rated customer service desk this week",
-      },
-      {
-        branchName: `${clean} — Umhlanga Arch & Gateway`,
-        region: "KwaZulu-Natal · DBN",
-        stashCount: 119,
-        trashCount: 21,
-        trustPct: 85,
-        openEscalations: 2,
-        topSignal: "Peak weekend queue feedback under active CX review",
-      },
-    ],
-    counterfeitRadar: [
-      {
-        id: "cf-1",
-        batchCode: `#${prefix}-LOT-884`,
-        location: "Johannesburg CBD Informal Trader Cluster",
-        scanStatus: "Suspected Grey-Market Leak",
-        scansCount: 14,
-        actionRecommended: "Issue Genuine Store Recovery Voucher & alert supply-chain auditor",
-      },
-      {
-        id: "cf-2",
-        batchCode: `#${prefix}-LOT-910`,
-        location: "Pretoria East Retail Partner",
-        scanStatus: "Packaging Seal Flagged",
-        scansCount: 6,
-        actionRecommended: "Video-inspect batch with customer via Zero-Phone-Number Call",
-      },
-      {
-        id: "cf-3",
-        batchCode: `#${prefix}-LOT-945`,
-        location: "National Authorised Distribution Channels",
-        scanStatus: "Verified Authentic Batch",
-        scansCount: 412,
-        actionRecommended: "100% authentic barcode scans — 94% Stash conversion",
-      },
-    ],
+    branches,
+    counterfeitRadar: liveRadar.length > 0 ? [...liveRadar, ...defaultRadar.slice(0, 2)] : defaultRadar,
   };
 }
 
@@ -963,4 +1007,327 @@ export function updateInboundCallRequestStatus(
   }
   emitOperatorUpdate();
 }
+
+// =========================================================================
+// DURABLE POSTGRES MULTI-TENANT BRAND DESK SYNC (Tab-Independent)
+// Works cleanly when operator browser tabs are closed & syncs across devices.
+// =========================================================================
+
+function mapDbCallStatusToUi(status: string): InboundCustomerCallRequest["status"] {
+  if (status === "waiting") return "pending";
+  if (status === "answered") return "operator_calling";
+  if (status === "resolved") return "resolved";
+  if (status === "missed") return "declined";
+  return "pending";
+}
+
+function mapUiCallStatusToDb(status: InboundCustomerCallRequest["status"]): string {
+  if (status === "pending") return "waiting";
+  if (status === "operator_calling") return "answered";
+  if (status === "resolved") return "resolved";
+  return "missed";
+}
+
+export async function syncBrandOperatorsFromDb(brandSlug: string): Promise<{
+  operators: BrandDeskOperator[];
+  syncedToPostgres: boolean;
+}> {
+  const normSlug = brandSlug.toLowerCase().trim();
+  try {
+    const db = supabase as any;
+    const { data, error } = await db
+      .from("brand_operators")
+      .select("*")
+      .eq("brand_slug", normSlug)
+      .neq("status", "revoked")
+      .order("created_at", { ascending: false });
+
+    if (!error && Array.isArray(data)) {
+      const mapped: BrandDeskOperator[] = data.map((row: any) => ({
+        id: row.id,
+        name: row.operator_name,
+        roleTitle: row.role_title,
+        shiftLabel: row.shift_label,
+        activeSince: String(row.created_at || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
+        trashesTurnedToStash: Number(row.trashes_flipped || 0),
+        vouchersIssued: Number(row.vouchers_issued || 0),
+        medianResponseMinutes: Number(row.median_response_minutes || 10),
+        clientCallRating: Number(row.client_call_rating || 4.8),
+        liveBroadcastsHosted: Number(row.live_broadcasts_hosted || 0),
+        sotOperatorScore: Math.min(100, 82 + Number(row.trashes_flipped || 0)),
+        awardBadge:
+          Number(row.trashes_flipped || 0) >= 20
+            ? "🏆 SOrT Star CX Operator"
+            : "🛡️ Verified Owner-Allocated Custodian",
+        operatorEmail: row.operator_email,
+        brandSlug: row.brand_slug,
+        ownerUid: row.owner_uid,
+        verifiedByOwner: Boolean(row.verified_by_owner),
+        countryCode: row.country_code,
+        status: row.status,
+      }));
+      if (mapped.length > 0 && typeof window !== "undefined") {
+        window.localStorage.setItem(OPERATORS_KEY, JSON.stringify(mapped));
+        emitOperatorUpdate();
+      }
+      return { operators: mapped, syncedToPostgres: true };
+    }
+  } catch {
+    // fallback if migration not yet applied
+  }
+  return { operators: getBrandDeskOperators(), syncedToPostgres: false };
+}
+
+export async function createVerifiedBrandOperatorDurable(params: {
+  brandSlug: string;
+  ownerUid: string;
+  operatorEmail: string;
+  operatorName: string;
+  roleTitle: string;
+  shiftLabel: string;
+  countryCode?: string;
+}): Promise<{ operator: BrandDeskOperator; syncedToPostgres: boolean }> {
+  const newOp = addAndSwitchDeskOperator({
+    name: params.operatorName,
+    roleTitle: params.roleTitle,
+    shiftLabel: params.shiftLabel,
+  });
+  newOp.operatorEmail = params.operatorEmail.trim().toLowerCase();
+  newOp.brandSlug = params.brandSlug;
+  newOp.ownerUid = params.ownerUid;
+  newOp.verifiedByOwner = true;
+  newOp.countryCode = params.countryCode || "GLOBAL";
+  newOp.status = "online";
+
+  try {
+    const db = supabase as any;
+    const { error } = await db.from("brand_operators").insert({
+      id: newOp.id,
+      brand_slug: params.brandSlug.toLowerCase().trim(),
+      owner_uid: params.ownerUid,
+      operator_email: newOp.operatorEmail,
+      operator_name: newOp.name,
+      role_title: newOp.roleTitle,
+      shift_label: newOp.shiftLabel,
+      country_code: newOp.countryCode,
+      status: "online",
+      verified_by_owner: true,
+      trashes_flipped: newOp.trashesTurnedToStash,
+      vouchers_issued: newOp.vouchersIssued,
+      median_response_minutes: newOp.medianResponseMinutes,
+      client_call_rating: newOp.clientCallRating,
+      live_broadcasts_hosted: newOp.liveBroadcastsHosted,
+    });
+    if (!error) return { operator: newOp, syncedToPostgres: true };
+  } catch {
+    // fallback
+  }
+  return { operator: newOp, syncedToPostgres: false };
+}
+
+export async function revokeBrandOperatorDurable(operatorId: string): Promise<void> {
+  if (typeof window !== "undefined") {
+    try {
+      const remaining = getBrandDeskOperators().filter((op) => op.id !== operatorId);
+      if (remaining.length > 0) {
+        window.localStorage.setItem(OPERATORS_KEY, JSON.stringify(remaining));
+      }
+      emitOperatorUpdate();
+    } catch {
+      // ignore
+    }
+  }
+  try {
+    const db = supabase as any;
+    await db
+      .from("brand_operators")
+      .update({ status: "revoked", updated_at: new Date().toISOString() })
+      .eq("id", operatorId);
+  } catch {
+    // ignore
+  }
+}
+
+export async function submitInboundCallRequestDurable(
+  request: Omit<InboundCustomerCallRequest, "id" | "status" | "createdAt"> & { countryCode?: string },
+): Promise<{ record: InboundCustomerCallRequest; syncedToPostgres: boolean }> {
+  const created = submitInboundCallRequest(request);
+  try {
+    const db = supabase as any;
+    const { error } = await db.from("inbound_call_requests").insert({
+      id: created.id,
+      brand_slug: created.brandSlug.toLowerCase().trim(),
+      brand_name: created.brandName,
+      customer_id: created.customerId,
+      customer_name: created.customerName,
+      issue_topic: created.issueTopic,
+      product_name: created.productName || "General Product Inquiry",
+      batch_or_receipt_number: created.batchOrReceiptNumber || null,
+      urgency: created.urgency === "urgent_cpa" || created.urgency === "high" ? "urgent" : "normal",
+      requested_call_mode: created.requestedCallMode === "video" ? "video" : "audio",
+      status: "waiting",
+      country_code: request.countryCode || "GLOBAL",
+    });
+    if (!error) {
+      return { record: created, syncedToPostgres: true };
+    }
+  } catch {
+    // fallback
+  }
+  return { record: created, syncedToPostgres: false };
+}
+
+export async function fetchInboundCallRequestsDurable(brandSlug?: string): Promise<{
+  requests: InboundCustomerCallRequest[];
+  syncedToPostgres: boolean;
+}> {
+  const localList = getInboundCallRequests(brandSlug);
+  try {
+    const db = supabase as any;
+    let query = db
+      .from("inbound_call_requests")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (brandSlug) query = query.eq("brand_slug", brandSlug.toLowerCase().trim());
+    const { data, error } = await query;
+
+    if (!error && Array.isArray(data)) {
+      const mapped: InboundCustomerCallRequest[] = data.map((row: any) => ({
+        id: row.id,
+        brandSlug: row.brand_slug,
+        brandName: row.brand_name,
+        customerId: row.customer_id,
+        customerName: row.customer_name,
+        issueTopic: row.issue_topic,
+        productName: row.product_name,
+        batchOrReceiptNumber: row.batch_or_receipt_number || undefined,
+        urgency: row.urgency === "urgent" ? "urgent_cpa" : "medium",
+        requestedCallMode: row.requested_call_mode === "video" ? "video" : "voice",
+        status: mapDbCallStatusToUi(row.status),
+        createdAt: row.created_at,
+        operatorNotes: row.operator_notes || undefined,
+      }));
+      const mergedMap = new Map<string, InboundCustomerCallRequest>();
+      [...mapped, ...localList].forEach((r) => mergedMap.set(r.id, r));
+      const merged = Array.from(mergedMap.values()).sort((a, b) =>
+        b.createdAt.localeCompare(a.createdAt),
+      );
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(INBOUND_CALL_REQUESTS_KEY, JSON.stringify(merged.slice(0, 100)));
+      }
+      return { requests: merged, syncedToPostgres: true };
+    }
+  } catch {
+    // fallback
+  }
+  return { requests: localList, syncedToPostgres: false };
+}
+
+export async function updateInboundCallRequestStatusDurable(
+  requestId: string,
+  status: InboundCustomerCallRequest["status"],
+  notes?: string,
+  operatorId?: string,
+): Promise<boolean> {
+  updateInboundCallRequestStatus(requestId, status, notes);
+  try {
+    const db = supabase as any;
+    const { error } = await db
+      .from("inbound_call_requests")
+      .update({
+        status: mapUiCallStatusToDb(status),
+        ...(notes ? { operator_notes: notes } : {}),
+        ...(operatorId ? { assigned_operator_id: operatorId } : {}),
+        ...(status === "resolved" ? { resolved_at: new Date().toISOString() } : {}),
+      })
+      .eq("id", requestId);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function fetchCxLifecycleMatrixDurable(
+  brandSlug: string,
+  brandName: string,
+): Promise<{ records: CxLifecycleRecord[]; syncedToPostgres: boolean }> {
+  const localList = getCxLifecycleMatrix(brandName);
+  try {
+    const db = supabase as any;
+    const { data, error } = await db
+      .from("cx_turnarounds")
+      .select("*")
+      .eq("brand_slug", brandSlug.toLowerCase().trim())
+      .order("created_at", { ascending: false })
+      .limit(40);
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const mapped: CxLifecycleRecord[] = data.map((row: any) => ({
+        id: row.id,
+        brandName: row.brand_name,
+        clientName: row.client_name,
+        stage1LaunchSource: row.stage1_source,
+        stage2ScanOrPostSignal: row.stage2_signal,
+        initialVerdict: row.initial_verdict === "TRASH" ? "trash" : "stash",
+        operatorAssigned: row.operator_assigned,
+        actionTaken: row.action_taken,
+        voucherCode: row.voucher_code || undefined,
+        finalVerdict:
+          row.final_verdict === "STASH"
+            ? "stash"
+            : row.final_verdict === "PENDING"
+              ? "pending"
+              : "trash",
+        revenueRetainedZar: Number(row.revenue_retained_amount || 0),
+        updatedAt: String(row.created_at || "").slice(0, 10) || "Synced",
+      }));
+      return { records: mapped, syncedToPostgres: true };
+    }
+  } catch {
+    // fallback
+  }
+  return { records: localList, syncedToPostgres: false };
+}
+
+export async function addCxLifecycleResolutionDurable(
+  record: Omit<CxLifecycleRecord, "id" | "updatedAt"> & {
+    brandSlug: string;
+    currencyCode?: string;
+    countryCode?: string;
+    slaMinutes?: number;
+  },
+): Promise<{ record: CxLifecycleRecord; syncedToPostgres: boolean }> {
+  const created = addCxLifecycleResolution(record);
+  try {
+    const db = supabase as any;
+    const { error } = await db.from("cx_turnarounds").insert({
+      id: created.id,
+      brand_slug: record.brandSlug.toLowerCase().trim(),
+      brand_name: created.brandName,
+      client_name: created.clientName,
+      stage1_source: created.stage1LaunchSource,
+      stage2_signal: created.stage2ScanOrPostSignal,
+      initial_verdict: created.initialVerdict === "trash" ? "TRASH" : "AT_RISK",
+      operator_assigned: created.operatorAssigned,
+      action_taken: created.actionTaken,
+      voucher_code: created.voucherCode || null,
+      final_verdict:
+        created.finalVerdict === "stash"
+          ? "STASH"
+          : created.finalVerdict === "pending"
+            ? "PENDING"
+            : "UNRESOLVED",
+      revenue_retained_amount: created.revenueRetainedZar,
+      currency_code: record.currencyCode || "USD",
+      country_code: record.countryCode || "GLOBAL",
+      sla_minutes: record.slaMinutes || 15,
+      resolved_within_cure_window: true,
+    });
+    if (!error) return { record: created, syncedToPostgres: true };
+  } catch {
+    // fallback
+  }
+  return { record: created, syncedToPostgres: false };
+}
+
 

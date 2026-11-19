@@ -10,6 +10,7 @@ const PRIVACY_VERSION = "2026-09-11";
 
 export function ReleaseSafetyControls({ userId }: { userId: string }) {
   const [accepted, setAccepted] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -35,7 +36,6 @@ export function ReleaseSafetyControls({ userId }: { userId: string }) {
   }
 
   async function requestDeletion() {
-    if (!window.confirm("Request permanent account deletion? This cannot be undone.")) return;
     setDeleting(true);
     try {
       if (typeof window !== "undefined") {
@@ -45,8 +45,10 @@ export function ReleaseSafetyControls({ userId }: { userId: string }) {
         .from("account_deletion_requests")
         .upsert({ user_id: userId, status: "requested" });
       toast.success("Deletion request submitted for processing");
+      setConfirmingDelete(false);
     } catch {
       toast.success("Deletion request submitted for processing");
+      setConfirmingDelete(false);
     } finally {
       setDeleting(false);
     }
@@ -83,15 +85,43 @@ export function ReleaseSafetyControls({ userId }: { userId: string }) {
         <div className="rounded-xl border border-destructive/30 p-3 text-sm">
           <Trash2 className="mb-2 h-4 w-4 text-destructive" />
           <strong>Delete account</strong>
-          <Button
-            variant="destructive"
-            size="sm"
-            className="mt-2 w-full"
-            onClick={requestDeletion}
-            disabled={deleting}
-          >
-            {deleting ? "Submitting…" : "Request deletion"}
-          </Button>
+          {confirmingDelete ? (
+            <div className="mt-2 flex flex-col gap-1.5">
+              <p className="text-[11px] font-medium text-destructive">
+                Confirm permanent account deletion? This cannot be undone.
+              </p>
+              <div className="flex gap-1.5">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="flex-1 text-xs"
+                  onClick={requestDeletion}
+                  disabled={deleting}
+                >
+                  {deleting ? "Submitting…" : "Confirm delete"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => setConfirmingDelete(false)}
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="mt-2 w-full"
+              onClick={() => setConfirmingDelete(true)}
+              disabled={deleting}
+            >
+              Request deletion
+            </Button>
+          )}
         </div>
       </div>
       <div className="mt-4 flex items-start gap-3 border-t border-border pt-4">

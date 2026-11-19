@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
 import { PeopleTrustFactorLink } from "@/components/PeopleTrustFactor";
 import { BRAND_TIERS, type BrandTierFilter, getBrandTier, getTierInfo, matchesTier } from "@/lib/brandTiers";
 import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
+import { BrandLogo } from "@/components/BrandLogo";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/awards")({
@@ -524,23 +525,11 @@ export function AwardsPage() {
                                     <span className="w-5 font-display font-extrabold text-muted-foreground text-center">
                                       {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}`}
                                     </span>
-                                    <div
-                                      translate="no"
-                                      className="notranslate flex h-7 w-7 shrink-0 items-center justify-center rounded bg-secondary font-bold text-[11px]"
-                                    >
-                                      {b.signedLogoUrl ? (
-                                        <img
-                                          src={b.signedLogoUrl}
-                                          alt={b.name}
-                                          translate="no"
-                                          className="notranslate h-full w-full object-cover rounded"
-                                        />
-                                      ) : (
-                                        <span translate="no" className="notranslate">
-                                          {b.name.charAt(0)}
-                                        </span>
-                                      )}
-                                    </div>
+                                    <BrandLogo
+                                      name={b.name}
+                                      url={b.signedLogoUrl}
+                                      className="h-7 w-7 rounded text-[11px]"
+                                    />
                                     <div className="truncate">
                                       <p translate="no" className="notranslate font-bold truncate text-foreground">
                                         {b.name}
@@ -713,23 +702,11 @@ export function AwardsPage() {
                         <span className="w-8 text-center font-display text-lg font-extrabold text-muted-foreground">
                           {i < 3 ? ["1st", "2nd", "3rd"][i] : i + 1}
                         </span>
-                        <div
-                          translate="no"
-                          className="notranslate flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary text-sm font-bold"
-                        >
-                          {b.signedLogoUrl ? (
-                            <img
-                              src={b.signedLogoUrl}
-                              alt={b.name}
-                              translate="no"
-                              className="notranslate h-full w-full object-cover"
-                            />
-                          ) : (
-                            <span translate="no" className="notranslate">
-                              {b.name.charAt(0).toUpperCase()}
-                            </span>
-                          )}
-                        </div>
+                        <BrandLogo
+                          name={b.name}
+                          url={b.signedLogoUrl}
+                          className="h-9 w-9 rounded-lg text-sm"
+                        />
                         <span className="flex-1 truncate font-semibold">
                           <span className="flex items-center gap-2">
                             <span translate="no" className="notranslate truncate">

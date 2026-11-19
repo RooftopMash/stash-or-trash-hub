@@ -25,9 +25,24 @@ export type BrandClaimEvaluation = {
   officialDomain: string | null;
   status: DomainMatchStatus;
   canAutoVerifyDomain: boolean;
+  isFreeWebmail: boolean;
   headline: string;
   explanation: string;
 };
+
+export interface BrandDeskAccessEvaluation {
+  allowed: boolean;
+  reasonCode:
+    | "verified_corporate_owner"
+    | "developer_sandbox"
+    | "blocked_free_webmail"
+    | "blocked_unverified_email"
+    | "blocked_domain_mismatch";
+  headline: string;
+  explanation: string;
+  officialDomain: string | null;
+  emailHost: string | null;
+}
 
 const MULTI_PART_PUBLIC_SUFFIXES = new Set([
   "co.za",
@@ -179,6 +194,117 @@ export function extractEmailDomain(email: string | null | undefined): string | n
   return domain;
 }
 
+export function isFreeEmailProvider(email: string | null | undefined): boolean {
+  const emailHost = extractEmailDomain(email);
+  if (!emailHost) return false;
+  const reg = extractRegistrableDomain(emailHost);
+  return FREE_WEBMAIL_DOMAINS.has(emailHost) || (!!reg && FREE_WEBMAIL_DOMAINS.has(reg));
+}
+
+export function canOperateBrandDesk(input: {
+  userEmail: string | null | undefined;
+  brandWebsite?: string | null;
+  brandVerified?: boolean;
+  claimStatus?: string | null;
+  brandSlug?: string | null;
+  isDeveloper?: boolean;
+  firebaseEmailVerified?: boolean;
+  hasApprovedClaim?: boolean;
+}): BrandDeskAccessEvaluation {
+  const cleanEmail = (input.userEmail || "").trim().toLowerCase();
+  const isDev =
+    !!input.isDeveloper || cleanEmail === "borulelo@gmail.com";
+  const emailHost = extractEmailDomain(cleanEmail);
+  const officialDomain = extractRegistrableDomain(input.brandWebsite);
+
+  if (isDev) {
+    return {
+      allowed: true,
+      reasonCode: "developer_sandbox",
+      headline: "Platform Developer Sandbox Inspection Active",
+      explanation:
+        "Operating with explicit platform owner developer clearance (borulelo@gmail.com).",
+      officialDomain,
+      emailHost,
+    };
+  }
+
+  if (input.hasApprovedClaim || input.claimStatus === "verified_domain" || input.claimStatus === "approved") {
+    return {
+      allowed: true,
+      reasonCode: "verified_corporate_owner",
+      headline: `Verified Corporate Custodian (@${emailHost || officialDomain || "corporate"})`,
+      explanation: "Corporate domain ownership has been cryptographically or admin verified.",
+      officialDomain,
+      emailHost,
+    };
+  }
+
+  if (!cleanEmail || !emailHost) {
+    return {
+      allowed: false,
+      reasonCode: "blocked_unverified_email",
+      headline: "Corporate Authentication Required",
+      explanation:
+        "Sign in with a verified corporate email address or complete DNS TXT verification to unlock Brand Desk controls.",
+      officialDomain,
+      emailHost: null,
+    };
+  }
+
+  if (isFreeEmailProvider(cleanEmail)) {
+    return {
+      allowed: false,
+      reasonCode: "blocked_free_webmail",
+      headline: `Personal Webmail Blocked (@${emailHost})`,
+      explanation: officialDomain
+        ? `Enterprise Brand Desks forbid personal @${emailHost} addresses. Authenticate with an @${officialDomain} corporate email or complete DNS TXT verification + Admin Review.`
+        : `Personal @${emailHost} addresses cannot operate corporate brand desks. Use your official company domain email or prove domain control via DNS TXT.`,
+      officialDomain,
+      emailHost,
+    };
+  }
+
+  const evalResult = evaluateBrandDomainMatch(input.brandWebsite, cleanEmail);
+  if (evalResult.canAutoVerifyDomain && (input.firebaseEmailVerified || input.brandVerified)) {
+    return {
+      allowed: true,
+      reasonCode: "verified_corporate_owner",
+      headline: `Verified Corporate Domain (@${emailHost})`,
+      explanation: "Corporate email domain matches official brand web property.",
+      officialDomain,
+      emailHost,
+    };
+  }
+
+  if (!evalResult.canAutoVerifyDomain && officialDomain) {
+    return {
+      allowed: false,
+      reasonCode: "blocked_domain_mismatch",
+      headline: `Domain Mismatch: @${emailHost} ≠ ${officialDomain}`,
+      explanation: `Only verified @${officialDomain} corporate custodians (or DNS TXT verified owners) may mutate OEM batches, operators, or customer queues.`,
+      officialDomain,
+      emailHost,
+    };
+  }
+
+  return {
+    allowed: false,
+    reasonCode: "blocked_unverified_email",
+    headline: "Email / DNS Verification Pending",
+    explanation:
+      "Confirm your corporate email verification link or verify the DNS TXT record for your official domain to unlock full Brand Desk writes.",
+    officialDomain,
+    emailHost,
+  };
+}
+
+export function buildDeterministicDnsToken(brandSlug: string, claimantUid: string): string {
+  const cleanSlug = (brandSlug || "brand").replace(/[^a-z0-9]/gi, "").slice(0, 12).toLowerCase();
+  const cleanUid = (claimantUid || "custodian").replace(/[^a-z0-9]/gi, "").slice(0, 10).toLowerCase();
+  return `sot-${cleanSlug}-${cleanUid}-verified`;
+}
+
 export function evaluateBrandDomainMatch(
   brandWebsite: string | null | undefined,
   email: string,
@@ -195,6 +321,7 @@ export function evaluateBrandDomainMatch(
       officialDomain,
       status: "invalid_email",
       canAutoVerifyDomain: false,
+      isFreeWebmail: false,
       headline: "Enter a valid corporate email address",
       explanation: officialDomain
         ? `Use an email address ending in @${officialDomain} to prove ownership.`
@@ -212,10 +339,11 @@ export function evaluateBrandDomainMatch(
       officialDomain,
       status: "free_provider",
       canAutoVerifyDomain: false,
-      headline: "Public/free email provider cannot auto-verify ownership",
+      isFreeWebmail: true,
+      headline: "Personal/free email provider blocked from auto-verification",
       explanation: officialDomain
-        ? `@${emailHost} is a personal email provider. Automatic domain ownership verification requires an official @${officialDomain} corporate address (or submit below for manual admin review).`
-        : `@${emailHost} is a free webmail provider. Please use a corporate domain email or request manual verification.`,
+        ? `@${emailHost} is a personal email provider. Enterprise verification requires an official @${officialDomain} corporate address, DNS TXT proof, or Admin Approval.`
+        : `@${emailHost} is a free webmail provider. Please use a corporate domain email or prove domain control via DNS TXT.`,
     };
   }
 
@@ -227,8 +355,9 @@ export function evaluateBrandDomainMatch(
       officialDomain: null,
       status: "no_website",
       canAutoVerifyDomain: false,
+      isFreeWebmail: false,
       headline: "No official brand website domain on file",
-      explanation: `This auto-sourced brand does not have an official domain stored yet. Submitting with @${emailHost} will route to Admin Verification so your corporate domain can be linked safely.`,
+      explanation: `This auto-sourced brand does not have an official domain stored yet. Verify ownership via DNS TXT on your domain or route @${emailHost} to Admin Verification.`,
     };
   }
 
@@ -241,10 +370,11 @@ export function evaluateBrandDomainMatch(
       officialDomain,
       status: isExact ? "matched" : "subdomain_match",
       canAutoVerifyDomain: true,
+      isFreeWebmail: false,
       headline: isExact
         ? `Domain match confirmed: @${emailHost}`
         : `Corporate subdomain match confirmed: @${emailHost}`,
-      explanation: `Your corporate email domain matches the brand's official web domain (${officialDomain}). Complete the email verification step to claim immediate ownership.`,
+      explanation: `Your corporate email domain matches the brand's official web domain (${officialDomain}). Complete Firebase email verification or DNS TXT check to activate full Brand Desk access.`,
     };
   }
 
@@ -255,8 +385,9 @@ export function evaluateBrandDomainMatch(
     officialDomain,
     status: "mismatch",
     canAutoVerifyDomain: false,
+    isFreeWebmail: false,
     headline: `Domain mismatch: @${emailHost} vs ${officialDomain}`,
-    explanation: `Automatic verification is blocked because @${emailHost} does not match the brand's official domain (${officialDomain}). Use an @${officialDomain} email or submit a manual admin ownership review explaining subsidiary/agency authorization.`,
+    explanation: `Automatic verification is blocked because @${emailHost} does not match the brand's official domain (${officialDomain}). Use an @${officialDomain} email or verify via DNS TXT.`,
   };
 }
 
@@ -384,6 +515,31 @@ export async function initiateBrandDomainClaim(input: {
     }
   }
 
+  const dnsTxtToken = buildDeterministicDnsToken(input.brand.slug, input.claimantUid);
+
+  // Sync corporate claim status to Postgres `brand_domain_claims` cleanly
+  try {
+    const db = supabase as any;
+    await db.from("brand_domain_claims").upsert(
+      {
+        brand_slug: input.brand.slug,
+        brand_name: input.brand.name,
+        official_domain: evaluation.officialDomain || evaluation.emailHost || "pending",
+        claimant_uid: input.claimantUid,
+        claimant_email: evaluation.email,
+        verification_method: firebaseVerifiedMatches ? "corporate_email" : "dns_txt",
+        dns_txt_token: dnsTxtToken,
+        dns_verified: false,
+        email_verified: firebaseVerifiedMatches,
+        status: firebaseVerifiedMatches ? "approved" : "pending",
+        updated_at: now,
+      },
+      { onConflict: "brand_slug,claimant_uid" },
+    );
+  } catch {
+    /* non-fatal if migration pending */
+  }
+
   if (firebaseVerifiedMatches) {
     await applyVerifiedBrandOwnershipToStores({
       brand: input.brand,
@@ -399,6 +555,92 @@ export async function initiateBrandDomainClaim(input: {
     evaluation,
     instantVerified: firebaseVerifiedMatches,
     challengeCode: firebaseVerifiedMatches ? undefined : challengeCode,
+  };
+}
+
+export async function verifyBrandDnsTxtRecord(input: {
+  brand: Brand;
+  domain: string;
+  claimantUid: string;
+  claimantEmail: string;
+}): Promise<{ verified: boolean; expectedRecordValue: string; recordsFoundCount: number; message: string }> {
+  const token = buildDeterministicDnsToken(input.brand.slug, input.claimantUid);
+  const cleanDomain = normalizeWebsiteHostname(input.domain) || input.domain.trim().toLowerCase();
+  const res = await fetch("/api/verify-domain-dns", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ domain: cleanDomain, expectedToken: token }),
+  });
+  const data = await res.json();
+  const verified = Boolean(res.ok && data?.verified);
+  const expectedRecordValue = `sot-domain-verify=${token}`;
+
+  if (verified) {
+    const now = new Date().toISOString();
+    const cleanClaimId = `claim_${input.brand.slug.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 60)}_${input.claimantUid.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 32)}`;
+    const existing = readLocalBrandClaims().filter((c) => c.id !== cleanClaimId);
+    const verifiedClaim: LocalBrandClaimRecord = {
+      id: cleanClaimId,
+      brandId: input.brand.id,
+      brandSlug: input.brand.slug,
+      brandName: input.brand.name,
+      brandWebsite: `https://${cleanDomain}`,
+      officialDomain: cleanDomain,
+      claimantUid: input.claimantUid,
+      claimantEmail: input.claimantEmail.toLowerCase(),
+      emailDomain: extractEmailDomain(input.claimantEmail) || cleanDomain,
+      domainMatchStatus: "matched",
+      status: "verified_domain",
+      message: `DNS TXT verification succeeded for ${cleanDomain}`,
+      verifiedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+    writeLocalBrandClaims([verifiedClaim, ...existing]);
+
+    try {
+      const db = supabase as any;
+      await db.from("brand_domain_claims").upsert(
+        {
+          brand_slug: input.brand.slug,
+          brand_name: input.brand.name,
+          official_domain: cleanDomain,
+          claimant_uid: input.claimantUid,
+          claimant_email: input.claimantEmail.toLowerCase(),
+          verification_method: "dns_txt",
+          dns_txt_token: token,
+          dns_verified: true,
+          email_verified: Boolean(auth.currentUser?.emailVerified),
+          status: "approved",
+          updated_at: now,
+        },
+        { onConflict: "brand_slug,claimant_uid" },
+      );
+    } catch {
+      /* ignore if migration pending */
+    }
+
+    await applyVerifiedBrandOwnershipToStores({
+      brand: input.brand,
+      ownerUid: input.claimantUid,
+      ownerEmail: input.claimantEmail.toLowerCase(),
+      verifiedDomain: cleanDomain,
+      website: `https://${cleanDomain}`,
+    });
+
+    return {
+      verified: true,
+      expectedRecordValue,
+      recordsFoundCount: Number(data?.recordsFoundCount || 1),
+      message: `DNS TXT record verified on ${cleanDomain}. Full corporate Brand Desk ownership unlocked.`,
+    };
+  }
+
+  return {
+    verified: false,
+    expectedRecordValue,
+    recordsFoundCount: Number(data?.recordsFoundCount || 0),
+    message: `TXT record "${expectedRecordValue}" not yet detected on _sot-verify.${cleanDomain} or ${cleanDomain}. Wait for DNS propagation and re-check.`,
   };
 }
 

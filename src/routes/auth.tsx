@@ -23,6 +23,7 @@ import {
   setActiveBrandPlanTier,
   type BrandPlanTierId,
 } from "@/lib/brand-operators";
+import { isFreeEmailProvider } from "@/lib/brand-domain-verification";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -111,10 +112,22 @@ function AuthPage() {
         registeredBrandName.trim() ||
         displayName.trim() ||
         getRegisteredBrandIdentity().name;
+      const effectiveEmail = (cleanEmail || email.trim() || "").toLowerCase();
+      const isDevSandbox = effectiveEmail === "borulelo@gmail.com";
+      const hasVerifiedCorpEmail =
+        Boolean(effectiveEmail) &&
+        !isFreeEmailProvider(effectiveEmail) &&
+        Boolean(auth.currentUser?.emailVerified);
+
       setRegisteredBrandIdentity({
         name: targetBrandName,
-        ownerEmail: cleanEmail || email.trim() || undefined,
-        verified: true,
+        ownerEmail: effectiveEmail || undefined,
+        verified: isDevSandbox ? false : hasVerifiedCorpEmail,
+        verificationStatus: isDevSandbox
+          ? "sandbox_preview"
+          : hasVerifiedCorpEmail
+            ? "verified_corporate"
+            : "unverified_pending",
       });
       setActiveBrandPlanTier(selectedBrandTier, targetBrandName);
       if (operatorName.trim()) {
@@ -123,6 +136,13 @@ function AuthPage() {
           roleTitle: operatorRole.trim() || "Authorized Brand Desk Operator",
           shiftLabel: "Active Shift Login",
         });
+      }
+      if (!hasVerifiedCorpEmail && !isDevSandbox) {
+        toast.info(
+          isFreeEmailProvider(effectiveEmail)
+            ? "Personal email detected: Complete Corporate Domain or DNS TXT Verification in your Dashboard to unlock verified brand controls."
+            : "Brand Desk opened in pending verification mode — confirm your corporate email or DNS TXT record in the Dashboard.",
+        );
       }
     }
     if (search.redirect) {
@@ -156,11 +176,11 @@ function AuthPage() {
         setAccountDoor("brand_owner");
         const bName = registeredBrandName.trim() || "Nando's South Africa";
         signInWithLocalFallback({
-          email: "brand.executive@stashortrash.app",
-          displayName: `${bName} Corporate Desk`,
+          email: "sandbox.preview@gmail.com",
+          displayName: `${bName} Sandbox Preview`,
         });
-        toast.success(`Signed in to Official Brand Account (${bName})!`);
-        finalizePortalRouting("brand.executive@stashortrash.app");
+        toast.info(`Opened ${bName} Sandbox Preview (unverified — verify corporate domain in Dashboard to unlock live corporate writes).`);
+        finalizePortalRouting("sandbox.preview@gmail.com");
       } else {
         setAccountDoor("consumer");
         const cleanEmail = email.trim() || "member@stashortrash.app";
@@ -370,7 +390,7 @@ function AuthPage() {
         const fallbackEmail =
           email.trim() ||
           (accountDoor === "brand_owner"
-            ? `executive@${(registeredBrandName.trim() || "brand").toLowerCase().replace(/[^a-z0-9]/g, "") || "brand"}.co.za`
+            ? `${providerName}.unverified@gmail.com`
             : `${providerName}.member@sot.app`);
         const fallbackName =
           accountDoor === "brand_owner"

@@ -27,9 +27,9 @@ import { cn } from "@/lib/utils";
 import {
   getBrandContactSettings,
   getActiveDeskOperator,
-  submitInboundCallRequest,
-  type BrandInboundContactSettings,
+  submitInboundCallRequestDurable,
 } from "@/lib/brand-operators";
+import { detectDefaultRegionFromBrowser } from "@/lib/global-regions";
 import { sendMessage } from "@/lib/messages";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -81,7 +81,7 @@ export function BrandCallRequestModal({
       `Customer ${user?.id ? user.id.slice(0, 6) : "Guest"}`;
 
     try {
-      const created = submitInboundCallRequest({
+      const { record: created, syncedToPostgres } = await submitInboundCallRequestDurable({
         brandSlug,
         brandName,
         customerId: user?.id || "guest-caller",
@@ -91,6 +91,7 @@ export function BrandCallRequestModal({
         batchOrReceiptNumber: batchOrReceipt.trim() || undefined,
         urgency,
         requestedCallMode,
+        countryCode: detectDefaultRegionFromBrowser(),
       });
 
       if (typeof BroadcastChannel !== "undefined") {
@@ -129,7 +130,11 @@ export function BrandCallRequestModal({
       }
 
       setSubmitted(true);
-      toast.success(`Call request dispatched to ${brandName}'s desk operator!`);
+      toast.success(
+        syncedToPostgres
+          ? `Call request persisted to ${brandName}'s cloud desk queue (works even if operator tabs are closed).`
+          : `Call request queued for ${brandName}'s desk operator.`,
+      );
       onRequestSubmitted?.();
     } catch {
       toast.error("Failed to submit call request. Please try again.");
@@ -292,7 +297,7 @@ export function BrandCallRequestModal({
                   <option value="low">Low (General Inquiry)</option>
                   <option value="medium">Medium (Standard Issue)</option>
                   <option value="high">High (Product Defect / Return)</option>
-                  <option value="urgent_cpa">🚨 Critical (CPA Pre-Escalation)</option>
+                  <option value="urgent_cpa">🚨 Critical (Regulatory / Ombudsman Pre-Escalation)</option>
                 </select>
               </div>
             </div>

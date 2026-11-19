@@ -30,10 +30,11 @@ import { useRoles } from "@/hooks/useRoles";
 import { setRegisteredBrandIdentity } from "@/lib/brand-operators";
 import type { Brand } from "@/lib/brands";
 import {
-  confirmBrandDomainVerificationCode,
+  buildDeterministicDnsToken,
   evaluateBrandDomainMatch,
   extractRegistrableDomain,
   initiateBrandDomainClaim,
+  verifyBrandDnsTxtRecord,
   type LocalBrandClaimRecord,
 } from "@/lib/brand-domain-verification";
 import { cn } from "@/lib/utils";
@@ -63,8 +64,8 @@ export function BrandOwnershipClaimModal({
   const [busy, setBusy] = useState(false);
 
   const [pendingClaim, setPendingClaim] = useState<LocalBrandClaimRecord | null>(null);
-  const [previewChallengeCode, setPreviewChallengeCode] = useState<string | null>(null);
-  const [enteredCode, setEnteredCode] = useState("");
+  const [dnsChecking, setDnsChecking] = useState(false);
+  const [dnsMessage, setDnsMessage] = useState<string | null>(null);
   const [verifiedSuccess, setVerifiedSuccess] = useState(false);
 
   useEffect(() => {
@@ -72,8 +73,7 @@ export function BrandOwnershipClaimModal({
       setCorpEmail((prev) => prev || user?.email || "");
       setWebsiteDraft(brand.website ?? "");
       setPendingClaim(null);
-      setPreviewChallengeCode(null);
-      setEnteredCode("");
+      setDnsMessage(null);
       setVerifiedSuccess(false);
     }
   }, [open, brand.id, brand.website, user?.email]);
@@ -116,9 +116,11 @@ export function BrandOwnershipClaimModal({
           name: brand.name,
           slug: brand.slug,
           category: brand.category || "Consumer Brand",
-          country: brand.country || "ZA",
+          country: brand.country || "GLOBAL",
           website: effectiveWebsite || "",
           ownerEmail: res.claim.claimantEmail,
+          verifiedDomain: res.evaluation.officialDomain || undefined,
+          verificationStatus: "verified_corporate",
           verified: true,
           trust_score: brand.trust_score || 78,
         });
@@ -126,10 +128,12 @@ export function BrandOwnershipClaimModal({
         await queryClient.invalidateQueries({ queryKey: ["brand", brand.slug] });
         toast.success(`Ownership verified via @${res.evaluation.officialDomain}!`);
         onClaimCompleted?.();
-      } else if (res.evaluation.canAutoVerifyDomain && res.challengeCode) {
+      } else if (res.evaluation.canAutoVerifyDomain) {
         setPendingClaim(res.claim);
-        setPreviewChallengeCode(res.challengeCode);
-        toast.success(`Domain matched @${res.evaluation.officialDomain}. Enter verification code to complete ownership.`);
+        setDnsMessage(
+          `A verification email has been sent to ${res.claim.claimantEmail} (if signed in with Firebase corporate email), OR add the DNS TXT record below to verify immediately.`,
+        );
+        toast.info(`Complete Firebase email verification or verify DNS TXT for ${res.evaluation.officialDomain}.`);
       } else {
         setPendingClaim(res.claim);
         toast.info("Submitted for manual admin ownership review because email domain did not match automatically.");
@@ -143,37 +147,48 @@ export function BrandOwnershipClaimModal({
     }
   };
 
-  const handleConfirmCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !pendingClaim) return;
-    setBusy(true);
+  const handleCheckDnsTxt = async () => {
+    if (!user) return;
+    const domainToCheck = detectedDomain || pendingClaim?.officialDomain || "";
+    if (!domainToCheck) {
+      toast.error("Provide the official corporate website domain first.");
+      return;
+    }
+    setDnsChecking(true);
     try {
-      const verified = await confirmBrandDomainVerificationCode({
-        claimId: pendingClaim.id,
+      const result = await verifyBrandDnsTxtRecord({
         brand,
-        enteredCode,
+        domain: domainToCheck,
         claimantUid: user.id,
+        claimantEmail: corpEmail || user.email || "",
       });
-      setVerifiedSuccess(true);
-      setRegisteredBrandIdentity({
-        id: brand.id,
-        name: brand.name,
-        slug: brand.slug,
-        category: brand.category || "Consumer Brand",
-        country: brand.country || "ZA",
-        website: verified.brandWebsite || brand.website || "",
-        ownerEmail: verified.claimantEmail,
-        verified: true,
-        trust_score: brand.trust_score || 78,
-      });
-      await queryClient.invalidateQueries({ queryKey: ["brands"] });
-      await queryClient.invalidateQueries({ queryKey: ["brand", brand.slug] });
-      toast.success(`Official ownership of ${brand.name} verified & activated!`);
-      onClaimCompleted?.();
+      setDnsMessage(result.message);
+      if (result.verified) {
+        setVerifiedSuccess(true);
+        setRegisteredBrandIdentity({
+          id: brand.id,
+          name: brand.name,
+          slug: brand.slug,
+          category: brand.category || "Consumer Brand",
+          country: brand.country || "GLOBAL",
+          website: effectiveWebsite || `https://${domainToCheck}`,
+          ownerEmail: corpEmail || user.email || "",
+          verifiedDomain: domainToCheck,
+          verificationStatus: "verified_corporate",
+          verified: true,
+          trust_score: brand.trust_score || 78,
+        });
+        await queryClient.invalidateQueries({ queryKey: ["brands"] });
+        await queryClient.invalidateQueries({ queryKey: ["brand", brand.slug] });
+        toast.success(result.message);
+        onClaimCompleted?.();
+      } else {
+        toast.warning("DNS TXT token not yet detected on live DNS resolvers.");
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Code verification failed.");
+      toast.error(err instanceof Error ? err.message : "DNS check failed.");
     } finally {
-      setBusy(false);
+      setDnsChecking(false);
     }
   };
 
@@ -232,42 +247,33 @@ export function BrandOwnershipClaimModal({
             </div>
           </div>
         ) : pendingClaim && pendingClaim.status === "code_sent" ? (
-          <form onSubmit={handleConfirmCode} className="space-y-4">
-            <div className="rounded-xl border border-[#d6a928]/50 bg-[#d6a928]/10 p-4 text-xs space-y-2">
+          <div className="space-y-4">
+            <div className="rounded-xl border border-[#d6a928]/50 bg-[#d6a928]/10 p-4 text-xs space-y-2.5">
               <div className="flex items-center gap-2 font-extrabold text-foreground">
                 <MailCheck className="h-4 w-4 text-[#b88914]" />
-                <span>Corporate Domain Match Confirmed: @{pendingClaim.officialDomain}</span>
+                <span>Corporate Domain Verification: {pendingClaim.officialDomain}</span>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                Enter the 6-digit domain verification code issued for{" "}
-                <strong className="font-mono text-foreground">{pendingClaim.claimantEmail}</strong> to lock ownership to your account.
+                Complete verification using either method below (zero fake shortcuts):
               </p>
-              {previewChallengeCode && (
-                <div className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs">
-                  <span className="text-muted-foreground">Verification Challenge Token:</span>
-                  <span className="font-black tracking-[0.2em] text-foreground select-all">
-                    {previewChallengeCode}
-                  </span>
-                </div>
+              <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                <li>
+                  Click the confirmation link sent to <strong className="font-mono text-foreground">{pendingClaim.claimantEmail}</strong> and refresh your session, OR
+                </li>
+                <li>
+                  Publish a DNS TXT record on{" "}
+                  <code className="font-mono text-foreground">_sot-verify.{pendingClaim.officialDomain}</code> with value:
+                </li>
+              </ol>
+              <div className="rounded-lg border border-border bg-background px-3 py-2 font-mono text-[11px] select-all text-foreground break-all">
+                sot-domain-verify={buildDeterministicDnsToken(brand.slug, user?.id || "")}
+              </div>
+              {dnsMessage && (
+                <p className="text-[11px] font-medium text-foreground/90">{dnsMessage}</p>
               )}
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <KeyRound className="h-3.5 w-3.5 text-[#d6a928]" />
-                Enter 6-Digit Verification Code
-              </label>
-              <Input
-                value={enteredCode}
-                onChange={(e) => setEnteredCode(e.target.value)}
-                placeholder="e.g. 482910"
-                maxLength={6}
-                className="font-mono text-center text-lg tracking-[0.35em] font-bold"
-                required
-              />
-            </div>
-
-            <div className="flex items-center justify-between gap-2 pt-2">
+            <div className="flex items-center justify-between gap-2 pt-1">
               <Button
                 type="button"
                 variant="ghost"
@@ -277,15 +283,16 @@ export function BrandOwnershipClaimModal({
                 Change Email
               </Button>
               <Button
-                type="submit"
-                disabled={busy}
+                type="button"
+                disabled={dnsChecking}
+                onClick={handleCheckDnsTxt}
                 className="gap-1.5 bg-[#d6a928] font-black text-slate-950 hover:bg-[#e5b935]"
               >
                 <BadgeCheck className="h-4 w-4" />
-                {busy ? "Verifying..." : "Verify Domain & Claim Brand"}
+                {dnsChecking ? "Querying Global DNS..." : "Verify Live DNS TXT Record"}
               </Button>
             </div>
-          </form>
+          </div>
         ) : pendingClaim && pendingClaim.status === "pending_review" ? (
           <div className="space-y-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-xs">
             <div className="flex items-start gap-2.5">
