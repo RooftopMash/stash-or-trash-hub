@@ -62,6 +62,7 @@ import {
   type BrandInboundContactSettings,
   type InboundCustomerCallRequest,
 } from "@/lib/brand-operators";
+import { getLiveBroadcastSessions } from "@/lib/live-broadcasts";
 import { cn } from "@/lib/utils";
 
 /**
@@ -434,40 +435,66 @@ export function BrandCxDataAndAwardsMatrix({
         </div>
 
         {/* Summary KPIs */}
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-xl border border-border bg-background p-3.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Trashes Flipped to Stash
-            </p>
-            <p className="mt-1 font-display text-2xl font-black text-emerald-600 tabular-nums">
-              {totalFlips} Turnarounds
-            </p>
-          </div>
-          <div className="rounded-xl border border-[#d6a928]/40 bg-[#d6a928]/5 p-3.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Estimated Revenue Retained
-            </p>
-            <p className="mt-1 font-display text-2xl font-black text-[#b88914] tabular-nums">
-              R{(totalRetainedZar + 48500).toLocaleString()}
-            </p>
-          </div>
-          <div className="rounded-xl border border-border bg-background p-3.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Launch Voucher Redemption
-            </p>
-            <p className="mt-1 font-display text-2xl font-black text-foreground tabular-nums">
-              71.4% Conversion
-            </p>
-          </div>
-          <div className="rounded-xl border border-border bg-background p-3.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Regulator Escalations Prevented
-            </p>
-            <p className="mt-1 font-display text-2xl font-black text-emerald-600 tabular-nums">
-              100% (0 CGSO Fines)
-            </p>
-          </div>
-        </div>
+        {(() => {
+          const brandSessions = getLiveBroadcastSessions().filter(
+            (s) =>
+              s.launchPerk &&
+              (!brandName ||
+                brandName === "All Official Brands" ||
+                s.brandName.toLowerCase().includes(brandName.toLowerCase())),
+          );
+          const totalAvail = brandSessions.reduce(
+            (acc, s) => acc + (s.launchPerk?.totalAvailable ?? 0),
+            0,
+          );
+          const totalClaimed = brandSessions.reduce(
+            (acc, s) => acc + (s.launchPerk?.claimedCount ?? 0),
+            0,
+          );
+          const redemptionPct = totalAvail > 0 ? Math.round((totalClaimed / totalAvail) * 1000) / 10 : 0;
+          const pendingCount = records.filter((r) => r.finalVerdict === "pending").length;
+          const resolvedPct =
+            records.length > 0
+              ? Math.round(((records.length - pendingCount) / records.length) * 100)
+              : 100;
+
+          return (
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-xl border border-border bg-background p-3.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Trashes Flipped to Stash
+                </p>
+                <p className="mt-1 font-display text-2xl font-black text-emerald-600 tabular-nums">
+                  {totalFlips} Turnarounds
+                </p>
+              </div>
+              <div className="rounded-xl border border-[#d6a928]/40 bg-[#d6a928]/5 p-3.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Estimated Revenue Retained
+                </p>
+                <p className="mt-1 font-display text-2xl font-black text-[#b88914] tabular-nums">
+                  R{totalRetainedZar.toLocaleString()}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border bg-background p-3.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Launch Voucher Redemption
+                </p>
+                <p className="mt-1 font-display text-2xl font-black text-foreground tabular-nums">
+                  {totalAvail > 0 ? `${redemptionPct}% Claimed` : "No active drops"}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border bg-background p-3.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  CPA First-Right Resolution
+                </p>
+                <p className="mt-1 font-display text-2xl font-black text-emerald-600 tabular-nums">
+                  {resolvedPct}% ({pendingCount} Pending)
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Full-Cycle Lifecycle Table */}
         <div className="mt-5 overflow-x-auto">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -91,7 +91,7 @@ export function useRoles() {
     },
   });
 
-  const roles = query.data ?? [];
+  const roles = useMemo(() => query.data ?? [], [query.data]);
   const isOwnerEmail = !!user?.email && KNOWN_ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
   const isAdmin = isOwnerEmail || roles.includes("admin");
   // Developer mode is strictly reserved for the platform creator/developer

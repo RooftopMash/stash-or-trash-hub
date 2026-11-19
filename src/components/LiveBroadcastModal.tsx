@@ -527,6 +527,11 @@ export function LiveBroadcastModal({
         setScreenSharing(false);
         if (streamRef.current && videoRef.current) {
           videoRef.current.srcObject = streamRef.current;
+          const camTrack = streamRef.current.getVideoTracks()[0];
+          if (camTrack && pcRef.current) {
+            const sender = pcRef.current.getSenders().find((s) => s.track?.kind === "video");
+            if (sender) void sender.replaceTrack(camTrack);
+          }
         }
       };
     } catch {
@@ -542,6 +547,7 @@ export function LiveBroadcastModal({
         body: JSON.stringify({
           channelName: roomChannel || `sot-live-${Date.now()}`,
           partnerId: brandName || "community",
+          callerId: user?.id || "sot-host",
           mode: sessionMode === "voice_call" ? "voice" : sessionMode === "video_call" ? "video" : "broadcast",
         }),
       });
@@ -606,6 +612,11 @@ export function LiveBroadcastModal({
             event: "sot-live-signal",
             payload,
           });
+          void supaChanRef.current?.send({
+            type: "broadcast",
+            event: "webrtc-signal",
+            payload,
+          });
         };
 
         pc.onicecandidate = (ev) => {
@@ -617,6 +628,11 @@ export function LiveBroadcastModal({
         const handleSignal = async (data: Record<string, any>) => {
           if (!pcRef.current) return;
           try {
+            if (data.type === "call-declined") {
+              toast.info(data.reason || "Recipient declined the call.");
+              void cleanupSession();
+              return;
+            }
             if (data.type === "chat" && data.message) {
               setChatMessages((prev) => [...prev, data.message]);
               return;
@@ -626,7 +642,7 @@ export function LiveBroadcastModal({
               else setLiveTrashVotes((v) => v + 1);
               return;
             }
-            if (data.type === "join") {
+            if (data.type === "join" || data.type === "ready") {
               setViewerCount((v) => v + 1);
               const offer = await pcRef.current.createOffer();
               await pcRef.current.setLocalDescription(offer);
@@ -649,14 +665,17 @@ export function LiveBroadcastModal({
         };
 
         if (typeof BroadcastChannel !== "undefined") {
-          const bc = new BroadcastChannel(`sot-live-${channel}`);
+          const bc = new BroadcastChannel(`sot-rtc-${channel}`);
           bc.onmessage = (e) => void handleSignal(e.data);
           bcRef.current = bc;
         }
 
         const supaChan = supabase
-          .channel(`sot-live-${channel}`)
+          .channel(`sot-rtc-${channel}`)
           .on("broadcast", { event: "sot-live-signal" }, ({ payload }) => {
+            if (payload) void handleSignal(payload as Record<string, any>);
+          })
+          .on("broadcast", { event: "webrtc-signal" }, ({ payload }) => {
             if (payload) void handleSignal(payload as Record<string, any>);
           })
           .subscribe((status) => {

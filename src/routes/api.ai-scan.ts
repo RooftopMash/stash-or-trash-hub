@@ -2,8 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { GoogleGenAI, Type } from "@google/genai";
 
 const CANDIDATE_MODELS = [
-  "gemini-flash-latest",
-  "gemini-3.8-flash",
+  "gemini-4-hydrogen",
   "gemini-3.1-flash-lite",
 ];
 
@@ -470,9 +469,7 @@ Perform a comprehensive multi-tier forensic evaluation:
             required: ["brandInfo", "authenticity", "counterfeitAssessment"],
           };
 
-          // Keep the route available when Gemini is not configured. Barcode lookups
-          // and the deterministic fallback can still serve the request.
-          const geminiApiKey = process.env.GEMINI_API_KEY;
+          const geminiApiKey = process.env.GEMINI_API_KEY?.trim();
           const ai = geminiApiKey
             ? new GoogleGenAI({
                 apiKey: geminiApiKey,
@@ -501,7 +498,7 @@ Perform a comprehensive multi-tier forensic evaluation:
                 });
 
                 const timeoutPromise = new Promise<never>((_, reject) =>
-                  setTimeout(() => reject(new Error("Model timeout")), 4500)
+                  setTimeout(() => reject(new Error("Model timeout")), 20000),
                 );
 
                 const response = await Promise.race([generatePromise, timeoutPromise]);
@@ -515,7 +512,6 @@ Perform a comprehensive multi-tier forensic evaluation:
             }
           }
 
-          // If Gemini models succeeded
           if (parsed) {
             return Response.json({
               success: true,
@@ -523,160 +519,145 @@ Perform a comprehensive multi-tier forensic evaluation:
             });
           }
 
-          // Resilient Fallback: If models are under temporary outage or GEMINI_API_KEY is not configured,
-          // synthesize verified response using Open Food Facts, QR Digital Link intelligence, or barcode registry
-          const qrStr = body?.qrData || "";
-          const isPhishingQr = qrStr.includes(".xyz") || qrStr.includes(".top") || qrStr.includes("fake") || qrStr.includes("-check.xyz");
-          const isCertilogo = qrStr.includes("certilogo.com");
-          const isNike = qrStr.includes("nike.com");
-          const isGs1DigitalLink = qrStr.includes("/01/") || qrStr.includes("id.gs1.org");
+          // Deterministic fallback ONLY when real barcode/QR evidence exists (no fabricated brand guesses for arbitrary images)
+          const qrStr = (body?.qrData || "").trim();
+          const hasBarcodeMatch = Boolean(barcodeVerifiedInfo);
+          const hasQrInput = qrStr.length > 0;
 
-          let bName = barcodeVerifiedInfo?.brandName || "Coca-Cola";
-          let bOwner = barcodeVerifiedInfo?.brandOwner || "The Coca-Cola Company";
-          let pName = barcodeVerifiedInfo?.productName || "Coca-Cola 2 Litre Original Bottle";
-          let cat = barcodeVerifiedInfo?.category || "Food & Beverage";
-          let tier = "Mass Market";
-          let origin = "United States";
-          const bc = body?.barcode || rawCode || (qrStr ? "QR-CODE-2D" : "GS1-VERIFIED");
-          const isOriginal = !isPhishingQr;
-          const verdict: "legit" | "high_risk_fake" | "suspected_counterfeit" = isPhishingQr ? "high_risk_fake" : "legit";
-          const authScore = isPhishingQr ? 18 : 96;
-          const fakeScore = isPhishingQr ? 92 : 4;
-          let badgeLabel = isPhishingQr ? "High Counterfeit Replica Risk" : "Verified Authentic Original";
-
-          if (isPhishingQr) {
-            bName = "Gucci";
-            bOwner = "Kering S.A.";
-            pName = "GG Marmont Matelassé Shoulder Bag (Suspected Replica)";
-            cat = "Luxury Fashion & Leather Goods";
-            tier = "Ultra Luxury";
-            origin = "Italy";
-          } else if (isCertilogo) {
-            bName = "Moncler";
-            bOwner = "Moncler S.p.A.";
-            pName = "Maya Down Jacket (Certilogo Tag Verified)";
-            cat = "Luxury Outerwear";
-            tier = "High-End Luxury";
-            origin = "Italy";
-            badgeLabel = "Certilogo Authenticated";
-          } else if (isNike) {
-            bName = "Nike";
-            bOwner = "Nike, Inc.";
-            pName = "Air Jordan 1 Retro High OG";
-            cat = "Footwear & Athletic Apparel";
-            tier = "Premium Streetwear";
-            origin = "United States";
-            badgeLabel = "Nike Digital Passport Valid";
-          } else if (isGs1DigitalLink) {
-            bName = "Nike";
-            bOwner = "Nike, Inc.";
-            pName = "Air Jordan 1 Digital Link Verified";
-            cat = "Footwear & Athletic Apparel";
-            tier = "Premium Streetwear";
-            origin = "United States";
-            badgeLabel = "GS1 Digital Link Original";
+          if (!hasBarcodeMatch && !hasQrInput) {
+            const reasonDetail = !ai
+              ? "Visual forensic AI requires GEMINI_API_KEY on the server, or provide a GS1 barcode or QR payload for deterministic registry lookup."
+              : `Visual AI models could not process this scan (${lastModelError?.message || "service busy"}). Try supplying the barcode digits directly.`;
+            return Response.json(
+              {
+                error: reasonDetail,
+                code: ai ? "GEMINI_SCAN_FAILED" : "GEMINI_UNAVAILABLE",
+              },
+              { status: 503 },
+            );
           }
 
-          const fallbackResult = {
+          const lowerQr = qrStr.toLowerCase();
+          const isPhishingQr =
+            hasQrInput &&
+            (lowerQr.includes(".xyz") ||
+              lowerQr.includes(".top") ||
+              lowerQr.includes("-check.") ||
+              lowerQr.startsWith("http://"));
+          const isCertilogo = lowerQr.includes("certilogo.com");
+          const isGs1DigitalLink = lowerQr.includes("/01/") || lowerQr.includes("id.gs1.org");
+
+          const bName =
+            barcodeVerifiedInfo?.brandName ||
+            (isCertilogo ? "Certilogo-Protected Brand" : "Unverified QR Brand");
+          const bOwner =
+            barcodeVerifiedInfo?.brandOwner ||
+            (isCertilogo ? "Verified Brand Registrar (Certilogo)" : "Unresolved Domain Registrar");
+          const pName =
+            barcodeVerifiedInfo?.productName ||
+            (hasQrInput ? `QR Target (${qrStr.slice(0, 48)})` : `GS1 Barcode #${rawCode}`);
+          const cat = barcodeVerifiedInfo?.category || "Consumer Goods";
+          const bcLabel = body?.barcode || rawCode || (hasQrInput ? "QR-2D" : "GS1-REGISTRY");
+
+          const verdict: "legit" | "high_risk_fake" | "inconclusive" = isPhishingQr
+            ? "high_risk_fake"
+            : hasBarcodeMatch || isCertilogo || isGs1DigitalLink
+              ? "legit"
+              : "inconclusive";
+          const authScore = isPhishingQr ? 22 : hasBarcodeMatch ? 88 : isCertilogo || isGs1DigitalLink ? 84 : 50;
+          const fakeScore = 100 - authScore;
+          const badgeLabel = isPhishingQr
+            ? "Suspicious QR Domain Risk"
+            : hasBarcodeMatch
+              ? "GS1 Registry Matched (Deterministic)"
+              : isCertilogo || isGs1DigitalLink
+                ? "Verified Protocol Link"
+                : "Inconclusive QR (Manual Visual Check)";
+
+          const deterministicResult = {
             brandInfo: {
-              identified: true,
+              identified: hasBarcodeMatch || isCertilogo || isGs1DigitalLink,
               brandName: bName,
               brandOwner: bOwner,
-              parentCompanyContext: `${bName} is an iconic brand owned and managed by ${bOwner}.`,
+              parentCompanyContext: hasBarcodeMatch
+                ? `${bName} matched against Open Food Facts / GS1 prefix registry (${bOwner}).`
+                : "Evaluated via deterministic QR host inspection (visual AI check skipped because GEMINI_API_KEY is not active).",
               productName: pName,
               category: cat,
-              marketTier: tier,
-              countryOfOrigin: origin,
-              confidence: 96,
-              qrOrBarcodeDecoded: qrStr || bc,
+              marketTier: "Mass Market",
+              countryOfOrigin: "International GS1",
+              confidence: hasBarcodeMatch ? 86 : 55,
+              qrOrBarcodeDecoded: qrStr || bcLabel,
               summary: isPhishingQr
-                ? `CRITICAL ALERT: QR destination domain uses suspicious non-official host. High likelihood of counterfeit luxury replica.`
-                : `Verified authentic ${pName} from ${bName} (${bOwner}) registered in global retail trade directory.`,
+                ? "Alert: QR destination uses an unencrypted HTTP scheme or non-standard domain often flagged in phishing/counterfeit links."
+                : hasBarcodeMatch
+                  ? `GS1 / Open Food Facts matched ${pName} (${bName}). Physical packaging visual forensics requires GEMINI_API_KEY.`
+                  : "QR URL structure checked without visual AI. Confirm the printed domain matches the manufacturer's official site.",
             },
             authenticity: {
               score: authScore,
-              isLegitimate: isOriginal,
-              verdictStatus: isOriginal ? "verified_authentic" : "flagged_counterfeit",
-              badgeLabel: badgeLabel,
-              confidence: "high",
+              isLegitimate: !isPhishingQr,
+              verdictStatus: isPhishingQr ? "suspicious_tampering" : hasBarcodeMatch ? "likely_authentic" : "inconclusive",
+              badgeLabel,
+              confidence: hasBarcodeMatch ? "medium" : "low",
               forensics: {
-                physicalLighting: "Consistent natural ambient lighting vectors matching physical product contours.",
-                textureAndNoise: "Organic ISO sensor noise pattern; zero synthetic GAN or generative diffusion markers.",
-                textIntegrity: isPhishingQr
-                  ? "Spoofed domain and non-standard web routing detected in 2D payload."
-                  : "Official GS1 barcode/QR symbology and brand typography conform to authentic manufacturer specifications.",
-                aiGenerationMarkers: "Zero generative synthesis markers detected; physical camera capture confirmed.",
+                physicalLighting: "Not inspected (deterministic GS1 / QR lookup only; GEMINI_API_KEY required for image lighting analysis).",
+                textureAndNoise: "Not inspected (deterministic GS1 / QR lookup only).",
+                textIntegrity: hasQrInput
+                  ? isPhishingQr
+                    ? "Non-official or unencrypted URL scheme flagged in 2D QR payload."
+                    : "HTTPS or GS1 Digital Link syntax validated."
+                  : `Valid GS1 digit structure for code ${bcLabel}.`,
+                aiGenerationMarkers: "Image pixel synthesis check skipped (deterministic registry lookup only).",
               },
               reasons: isPhishingQr
-                ? [
-                    "QR code directs to unauthorized lookalike phishing domain rather than official brand portal.",
-                    "Serial number does not correlate to active manufacturer blockchain registry.",
-                    "High probability of counterfeit luxury garment or packaging replica.",
-                  ]
+                ? ["QR payload routes to insecure HTTP or high-risk novelty TLD (.xyz / .top)."]
                 : [
-                    `Valid barcode/QR registry recognized in official international directory.`,
-                    `Manufacturer confirmed as ${bOwner}.`,
-                    "Cryptographic domain certificate validated.",
+                    hasBarcodeMatch
+                      ? `Barcode ${bcLabel} resolved in GS1 / Open Food Facts registry (${bOwner}).`
+                      : "QR syntax evaluated deterministically.",
+                    "Enable GEMINI_API_KEY on server to unlock full visual tamper & stitching inspection.",
                   ],
-              flags: isPhishingQr ? ["unauthorized_domain", "counterfeit_qr_spoofing", "replica_risk"] : [],
+              flags: isPhishingQr ? ["suspicious_qr_domain"] : [],
             },
             counterfeitAssessment: {
-              isOriginal: isOriginal,
-              verdict: verdict,
+              verdict,
               authenticityScore: authScore,
               counterfeitRiskScore: fakeScore,
-              confidence: "high",
-              badgeLabel: badgeLabel,
-              logoInspection: isPhishingQr
-                ? "Irregular typeface kerning, blurred debossing depth, and misaligned serif angles observed on packaging."
-                : `Authentic ${bName} typography and packaging design consistent with official corporate standards.`,
-              barcodeAndTagsInspection: isPhishingQr
-                ? `QR code ${qrStr} resolves to unverified third-party host without brand cryptographic signing.`
-                : `QR / Barcode ${qrStr || bc} complies with GS1 international digital standards registered to ${bOwner}.`,
-              materialAndCraftsmanship: isPhishingQr
-                ? "Inconsistent stitch tension, synthetic polyurethane odor, and lightweight pot-metal hardware detected."
-                : "Premium materials, uniform stitch count, and authorized manufacturer hardware hallmarks confirmed.",
-              clientVerificationGuide: isPhishingQr
-                ? [
-                    "Do NOT approve purchase — QR code redirects to an unverified replica verification proxy.",
-                    "Compare hardware engravings against official brand boutique reference archives.",
-                    "Request proof of purchase from authorized department store or brand flagship.",
-                  ]
-                : [
-                    "Verify the tamper-evident packaging seal or security tag is intact before purchase.",
-                    "Check laser-etched batch code against official corporate customer service portal.",
-                    "Ensure stitch density and hardware weight match official boutique specifications.",
-                  ],
+              confidence: hasBarcodeMatch ? "medium" : "low",
+              badgeLabel,
+              logoInspection: "Visual logo inspection requires GEMINI_API_KEY; verify embossed/printed emblem sharpness manually.",
+              barcodeAndTagsInspection: hasBarcodeMatch
+                ? `Barcode ${bcLabel} matches ${bOwner} registry metadata.`
+                : `2D payload "${qrStr}" checked for TLS and domain spoofing indicators.`,
+              materialAndCraftsmanship: "Physical material & stitch analysis requires GEMINI_API_KEY visual pipeline.",
+              clientVerificationGuide: [
+                "Inspect the tamper-evident seal and batch stamp near the neck or care tag.",
+                "Verify the domain on printed QR labels matches the manufacturer's official corporate homepage.",
+                "Purchase from authorized stockists and retain your POS till slip for receipt authentication.",
+              ],
               brandProtectionTracking: {
-                brandOwnerConfirmed: true,
-                authorizedChannels: isPhishingQr
-                  ? "Genuine items are sold EXCLUSIVELY via official brand boutiques. This item originated outside authorized networks."
-                  : "Authorized supermarkets, licensed department stores, and certified brand distribution channels.",
+                brandOwnerConfirmed: hasBarcodeMatch,
+                authorizedChannels: "Authorized retail outlets and official brand stores.",
                 advice: isPhishingQr
-                  ? `Counterfeit warning: ${bName} legal brand protection officers recommend rejecting this product.`
-                  : `Always purchase ${bName} products through certified stockists to guarantee authenticity.`,
+                  ? "Do not trust unverified third-party domains claiming instant authentication."
+                  : "Combine GS1 registry checks with visual packaging seal inspection.",
               },
-              keyDifferencesToLookFor: isPhishingQr
-                ? [
-                    "Genuine items use secure brand portals (e.g. certilogo.com, gucci.com), never .xyz or .top vanity domains.",
-                    "Authentic hardware is heavy palladium or brass alloy; counterfeits use hollow zinc with peeling electroplate.",
-                    "Original stitching has precise thread gauge and exact angle slant; fakes have erratic straight machine stitching.",
-                  ]
-                : [
-                    "Authentic products have crisp vector label printing with zero microprint blur or ink bleed.",
-                    "Genuine security QR codes resolve over HTTPS to the verified corporate parent domain.",
-                  ],
+              keyDifferencesToLookFor: [
+                "Genuine brand QR portals use official HTTPS manufacturer domains or certified GS1 Digital Links.",
+                "Consistent typography and batch ink stamping alignment vs smudged thermal stickers.",
+              ],
             },
           };
 
           return Response.json({
             success: true,
-            data: fallbackResult,
+            data: deterministicResult,
           });
         } catch {
           return Response.json(
             { error: "AI Verification service encountered a temporary issue. Please try again." },
-            { status: 500 }
+            { status: 500 },
           );
         }
       },

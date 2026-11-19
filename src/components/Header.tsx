@@ -22,6 +22,7 @@ import { getRegisteredBrandIdentity } from "@/lib/brand-operators";
 import { supabase } from "@/integrations/supabase/client";
 import { usePageTheme } from "@/lib/page-theme";
 import type { AiScanResult } from "@/lib/ai-scanner";
+import { broadcastCallStatus, startIncomingRingtone } from "@/lib/rtc-signaling";
 import { cn } from "@/lib/utils";
 
 export function Header({ onPosted }: { onPosted?: () => void }) {
@@ -48,9 +49,9 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [liveStudioOpen, setLiveStudioOpen] = useState(false);
   const [incomingCall, setIncomingCall] = useState<IncomingSotCallPayload | null>(null);
-  const [activeCallRoom, setActiveCallRoom] = useState<string | undefined>(undefined);
-  const [activeCallMode, setActiveCallMode] = useState<"broadcast" | "video_call" | "voice_call">("video_call");
-  const [activeCallPartner, setActiveCallPartner] = useState<string | undefined>(undefined);
+  const [activeCallRoom] = useState<string | undefined>(undefined);
+  const [activeCallMode] = useState<"broadcast" | "video_call" | "voice_call">("video_call");
+  const [activeCallPartner] = useState<string | undefined>(undefined);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
 
   // Private 1-on-1 Messenger Call states
@@ -61,11 +62,20 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const handleIncoming = (payload: IncomingSotCallPayload) => {
+    const handleIncoming = (payload: IncomingSotCallPayload, fromLocalTab = false) => {
       if (!payload || !payload.roomChannel) return;
       if (!getAccountPreferences().callRingAlerts) return;
-      // Show ring banner if targeted to this user, or if testing in another tab
-      if (!user?.id || payload.recipientId === user.id || payload.callerId !== user.id) {
+      if (user?.id && payload.callerId === user.id && !fromLocalTab) return;
+
+      const isDirectTarget = Boolean(user?.id && payload.recipientId === user.id);
+      const isOpenDeskTarget =
+        !payload.recipientId ||
+        payload.recipientId === "community" ||
+        payload.recipientId === "sot-community-desk" ||
+        (payload.recipientId.startsWith("brand-") && isBrand);
+      const isSameBrowserTabPreview = fromLocalTab && payload.callerId !== user?.id;
+
+      if (isDirectTarget || isOpenDeskTarget || isSameBrowserTabPreview) {
         setIncomingCall(payload);
       }
     };
@@ -73,13 +83,13 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
     let bc: BroadcastChannel | null = null;
     if (typeof BroadcastChannel !== "undefined") {
       bc = new BroadcastChannel("sot-call-ring");
-      bc.onmessage = (ev) => handleIncoming(ev.data as IncomingSotCallPayload);
+      bc.onmessage = (ev) => handleIncoming(ev.data as IncomingSotCallPayload, true);
     }
 
     const chan = supabase
       .channel("sot-call-ring")
       .on("broadcast", { event: "incoming-call" }, ({ payload }) => {
-        if (payload) handleIncoming(payload as IncomingSotCallPayload);
+        if (payload) handleIncoming(payload as IncomingSotCallPayload, false);
       })
       .subscribe();
 
@@ -87,7 +97,16 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
       bc?.close();
       void supabase.removeChannel(chan);
     };
-  }, [user?.id]);
+  }, [user?.id, isBrand]);
+
+  // Play & dispose subtle Web Audio ringtone while incoming call banner is active
+  useEffect(() => {
+    if (!incomingCall) return;
+    const stopRing = startIncomingRingtone();
+    return () => {
+      stopRing();
+    };
+  }, [incomingCall]);
   const [prefilledPost, setPrefilledPost] = useState<{
     brandName: string;
     brandOwner: string;
@@ -383,7 +402,15 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setIncomingCall(null)}
+                onClick={() => {
+                  broadcastCallStatus({
+                    roomChannel: incomingCall.roomChannel,
+                    senderId: user?.id || "recipient",
+                    type: "call-declined",
+                    reason: `${user?.email?.split("@")[0] || "Recipient"} declined the call.`,
+                  });
+                  setIncomingCall(null);
+                }}
                 className="h-8 gap-1 border-white/30 bg-transparent text-white hover:bg-white/10 text-xs"
               >
                 <PhoneOff className="h-3.5 w-3.5" /> Decline

@@ -297,12 +297,25 @@ function BrandPage() {
     toast.success(`Coupon ${couponCode} copied to clipboard and social rewards claimed!`);
   };
 
-  // Mock CX/UX Matrix Rating for the People's standard of brands
-  const mockCXMetrics = {
-    customerService: brand ? Math.min(100, Math.max(10, brand.trust_score + 5)) : 75,
-    productQuality: brand ? Math.min(100, Math.max(10, brand.trust_score - 2)) : 80,
-    priceValue: brand ? Math.min(100, Math.max(10, brand.trust_score - 10)) : 65,
-    deliverySpeed: brand ? Math.min(100, Math.max(10, brand.trust_score + 8)) : 85,
+  // Compute CX/UX Matrix metrics from real community feed verdicts (falling back to brand trust score when unrated)
+  const cxFeedTotals = (feed ?? []).reduce(
+    (acc, item) => ({
+      stash: acc.stash + (item.stashCount ?? 0),
+      trash: acc.trash + (item.trashCount ?? 0),
+    }),
+    { stash: 0, trash: 0 },
+  );
+  const cxTotalVotes = cxFeedTotals.stash + cxFeedTotals.trash;
+  const cxBaselineScore =
+    cxTotalVotes > 0
+      ? Math.round((cxFeedTotals.stash / cxTotalVotes) * 100)
+      : Number(brand?.trust_score ?? 0);
+  const cxMetrics = {
+    hasLiveVotes: cxTotalVotes > 0 || (feed?.length ?? 0) > 0,
+    customerService: cxBaselineScore,
+    productQuality: cxBaselineScore,
+    priceValue: cxBaselineScore,
+    deliverySpeed: cxBaselineScore,
   };
 
   return (
@@ -796,53 +809,62 @@ function BrandPage() {
                     totalVerdicts={
                       feed && feed.length > 0
                         ? feed.reduce((acc, it) => acc + it.stashCount + it.trashCount, 0) || feed.length
-                        : 24
+                        : 0
                     }
                     sampleReviews={feed?.map((f) => f.title) ?? []}
                   />
 
                   {/* CX/UX Matrix Metrics */}
                   <div className="space-y-3">
-                    <h4 className="font-display font-bold text-sm text-muted-foreground uppercase tracking-wide">Consumer Experience Rating Matrix</h4>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h4 className="font-display font-bold text-sm text-muted-foreground uppercase tracking-wide">
+                        Consumer Experience Rating Matrix
+                      </h4>
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {cxMetrics.hasLiveVotes
+                          ? `Based on ${cxTotalVotes || feed?.length || 0} live verdict signals`
+                          : "Baseline trust score (awaiting first verdict)"}
+                      </span>
+                    </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="p-3 rounded-xl bg-secondary/30 border border-border/40">
                         <div className="flex justify-between text-xs font-semibold">
-                          <span>Customer Service & Support</span>
-                          <span className="text-emerald-500">{mockCXMetrics.customerService}%</span>
+                          <span>Customer Service &amp; Support</span>
+                          <span className="text-emerald-500 tabular-nums">{cxMetrics.customerService}%</span>
                         </div>
                         <div className="mt-1.5 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-500" style={{ width: `${mockCXMetrics.customerService}%` }} />
+                          <div className="h-full bg-emerald-500" style={{ width: `${cxMetrics.customerService}%` }} />
                         </div>
                       </div>
 
                       <div className="p-3 rounded-xl bg-secondary/30 border border-border/40">
                         <div className="flex justify-between text-xs font-semibold">
-                          <span>Product Quality & Durability</span>
-                          <span className="text-emerald-500">{mockCXMetrics.productQuality}%</span>
+                          <span>Product Quality &amp; Durability</span>
+                          <span className="text-emerald-500 tabular-nums">{cxMetrics.productQuality}%</span>
                         </div>
                         <div className="mt-1.5 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-500" style={{ width: `${mockCXMetrics.productQuality}%` }} />
+                          <div className="h-full bg-emerald-500" style={{ width: `${cxMetrics.productQuality}%` }} />
                         </div>
                       </div>
 
                       <div className="p-3 rounded-xl bg-secondary/30 border border-border/40">
                         <div className="flex justify-between text-xs font-semibold">
-                          <span>Pricing & Value For Money</span>
-                          <span className="text-amber-500">{mockCXMetrics.priceValue}%</span>
+                          <span>Pricing &amp; Value For Money</span>
+                          <span className="text-amber-500 tabular-nums">{cxMetrics.priceValue}%</span>
                         </div>
                         <div className="mt-1.5 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                          <div className="h-full bg-amber-500" style={{ width: `${mockCXMetrics.priceValue}%` }} />
+                          <div className="h-full bg-amber-500" style={{ width: `${cxMetrics.priceValue}%` }} />
                         </div>
                       </div>
 
                       <div className="p-3 rounded-xl bg-secondary/30 border border-border/40">
                         <div className="flex justify-between text-xs font-semibold">
-                          <span>Delivery, Supply & Speed</span>
-                          <span className="text-emerald-500">{mockCXMetrics.deliverySpeed}%</span>
+                          <span>Delivery, Supply &amp; Speed</span>
+                          <span className="text-emerald-500 tabular-nums">{cxMetrics.deliverySpeed}%</span>
                         </div>
                         <div className="mt-1.5 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-500" style={{ width: `${mockCXMetrics.deliverySpeed}%` }} />
+                          <div className="h-full bg-emerald-500" style={{ width: `${cxMetrics.deliverySpeed}%` }} />
                         </div>
                       </div>
                     </div>

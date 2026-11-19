@@ -4,16 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@keyframes sot-coin-approach {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) rotate(-2deg);
-  }
-  50% {
-    transform: translate3d(0, -0.65rem, 0) rotate(2deg);
-  }
-}
-
 /* Township Coin Spinning on Flat Surfaces (Zwepe / R5 / R2 game):
    1. Initial finger-flick impulse launching off the desk/stoop
    2. High-speed upright rim spin on flat surface

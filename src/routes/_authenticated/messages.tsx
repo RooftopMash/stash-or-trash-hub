@@ -158,8 +158,7 @@ function MessagesPage() {
 
   const { data: thread, refetch: refetchThread } = useQuery({
     queryKey: ["thread", user?.id, active],
-    queryFn: () =>
-      active === "sot-community-desk" ? Promise.resolve([]) : fetchThread(user!.id, active!),
+    queryFn: () => fetchThread(user!.id, active!),
     enabled: !!user && !!active,
   });
 
@@ -169,9 +168,15 @@ function MessagesPage() {
     }
   }, [user, active, thread?.length, refetchInbox]);
 
-  // Realtime: live inbox + open thread updates.
+  // Realtime: live inbox + open thread updates + local desk message sync.
   useEffect(() => {
     if (!user) return;
+    const onLocalUpdate = () => {
+      void refetchInbox();
+      void refetchThread();
+    };
+    window.addEventListener("sot-messages-updated", onLocalUpdate);
+
     const channel = supabase
       .channel(`messages-${user.id}`)
       .on(
@@ -185,7 +190,10 @@ function MessagesPage() {
         () => { refetchInbox(); refetchThread(); },
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      window.removeEventListener("sot-messages-updated", onLocalUpdate);
+      void supabase.removeChannel(channel);
+    };
   }, [user, refetchInbox, refetchThread]);
 
   const conversations = useMemo(() => inbox ?? [], [inbox]);
@@ -290,10 +298,6 @@ function MessagesPage() {
       ? `📩 [SOT CALL REQUEST] Hi ${activeName ?? "there"}, we represent the brand and would like to call you via SOT Voice/Video to resolve your product post (your personal phone number remains 100% private). Click "Approve Call Request" below if you allow us to ring you.`
       : `📩 [SOT CALL REQUEST] Hi ${activeName ?? "there"}, ${callerLabel} is requesting permission to Voice/Video call you on SOT. Click "Approve Call Request" below to allow calling.`;
 
-    if (active === "sot-community-desk" || active.startsWith("brand-")) {
-      toast.success("Call Request Handshake logged — ready to dial!");
-      return;
-    }
     try {
       await sendMessage({ senderId: user.id, recipientId: active, body: handshakeText });
       await refetchThread();
@@ -310,16 +314,11 @@ function MessagesPage() {
       toast.error(permissionStatus.reason);
       return;
     }
-    if (active === "sot-community-desk" || active.startsWith("brand-")) {
-      toast.success(`Message delivered to ${activeName ?? "SOT Resolution Desk"}.`);
-      setBody("");
-      return;
-    }
     try {
       await sendMessage({ senderId: user.id, recipientId: active, body });
       setBody("");
-      refetchThread();
-      refetchInbox();
+      void refetchThread();
+      void refetchInbox();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not send.");
     }

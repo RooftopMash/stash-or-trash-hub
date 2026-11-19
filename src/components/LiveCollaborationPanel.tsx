@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   IAgoraRTCClient,
   ICameraVideoTrack,
+  ILocalVideoTrack,
   IMicrophoneAudioTrack,
 } from "agora-rtc-sdk-ng";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,10 +22,20 @@ import {
   ShieldCheck,
   Video,
   VideoOff,
+  Wifi,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sendMessage } from "@/lib/messages";
 import type { IncomingSotCallPayload } from "@/components/LiveBroadcastModal";
+import {
+  FALLBACK_ICE_SERVERS,
+  attachUnifiedRtcSignaling,
+  broadcastCallStatus,
+  createPoliteWebRtcController,
+  createStablePeerId,
+  samplePeerConnectionQuality,
+  type RtcNetworkQuality,
+} from "@/lib/rtc-signaling";
 import { toast } from "sonner";
 
 type LiveCollaborationPanelProps = {
@@ -39,12 +50,6 @@ type LiveCollaborationPanelProps = {
   onSendCallRequest?: () => void;
   onOpenFullDialer?: (mode: "voice_call" | "video_call") => void;
 };
-
-const DEFAULT_GOOGLE_ICE: RTCIceServer[] = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" },
-  { urls: "stun:stun2.l.google.com:19302" },
-];
 
 export function LiveCollaborationPanel({
   partnerName,
@@ -61,27 +66,51 @@ export function LiveCollaborationPanel({
   const { user, session } = useAuth();
   const [requestedMode, setRequestedMode] = useState<"voice" | "video" | "broadcast" | null>(null);
   const [connected, setConnected] = useState(false);
-  const [engineLabel, setEngineLabel] = useState<string>("Google WebRTC + Agora Hybrid");
+  const [engineLabel, setEngineLabel] = useState<string>("WebRTC + Agora Hybrid");
   const [channelName, setChannelName] = useState<string>("");
   const [remoteConnected, setRemoteConnected] = useState(false);
   const [cameraOn, setCameraOn] = useState(true);
   const [microphoneOn, setMicrophoneOn] = useState(true);
   const [screenSharing, setScreenSharing] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
+  const [networkQuality, setNetworkQuality] = useState<RtcNetworkQuality>({
+    label: "Connecting",
+    rttMs: null,
+    kbps: null,
+  });
 
   const clientRef = useRef<IAgoraRTCClient | null>(null);
   const audioRef = useRef<IMicrophoneAudioTrack | null>(null);
   const videoRef = useRef<ICameraVideoTrack | null>(null);
+  const screenAgoraRef = useRef<ILocalVideoTrack | null>(null);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
   const localVideoElRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoElRef = useRef<HTMLVideoElement | null>(null);
-  const signalingRef = useRef<BroadcastChannel | null>(null);
-  const supaChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const signalingCleanupRef = useRef<(() => void) | null>(null);
+  const emitSignalRef = useRef<ReturnType<typeof attachUnifiedRtcSignaling>["emit"] | null>(null);
+  const statsIntervalRef = useRef<number | null>(null);
+  const prevBytesSentRef = useRef<number | undefined>(undefined);
+  const channelNameRef = useRef<string>("");
+  const remoteConnectedRef = useRef<boolean>(false);
+  const callSecondsRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!connected) {
+    channelNameRef.current = channelName;
+  }, [channelName]);
+
+  useEffect(() => {
+    remoteConnectedRef.current = remoteConnected;
+  }, [remoteConnected]);
+
+  useEffect(() => {
+    callSecondsRef.current = callSeconds;
+  }, [callSeconds]);
+
+  useEffect(() => {
+    if (!connected || !remoteConnected) {
       setCallSeconds(0);
       return;
     }
@@ -89,47 +118,98 @@ export function LiveCollaborationPanel({
       setCallSeconds((s) => s + 1);
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [connected]);
+  }, [connected, remoteConnected]);
 
-  const leaveCall = useCallback(async () => {
-    try {
-      audioRef.current?.close();
-      videoRef.current?.close();
-      audioRef.current = null;
-      videoRef.current = null;
-      if (clientRef.current) {
-        await clientRef.current.leave();
-        clientRef.current = null;
+  const leaveCall = useCallback(
+    async (options?: { reason?: string; skipStatusBroadcast?: boolean }) => {
+      const room = channelNameRef.current;
+      const hadRemote = remoteConnectedRef.current;
+      const secs = callSecondsRef.current;
+
+      if (room && !options?.skipStatusBroadcast) {
+        if (emitSignalRef.current) {
+          emitSignalRef.current({ type: "call-ended" });
+        } else {
+          broadcastCallStatus({
+            roomChannel: room,
+            senderId: user?.id || "sot-peer",
+            type: "call-ended",
+          });
+        }
       }
-    } catch {
-      // ignore Agora cleanup errors
-    }
 
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((t) => t.stop());
-      localStreamRef.current = null;
-    }
-    if (pcRef.current) {
-      pcRef.current.close();
-      pcRef.current = null;
-    }
-    if (signalingRef.current) {
-      signalingRef.current.close();
-      signalingRef.current = null;
-    }
-    if (supaChannelRef.current) {
-      void supabase.removeChannel(supaChannelRef.current);
-      supaChannelRef.current = null;
-    }
-    setConnected(false);
-    setRemoteConnected(false);
-    setScreenSharing(false);
-    setRequestedMode(null);
-  }, []);
+      if (statsIntervalRef.current !== null) {
+        window.clearInterval(statsIntervalRef.current);
+        statsIntervalRef.current = null;
+      }
+      prevBytesSentRef.current = undefined;
+
+      if (signalingCleanupRef.current) {
+        signalingCleanupRef.current();
+        signalingCleanupRef.current = null;
+      }
+      emitSignalRef.current = null;
+
+      try {
+        audioRef.current?.close();
+        videoRef.current?.close();
+        screenAgoraRef.current?.close();
+        audioRef.current = null;
+        videoRef.current = null;
+        screenAgoraRef.current = null;
+        if (clientRef.current) {
+          await clientRef.current.leave();
+          clientRef.current = null;
+        }
+      } catch {
+        // ignore Agora cleanup errors
+      }
+
+      if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach((t) => t.stop());
+        screenStreamRef.current = null;
+      }
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((t) => t.stop());
+        localStreamRef.current = null;
+      }
+      if (pcRef.current) {
+        pcRef.current.close();
+        pcRef.current = null;
+      }
+      if (localVideoElRef.current) localVideoElRef.current.srcObject = null;
+      if (remoteVideoElRef.current) remoteVideoElRef.current.srcObject = null;
+
+      if (user?.id && partnerId && partnerId !== user.id && room) {
+        const mins = String(Math.floor(secs / 60)).padStart(2, "0");
+        const rem = String(secs % 60).padStart(2, "0");
+        void sendMessage({
+          senderId: user.id,
+          recipientId: partnerId,
+          body: options?.reason
+            ? `📵 Call to ${partnerName}: ${options.reason}`
+            : hadRemote
+              ? `📞 Call with ${partnerName} completed (${mins}:${rem}).`
+              : `📞 Call attempt in room ${room} ended.`,
+        });
+      }
+
+      setConnected(false);
+      setRemoteConnected(false);
+      setScreenSharing(false);
+      setRequestedMode(null);
+      setNetworkQuality({ label: "Connecting", rttMs: null, kbps: null });
+
+      if (options?.reason) {
+        toast.info(options.reason);
+      }
+    },
+    [partnerId, partnerName, user?.id],
+  );
 
   useEffect(
     () => () => {
-      void leaveCall();
+      void leaveCall({ skipStatusBroadcast: true });
     },
     [leaveCall],
   );
@@ -149,7 +229,7 @@ export function LiveCollaborationPanel({
     }
 
     const pc = new RTCPeerConnection({
-      iceServers: iceServers.length > 0 ? iceServers : DEFAULT_GOOGLE_ICE,
+      iceServers: iceServers.length > 0 ? iceServers : FALLBACK_ICE_SERVERS,
     });
     pcRef.current = pc;
 
@@ -159,73 +239,70 @@ export function LiveCollaborationPanel({
       const [remoteStream] = event.streams;
       if (remoteStream && remoteVideoElRef.current) {
         remoteVideoElRef.current.srcObject = remoteStream;
+      }
+      setRemoteConnected(true);
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
         setRemoteConnected(true);
       }
     };
 
-    const sendSignal = (data: Record<string, unknown>) => {
-      signalingRef.current?.postMessage(data);
-      void supaChannelRef.current?.send({
-        type: "broadcast",
-        event: "webrtc-signal",
-        payload: data,
-      });
-    };
+    const peerId = createStablePeerId(user?.id);
+    let controller: ReturnType<typeof createPoliteWebRtcController> | null = null;
+
+    const bridge = attachUnifiedRtcSignaling({
+      roomChannel: room,
+      peerId,
+      onSignal: (msg) => controller?.handleSignal(msg),
+      onSubscribed: () => {
+        bridge.emit({ type: "ready" });
+      },
+    });
+    signalingCleanupRef.current = bridge.cleanup;
+    emitSignalRef.current = bridge.emit;
+
+    controller = createPoliteWebRtcController({
+      pc,
+      peerId,
+      emit: bridge.emit,
+      onRemoteJoined: () => setRemoteConnected(true),
+      onCallDeclined: (reason) => {
+        void leaveCall({
+          reason: reason || `${partnerName} declined the call.`,
+          skipStatusBroadcast: true,
+        });
+      },
+      onCallEnded: () => {
+        void leaveCall({
+          reason: `${partnerName} ended the call.`,
+          skipStatusBroadcast: true,
+        });
+      },
+    });
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        sendSignal({
+        bridge.emit({
           type: "candidate",
           candidate: event.candidate.toJSON(),
-          sender: user?.id ?? "anon",
         });
       }
     };
 
-    const handleSignal = async (msg: Record<string, any>) => {
-      if (!pcRef.current || msg.sender === (user?.id ?? "anon")) return;
-      try {
-        if (msg.type === "offer") {
-          await pcRef.current.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-          const answer = await pcRef.current.createAnswer();
-          await pcRef.current.setLocalDescription(answer);
-          sendSignal({ type: "answer", sdp: answer, sender: user?.id ?? "anon" });
-          setRemoteConnected(true);
-        } else if (msg.type === "answer" && pcRef.current.signalingState === "have-local-offer") {
-          await pcRef.current.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-          setRemoteConnected(true);
-        } else if (msg.type === "candidate" && msg.candidate) {
-          await pcRef.current.addIceCandidate(new RTCIceCandidate(msg.candidate));
-        } else if (msg.type === "ready") {
-          const offer = await pcRef.current.createOffer();
-          await pcRef.current.setLocalDescription(offer);
-          sendSignal({ type: "offer", sdp: offer, sender: user?.id ?? "anon" });
-        }
-      } catch (err) {
-        console.warn("WebRTC signal handling warning:", err);
-      }
-    };
+    bridge.emit({ type: "ready" });
 
-    if (typeof BroadcastChannel !== "undefined") {
-      const bc = new BroadcastChannel(`sot-rtc-${room}`);
-      bc.onmessage = (ev) => void handleSignal(ev.data);
-      signalingRef.current = bc;
-    }
-
-    const supaChan = supabase
-      .channel(`sot-rtc-${room}`)
-      .on("broadcast", { event: "webrtc-signal" }, ({ payload }) => {
-        if (payload) void handleSignal(payload as Record<string, any>);
-      })
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          sendSignal({ type: "ready", sender: user?.id ?? "anon" });
-        }
-      });
-    supaChannelRef.current = supaChan;
-
-    // Also announce readiness on BroadcastChannel for instant multi-tab/local peer connection
-    sendSignal({ type: "ready", sender: user?.id ?? "anon" });
+    statsIntervalRef.current = window.setInterval(async () => {
+      if (!pcRef.current) return;
+      const { quality, bytesSent } = await samplePeerConnectionQuality(
+        pcRef.current,
+        prevBytesSentRef.current,
+        2,
+      );
+      prevBytesSentRef.current = bytesSent;
+      setNetworkQuality(quality);
+    }, 2000);
   };
 
   const ringRecipientOnSot = useCallback(
@@ -266,18 +343,19 @@ export function LiveCollaborationPanel({
             event: "incoming-call",
             payload: ringPayload,
           });
+          window.setTimeout(() => void supabase.removeChannel(ringChan), 800);
         }
       });
 
-      if (user?.id && partnerId && partnerId !== "sot-community-desk" && partnerId !== user.id) {
+      if (user?.id && partnerId && partnerId !== user.id) {
         try {
           await sendMessage({
             senderId: user.id,
             recipientId: partnerId,
-            body: `📞 Incoming ${mode === "voice" ? "Voice Call" : "Video Call"} on SOT from ${callerDisplayName} — Open this thread to join live room (${room}).`,
+            body: `📞 Incoming ${mode === "voice" ? "Voice Call" : "Video Call"} on SOT from ${callerDisplayName} — Room: ${room}.`,
           });
         } catch {
-          // Non-blocking if partnerId is a virtual channel
+          // Non-blocking
         }
       }
     },
@@ -307,11 +385,14 @@ export function LiveCollaborationPanel({
         method: "POST",
         headers: {
           "content-type": "application/json",
-          ...((session as any)?.access_token ? { authorization: `Bearer ${(session as any).access_token}` } : {}),
+          ...((session as any)?.access_token
+            ? { authorization: `Bearer ${(session as any).access_token}` }
+            : {}),
         },
         body: JSON.stringify({
           partnerId: customRoom || partnerId || "community-room",
           callerId: user?.id || "sot-client",
+          channelName: customRoom || undefined,
           mode,
         }),
       });
@@ -324,19 +405,38 @@ export function LiveCollaborationPanel({
         token?: string | null;
         uid?: number;
         iceServers?: RTCIceServer[];
+        turnConfigured?: boolean;
       };
 
       const resolvedChannel = customRoom || payload.channelName || `sot-${partnerId || "live"}`;
       setChannelName(resolvedChannel);
 
-      // Ring the target user or brand across SOT immediately
+      // Ring recipient over global SOT ring channel
       void ringRecipientOnSot(resolvedChannel, mode);
 
       if (payload.provider === "agora" && payload.appId && payload.token && payload.uid) {
-        setEngineLabel("Agora RTC + Google STUN");
+        setEngineLabel("Agora Global RTC");
         const { default: AgoraRTC } = await import("agora-rtc-sdk-ng");
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         clientRef.current = client;
+
+        // Subscribe to decline / end events in case callee rejects via Header banner
+        const controlBridge = attachUnifiedRtcSignaling({
+          roomChannel: resolvedChannel,
+          peerId: createStablePeerId(user?.id),
+          onSignal: (msg) => {
+            if (msg.type === "call-declined") {
+              void leaveCall({
+                reason: msg.reason || `${partnerName} declined the call.`,
+                skipStatusBroadcast: true,
+              });
+            }
+          },
+        });
+        signalingCleanupRef.current = controlBridge.cleanup;
+        emitSignalRef.current = controlBridge.emit;
+
+        client.on("user-joined", () => setRemoteConnected(true));
         client.on("user-published", async (remoteUser, mediaType) => {
           await client.subscribe(remoteUser, mediaType);
           if (mediaType === "audio") remoteUser.audioTrack?.play();
@@ -345,6 +445,16 @@ export function LiveCollaborationPanel({
           }
           setRemoteConnected(true);
         });
+        client.on("user-left", () => {
+          void leaveCall({ reason: `${partnerName} left the call.`, skipStatusBroadcast: true });
+        });
+        client.on("network-quality", (stats) => {
+          const worst = Math.max(stats.uplinkNetworkQuality, stats.downlinkNetworkQuality);
+          const label: RtcNetworkQuality["label"] =
+            worst === 0 ? "Connecting" : worst <= 2 ? "HD" : worst === 3 ? "Good" : worst === 4 ? "Fair" : "Weak";
+          setNetworkQuality((prev) => ({ ...prev, label }));
+        });
+
         await client.join(payload.appId, resolvedChannel, payload.token, payload.uid);
         audioRef.current = await AgoraRTC.createMicrophoneAudioTrack();
         await client.publish(audioRef.current);
@@ -356,23 +466,20 @@ export function LiveCollaborationPanel({
           }
         }
         setConnected(true);
-        toast.success(
-          `${mode === "voice" ? "Voice call" : mode === "broadcast" ? "Live broadcast" : "Video call"} connected via Agora RTC`,
-        );
+        toast.success(`Ringing ${partnerName} via Agora RTC...`);
         return;
       }
 
-      // Use Google WebRTC Engine (Google STUN stun.l.google.com:19302 + Realtime Signaling)
-      setEngineLabel("Google WebRTC (stun.l.google.com)");
+      setEngineLabel(
+        payload.turnConfigured ? "Google WebRTC + TURN Relay" : "Google WebRTC P2P (STUN)",
+      );
       await setupGoogleWebRtcCall(
         resolvedChannel,
         mode,
-        payload.iceServers ?? DEFAULT_GOOGLE_ICE,
+        payload.iceServers ?? FALLBACK_ICE_SERVERS,
       );
       setConnected(true);
-      toast.success(
-        `${mode === "voice" ? "Voice call" : mode === "broadcast" ? "Live situation broadcast" : "Video call"} active via Google WebRTC!`,
-      );
+      toast.success(`Ringing ${partnerName} — waiting for peer to answer.`);
     } catch (error) {
       console.error("Call initialization failed:", error);
       const msg = error instanceof Error ? error.message : "Could not access microphone/camera";
@@ -411,19 +518,67 @@ export function LiveCollaborationPanel({
     }
   };
 
+  const stopScreenShare = async () => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach((t) => t.stop());
+      screenStreamRef.current = null;
+    }
+    if (clientRef.current && screenAgoraRef.current) {
+      try {
+        await clientRef.current.unpublish(screenAgoraRef.current);
+        screenAgoraRef.current.close();
+        screenAgoraRef.current = null;
+        if (videoRef.current && cameraOn) {
+          await clientRef.current.publish(videoRef.current);
+          if (localVideoElRef.current) videoRef.current.play(localVideoElRef.current);
+        }
+      } catch {
+        // non-fatal
+      }
+    } else if (pcRef.current && localStreamRef.current) {
+      const camTrack = localStreamRef.current.getVideoTracks()[0];
+      if (camTrack) {
+        const sender = pcRef.current.getSenders().find((s) => s.track?.kind === "video");
+        if (sender) await sender.replaceTrack(camTrack);
+      }
+      if (localVideoElRef.current) localVideoElRef.current.srcObject = localStreamRef.current;
+    }
+    setScreenSharing(false);
+  };
+
   const toggleScreenShare = async () => {
+    if (screenSharing) {
+      await stopScreenShare();
+      return;
+    }
     if (!navigator.mediaDevices?.getDisplayMedia) {
       toast.error("Screen sharing is not supported on this device.");
       return;
     }
     try {
+      if (clientRef.current) {
+        const { default: AgoraRTC } = await import("agora-rtc-sdk-ng");
+        const screenRes = await AgoraRTC.createScreenVideoTrack({ encoderConfig: "1080p_1" }, "disable");
+        const screenTrack = Array.isArray(screenRes) ? screenRes[0] : screenRes;
+        screenAgoraRef.current = screenTrack;
+        if (videoRef.current) await clientRef.current.unpublish(videoRef.current);
+        await clientRef.current.publish(screenTrack);
+        if (localVideoElRef.current) screenTrack.play(localVideoElRef.current);
+        screenTrack.on("track-ended", () => void stopScreenShare());
+        setScreenSharing(true);
+        toast.success("Sharing your screen / evidence live");
+        return;
+      }
+
       const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
       const screenTrack = displayStream.getVideoTracks()[0];
       if (!screenTrack) return;
+      screenStreamRef.current = displayStream;
 
       if (pcRef.current) {
         const sender = pcRef.current.getSenders().find((s) => s.track?.kind === "video");
         if (sender) await sender.replaceTrack(screenTrack);
+        else pcRef.current.addTrack(screenTrack, displayStream);
       }
       if (localVideoElRef.current) {
         localVideoElRef.current.srcObject = displayStream;
@@ -432,15 +587,7 @@ export function LiveCollaborationPanel({
       toast.success("Sharing your screen / evidence live");
 
       screenTrack.onended = () => {
-        setScreenSharing(false);
-        if (localStreamRef.current && localVideoElRef.current) {
-          localVideoElRef.current.srcObject = localStreamRef.current;
-          const camTrack = localStreamRef.current.getVideoTracks()[0];
-          if (camTrack && pcRef.current) {
-            const sender = pcRef.current.getSenders().find((s) => s.track?.kind === "video");
-            if (sender) void sender.replaceTrack(camTrack);
-          }
-        }
+        void stopScreenShare();
       };
     } catch {
       toast.info("Screen share cancelled.");
@@ -554,7 +701,7 @@ export function LiveCollaborationPanel({
               size="sm"
               variant="destructive"
               onClick={() => void leaveCall()}
-              className="gap-1.5 font-semibold"
+              className="gap-1.5 font-semibold tabular-nums"
             >
               <PhoneOff className="h-3.5 w-3.5" /> End ({formatDuration(callSeconds)})
             </Button>
@@ -577,13 +724,18 @@ export function LiveCollaborationPanel({
               <span className="text-xs text-muted-foreground">· {engineLabel}</span>
             </div>
             <div className="flex items-center gap-2 text-xs font-mono tabular-nums text-muted-foreground">
-              <span>{remoteConnected ? "Peer Connected" : "Waiting for peer / broadcasting"}</span>
+              <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold">
+                <Wifi className="h-3 w-3" /> {networkQuality.label}
+                {networkQuality.rttMs !== null ? ` (${networkQuality.rttMs}ms)` : ""}
+              </span>
+              <span>·</span>
+              <span>{remoteConnected ? "Peer Connected" : "Ringing / waiting for peer"}</span>
               <span>·</span>
               <span>{formatDuration(callSeconds)}</span>
             </div>
           </div>
 
-          {requestedMode !== "voice" && (
+          {(requestedMode !== "voice" || screenSharing) && (
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="relative aspect-video overflow-hidden rounded-lg border border-border bg-slate-950">
                 <video
@@ -616,7 +768,7 @@ export function LiveCollaborationPanel({
                     <Radio className="mb-1.5 h-6 w-6 animate-pulse text-[#d6a928]" />
                     <p className="font-semibold">Channel Ready: {channelName}</p>
                     <p className="mt-0.5 text-[11px] text-slate-400">
-                      Share the call link or open this thread on another device to connect peer video.
+                      Waiting for {partnerName} to answer or click your shared call link.
                     </p>
                   </div>
                 )}
@@ -641,33 +793,32 @@ export function LiveCollaborationPanel({
               </Button>
 
               {requestedMode !== "voice" && (
-                <>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={cameraOn ? "secondary" : "outline"}
-                    onClick={toggleCam}
-                    className="gap-1.5 text-xs"
-                  >
-                    {cameraOn ? (
-                      <Camera className="h-3.5 w-3.5" />
-                    ) : (
-                      <VideoOff className="h-3.5 w-3.5" />
-                    )}
-                    {cameraOn ? "Camera On" : "Camera Off"}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={screenSharing ? "default" : "outline"}
-                    onClick={() => void toggleScreenShare()}
-                    className="gap-1.5 text-xs"
-                  >
-                    <MonitorUp className="h-3.5 w-3.5" />
-                    {screenSharing ? "Sharing Evidence" : "Share Screen / Receipt"}
-                  </Button>
-                </>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={cameraOn ? "secondary" : "outline"}
+                  onClick={toggleCam}
+                  className="gap-1.5 text-xs"
+                >
+                  {cameraOn ? (
+                    <Camera className="h-3.5 w-3.5" />
+                  ) : (
+                    <VideoOff className="h-3.5 w-3.5" />
+                  )}
+                  {cameraOn ? "Camera On" : "Camera Off"}
+                </Button>
               )}
+
+              <Button
+                type="button"
+                size="sm"
+                variant={screenSharing ? "default" : "outline"}
+                onClick={() => void toggleScreenShare()}
+                className="gap-1.5 text-xs"
+              >
+                <MonitorUp className="h-3.5 w-3.5" />
+                {screenSharing ? "Stop Screen Share" : "Share Screen / Receipt"}
+              </Button>
             </div>
 
             <div className="flex items-center gap-2">
@@ -696,4 +847,3 @@ export function LiveCollaborationPanel({
     </div>
   );
 }
-

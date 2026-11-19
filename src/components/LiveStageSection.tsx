@@ -47,7 +47,7 @@ export function LiveStageSection({
   brandNameFilter,
 }: LiveStageSectionProps) {
   const { isDeveloper, persona } = useRoles();
-  const { t, liveStage } = useTranslation();
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState<LiveBroadcastSession[]>(DEFAULT_LIVE_SESSIONS);
   const [filter, setFilter] = useState<"all" | "brand_owner" | "consumer">(defaultFilter);
   const [claimedIds, setClaimedIds] = useState<Record<string, boolean>>({});

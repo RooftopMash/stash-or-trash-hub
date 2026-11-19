@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Download, Check, X, Globe, Copy, Search, Sparkles, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { AdminAppealsQueue } from "@/components/AdminAppealsQueue";
+import { AdminReportsQueue } from "@/components/AdminReportsQueue";
 import {
   adminReviewBrandClaim,
   fetchAllBrandClaimsForReview,
@@ -206,6 +207,7 @@ function AdminPage() {
                   ? ` (${(verifications?.length ?? 0) + domainClaims.filter((c) => c.status === "pending_review").length})`
                   : ""}
               </TabsTrigger>
+              <TabsTrigger value="reports">UGC Reports</TabsTrigger>
               <TabsTrigger value="appeals">Appeals</TabsTrigger>
             </TabsList>
 
@@ -392,6 +394,16 @@ function AdminPage() {
                   </div>
                 ))
               )}
+            </TabsContent>
+
+            <TabsContent value="reports" className="mt-6">
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <h2 className="mb-1 font-display text-lg font-bold">Community UGC Moderation Reports</h2>
+                <p className="mb-4 text-xs text-muted-foreground">
+                  Review flagged posts, comments, items, and brand pages submitted via store-compliant reporting.
+                </p>
+                <AdminReportsQueue />
+              </div>
             </TabsContent>
 
             <TabsContent value="appeals" className="mt-6">

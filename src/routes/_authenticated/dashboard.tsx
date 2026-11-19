@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoles } from "@/hooks/useRoles";
 import {
+  fetchBrands,
   fetchBrandStats,
   requestVerification,
   fetchPendingVerifications,
@@ -34,6 +35,7 @@ import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
 import { LiveStageSection } from "@/components/LiveStageSection";
 import { LiveIncidents } from "@/components/LiveIncidents";
 import { AdminAppealsQueue } from "@/components/AdminAppealsQueue";
+import { AdminReportsQueue } from "@/components/AdminReportsQueue";
 import {
   getFollowerCount,
   getMyFriendsWithProfiles,
@@ -104,6 +106,7 @@ import {
   getActiveBrandSubscription,
   getActiveDeskOperator,
   getBrandSpecificTelemetry,
+  getInboundCallRequests,
   getRegisteredBrandIdentity,
   isTierEntitled,
   recordOperatorResolutionMetric,
@@ -147,8 +150,9 @@ function DashboardPage() {
   );
   const [subState, setSubState] = useState(() => getActiveBrandSubscription());
 
-  // Inline editor for updating the Brand Owner's single registered brand identity
+  // Inline editor & searchable catalog picker for updating the Brand Owner's registered brand
   const [editingBrand, setEditingBrand] = useState(false);
+  const [brandPickerQuery, setBrandPickerQuery] = useState("");
   const [brandNameDraft, setBrandNameDraft] = useState(registeredBrand.name);
   const [brandCategoryDraft, setBrandCategoryDraft] = useState(registeredBrand.category);
   const [brandCountryDraft, setBrandCountryDraft] = useState(registeredBrand.country);
@@ -245,6 +249,25 @@ function DashboardPage() {
     queryKey: ["dashboard-client-feed"],
     queryFn: () => fetchFeed(null),
   });
+
+  const { data: catalogBrands = [] } = useQuery({
+    queryKey: ["dashboard-brand-picker-catalog"],
+    queryFn: fetchBrands,
+    enabled: editingBrand,
+  });
+
+  const filteredCatalogBrands = useMemo(() => {
+    const q = brandPickerQuery.trim().toLowerCase();
+    const list = q
+      ? catalogBrands.filter(
+          (b) =>
+            b.name.toLowerCase().includes(q) ||
+            (b.category || "").toLowerCase().includes(q) ||
+            (b.country || "").toLowerCase().includes(q),
+        )
+      : catalogBrands;
+    return list.slice(0, 12);
+  }, [catalogBrands, brandPickerQuery]);
 
   const { data: candidates = [], refetch: refetchCandidates } = useQuery({
     queryKey: ["brand-candidates"],
@@ -409,45 +432,23 @@ function DashboardPage() {
     );
   };
 
-  // Client feedback items strictly scoped to this Brand Owner's registered brand
+  // Client feedback & call requests strictly scoped to this Brand Owner's registered brand
   const brandScopedClientPosts = useMemo(() => {
     const bLower = activeBrand.name.toLowerCase();
-    const matching = recentFeed.filter(
-      (item: any) =>
-        item.brandName && item.brandName.toLowerCase().includes(bLower),
-    );
-    if (matching.length > 0) return matching.slice(0, 8);
-    const prefix = activeBrand.name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5) || "BRAND";
-    return [
-      {
-        id: "brand-client-1",
-        user_id: "client-thabo",
-        authorName: "Thabo M. (Verified Voter)",
-        brandName: activeBrand.name,
-        title: `${activeBrand.name} order at Sandton branch was missing an item — requesting replacement voucher`,
-        stashCount: 2,
-        trashCount: 6,
-      },
-      {
-        id: "brand-client-2",
-        user_id: "client-lerato",
-        authorName: "Lerato K. (Gold Circle Member)",
-        brandName: activeBrand.name,
-        title: `Scanned ${activeBrand.name} batch barcode #${prefix}-882 — outer packaging seal looked loose`,
-        stashCount: 4,
-        trashCount: 5,
-      },
-      {
-        id: "brand-client-3",
-        user_id: "client-kabelo",
-        authorName: "Kabelo S. (Level 4 Watchdog)",
-        brandName: activeBrand.name,
-        title: `Watched ${activeBrand.name} Live Launch reveal — product quality exceeded expectations!`,
-        stashCount: 19,
-        trashCount: 1,
-      },
-    ];
-  }, [activeBrand.name, recentFeed]);
+    const matchingPosts = recentFeed
+      .filter((item: any) => item.brandName && item.brandName.toLowerCase().includes(bLower))
+      .slice(0, 8);
+    const matchingRequests = getInboundCallRequests(activeBrand.slug).map((req) => ({
+      id: req.id,
+      user_id: req.customerId,
+      authorName: req.customerName,
+      brandName: req.brandName,
+      title: `${req.issueTopic}${req.batchOrReceiptNumber ? ` · Ref #${req.batchOrReceiptNumber}` : ""}`,
+      stashCount: 0,
+      trashCount: 1,
+    }));
+    return [...matchingRequests, ...matchingPosts].slice(0, 10);
+  }, [activeBrand.name, activeBrand.slug, recentFeed]);
 
   return (
     <div
@@ -548,7 +549,7 @@ function DashboardPage() {
                     My Personal Votes
                   </p>
                   <p className="mt-1 font-display text-2xl font-black text-slate-950 tabular-nums">
-                    {(consumerStats?.stashVotes ?? 12) + (consumerStats?.trashVotes ?? 4)} Verdicts
+                    {(consumerStats?.stashVotes ?? 0) + (consumerStats?.trashVotes ?? 0)} Verdicts
                   </p>
                 </div>
                 <div className="rounded-2xl border border-amber-200 bg-white p-4 shadow-xs">
@@ -736,63 +737,112 @@ function DashboardPage() {
                 </div>
               </div>
 
-              {/* Inline Registered Brand Identity Editor (so Brand Owner can bind any brand name) */}
+              {/* Inline Searchable Brand Catalog Picker & Identity Editor */}
               {editingBrand && (
-                <form
-                  onSubmit={handleSaveBrandIdentity}
-                  className="mt-5 grid gap-3 rounded-2xl border border-[#d6a928]/50 bg-slate-900 p-4 sm:grid-cols-4"
-                >
+                <div className="mt-5 space-y-4 rounded-2xl border border-[#d6a928]/50 bg-slate-900 p-4">
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold text-[#f5d061]">
-                      Registered Brand Name
+                    <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-[#f5d061]">
+                      Quick-Pick Official Brand from Global Directory ({catalogBrands.length} indexed)
                     </label>
                     <Input
-                      value={brandNameDraft}
-                      onChange={(e) => setBrandNameDraft(e.target.value)}
-                      placeholder="e.g. Nando's South Africa"
-                      className="h-9 border-slate-700 bg-slate-950 text-xs font-bold text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold text-slate-300">
-                      Industry Category
-                    </label>
-                    <Input
-                      value={brandCategoryDraft}
-                      onChange={(e) => setBrandCategoryDraft(e.target.value)}
-                      placeholder="e.g. Food & Fast Food"
+                      value={brandPickerQuery}
+                      onChange={(e) => setBrandPickerQuery(e.target.value)}
+                      placeholder="Search registered brands by name, category, or country..."
                       className="h-9 border-slate-700 bg-slate-950 text-xs text-white"
                     />
+                    {filteredCatalogBrands.length > 0 && (
+                      <div className="mt-2 grid max-h-40 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-3">
+                        {filteredCatalogBrands.map((b) => (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => {
+                              const updated = setRegisteredBrandIdentity({
+                                id: b.id,
+                                name: b.name,
+                                slug: b.slug,
+                                category: b.category || "Consumer Brand",
+                                country: (b.country || "ZA").toUpperCase().slice(0, 2),
+                                website: b.website || "",
+                                trust_score: Number(b.trust_score) || 75,
+                                verified: b.verified,
+                              });
+                              setRegisteredBrand(updated);
+                              setBrandNameDraft(updated.name);
+                              setBrandCategoryDraft(updated.category);
+                              setBrandCountryDraft(updated.country);
+                              setBrandWebsiteDraft(updated.website);
+                              setEditingBrand(false);
+                              toast.success(`Switched active brand workspace to ${updated.name}.`);
+                            }}
+                            className="flex items-center justify-between gap-2 rounded-lg border border-slate-700 bg-slate-950/90 px-2.5 py-2 text-left text-xs hover:border-[#d6a928] cursor-pointer"
+                          >
+                            <span className="truncate font-bold text-white">{b.name}</span>
+                            <span className="shrink-0 text-[10px] font-mono text-[#f5d061]">
+                              {b.country || "GL"}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold text-slate-300">
-                      Country Code (ISO)
-                    </label>
-                    <Input
-                      value={brandCountryDraft}
-                      onChange={(e) => setBrandCountryDraft(e.target.value.toUpperCase().slice(0, 2))}
-                      placeholder="ZA"
-                      maxLength={2}
-                      className="h-9 border-slate-700 bg-slate-950 text-xs text-white"
-                    />
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <Button
-                      type="submit"
-                      className="h-9 flex-1 bg-[#d6a928] text-xs font-black text-slate-950 hover:bg-[#e5b935]"
-                    >
-                      Save My Brand
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setEditingBrand(false)}
-                      className="h-9 text-xs text-slate-300"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
+
+                  <form
+                    onSubmit={handleSaveBrandIdentity}
+                    className="grid gap-3 border-t border-slate-800 pt-3 sm:grid-cols-4"
+                  >
+                    <div>
+                      <label className="mb-1 block text-[11px] font-bold text-[#f5d061]">
+                        Or Enter Custom Brand Name
+                      </label>
+                      <Input
+                        value={brandNameDraft}
+                        onChange={(e) => setBrandNameDraft(e.target.value)}
+                        placeholder="e.g. Nando's South Africa"
+                        className="h-9 border-slate-700 bg-slate-950 text-xs font-bold text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-bold text-slate-300">
+                        Industry Category
+                      </label>
+                      <Input
+                        value={brandCategoryDraft}
+                        onChange={(e) => setBrandCategoryDraft(e.target.value)}
+                        placeholder="e.g. Food & Fast Food"
+                        className="h-9 border-slate-700 bg-slate-950 text-xs text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-bold text-slate-300">
+                        Country Code (ISO)
+                      </label>
+                      <Input
+                        value={brandCountryDraft}
+                        onChange={(e) => setBrandCountryDraft(e.target.value.toUpperCase().slice(0, 2))}
+                        placeholder="ZA"
+                        maxLength={2}
+                        className="h-9 border-slate-700 bg-slate-950 text-xs text-white"
+                      />
+                    </div>
+                    <div className="flex items-end gap-2">
+                      <Button
+                        type="submit"
+                        className="h-9 flex-1 bg-[#d6a928] text-xs font-black text-slate-950 hover:bg-[#e5b935]"
+                      >
+                        Save My Brand
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setEditingBrand(false)}
+                        className="h-9 text-xs text-slate-300"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </div>
               )}
 
               {/* Active Payment Tier & Entitlements Bar */}
@@ -1130,7 +1180,16 @@ function DashboardPage() {
                   </div>
 
                   <div className="mt-5 space-y-3">
-                    {brandScopedClientPosts.map((item: any, idx: number) => {
+                    {brandScopedClientPosts.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-border bg-background/60 p-6 text-center text-xs text-muted-foreground">
+                        No live customer posts or call requests tagged for <strong>{activeBrand.name}</strong> yet. When consumers review <strong>{activeBrand.name}</strong> on the home feed or request a call from{" "}
+                        <Link to="/brands/$slug" params={{ slug: activeBrand.slug }} className="font-bold text-[#b88914] underline">
+                          your brand page
+                        </Link>
+                        , they appear here in real time.
+                      </div>
+                    ) : (
+                      brandScopedClientPosts.map((item: any, idx: number) => {
                       const clientName = item.authorName || `Verified ${activeBrand.name} Customer #${idx + 1}`;
                       const clientId = item.user_id || `client-${idx + 1}`;
                       const isTrashHeavy = (item.trashCount || 0) > (item.stashCount || 0);
@@ -1230,7 +1289,8 @@ function DashboardPage() {
                           </div>
                         </div>
                       );
-                    })}
+                      })
+                    )}
                   </div>
                 </section>
               </div>
@@ -1476,11 +1536,19 @@ function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-border bg-background/50 p-4">
-                  <h3 className="mb-3 font-display text-sm font-extrabold uppercase tracking-wider">
-                    Human Content Appeals Queue
-                  </h3>
-                  <AdminAppealsQueue />
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <div className="rounded-2xl border border-border bg-background/50 p-4">
+                    <h3 className="mb-3 font-display text-sm font-extrabold uppercase tracking-wider">
+                      Human Content Appeals Queue
+                    </h3>
+                    <AdminAppealsQueue />
+                  </div>
+                  <div className="rounded-2xl border border-border bg-background/50 p-4">
+                    <h3 className="mb-3 font-display text-sm font-extrabold uppercase tracking-wider">
+                      Community UGC Reports Queue
+                    </h3>
+                    <AdminReportsQueue />
+                  </div>
                 </div>
               </section>
             )}
@@ -1606,10 +1674,10 @@ function BrandRow({
     }
   };
 
-  const stashCount = stats?.stash ?? kpis?.stash ?? 613;
-  const trashCount = stats?.trash ?? kpis?.trash ?? 65;
+  const stashCount = stats?.stash ?? kpis?.stash ?? 0;
+  const trashCount = stats?.trash ?? kpis?.trash ?? 0;
   const total = stashCount + trashCount;
-  const trustScore = Number(brand.trust_score) > 0 ? Number(brand.trust_score) : 86;
+  const trustScore = Number(brand.trust_score) > 0 ? Number(brand.trust_score) : 0;
   const stashPct = total > 0 ? Math.round((100 * stashCount) / total) : trustScore;
   const isVerified = localVerified || brand.verified;
 
@@ -1738,10 +1806,10 @@ function BrandRow({
           <div>
             <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-5">
               <Stat label={t("dashboard.trustScore")} value={`${trustScore}%`} accent />
-              <Stat label={t("dashboard.posts")} value={`${stats?.posts ?? kpis?.posts ?? 678}`} />
+              <Stat label={t("dashboard.posts")} value={`${stats?.posts ?? kpis?.posts ?? 0}`} />
               <Stat label={t("dashboard.stash")} value={`${stashCount}`} />
               <Stat label={t("dashboard.trash")} value={`${trashCount}`} />
-              <Stat label={t("dashboard.followers")} value={`${followers ?? 1420}`} />
+              <Stat label={t("dashboard.followers")} value={`${followers ?? 0}`} />
             </div>
 
             <div className="mt-4">
@@ -1771,15 +1839,15 @@ function BrandRow({
               {brand.name} · {t("brandTeam.kpis")}
             </p>
             <div className="mt-3 grid grid-cols-2 gap-3 text-center sm:grid-cols-6">
-              <Stat label={t("brandTeam.volume")} value={`${kpis?.posts ?? 678}`} />
+              <Stat label={t("brandTeam.volume")} value={`${kpis?.posts ?? 0}`} />
               <Stat label={t("brandTeam.stashPct")} value={`${kpis?.stash_pct ?? stashPct}%`} accent />
-              <Stat label={t("brandTeam.positive")} value={`${kpis?.positive ?? 540}`} />
-              <Stat label={t("brandTeam.neutral")} value={`${kpis?.neutral ?? 73}`} />
-              <Stat label={t("brandTeam.negative")} value={`${kpis?.negative ?? 65}`} />
-              <Stat label={t("brandTeam.unanswered")} value={`${kpis?.unanswered ?? 2}`} />
+              <Stat label={t("brandTeam.positive")} value={`${kpis?.positive ?? 0}`} />
+              <Stat label={t("brandTeam.neutral")} value={`${kpis?.neutral ?? 0}`} />
+              <Stat label={t("brandTeam.negative")} value={`${kpis?.negative ?? 0}`} />
+              <Stat label={t("brandTeam.unanswered")} value={`${kpis?.unanswered ?? 0}`} />
             </div>
             <p className="mt-3 text-xs font-medium text-muted-foreground">
-              {t("brandTeam.responseTime")}: {formatReply(kpis?.median_response_minutes ?? 14, t)}
+              {t("brandTeam.responseTime")}: {formatReply(kpis?.median_response_minutes ?? 0, t)}
             </p>
           </div>
 

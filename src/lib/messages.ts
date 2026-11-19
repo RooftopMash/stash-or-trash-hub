@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, addDoc, doc, updateDoc, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 export type ChatMessage = {
   id: string;
@@ -19,8 +19,38 @@ export type Conversation = {
   unread: number;
 };
 
+const LOCAL_MESSAGES_KEY = "sot_local_desk_messages_v1";
+
+export function isVirtualDeskPartner(partnerId: string): boolean {
+  return partnerId === "sot-community-desk" || partnerId.startsWith("brand-");
+}
+
+function readLocalMessages(userId: string): ChatMessage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(`${LOCAL_MESSAGES_KEY}:${userId}`);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as ChatMessage[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function appendLocalMessage(userId: string, msg: ChatMessage) {
+  if (typeof window === "undefined") return;
+  try {
+    const current = readLocalMessages(userId);
+    const updated = [...current, msg].slice(-250);
+    window.localStorage.setItem(`${LOCAL_MESSAGES_KEY}:${userId}`, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent("sot-messages-updated"));
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
 export async function fetchInbox(userId: string): Promise<Conversation[]> {
-  const rows: ChatMessage[] = [];
+  const rows: ChatMessage[] = [...readLocalMessages(userId)];
 
   // 1. Fetch Firestore messages
   try {
@@ -28,7 +58,7 @@ export async function fetchInbox(userId: string): Promise<Conversation[]> {
     const q2 = query(collection(db, "messages"), where("receiverId", "==", userId));
     const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
 
-    const docMap = new Map();
+    const docMap = new Map<string, ChatMessage>();
     [...snap1.docs, ...snap2.docs].forEach((d) => {
       if (!docMap.has(d.id)) {
         const data = d.data();
@@ -69,7 +99,7 @@ export async function fetchInbox(userId: string): Promise<Conversation[]> {
     byPartner.get(partner)!.push(m);
   }
 
-  const partnerIds = [...byPartner.keys()];
+  const partnerIds = [...byPartner.keys()].filter((id) => !isVirtualDeskPartner(id));
   const nameById = new Map<string, string>();
   try {
     const { data: profiles } = partnerIds.length
@@ -82,11 +112,17 @@ export async function fetchInbox(userId: string): Promise<Conversation[]> {
 
   return [...byPartner.entries()]
     .map(([partnerId, msgs]) => {
-      const sorted = msgs.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+      const sorted = [...msgs].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
       const last = sorted[0];
+      const fallbackName =
+        partnerId === "sot-community-desk"
+          ? "SOT Calling & Resolution Desk"
+          : partnerId.startsWith("brand-")
+            ? partnerId.replace(/^brand-/, "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+            : "User";
       return {
         partnerId,
-        partnerName: nameById.get(partnerId) ?? "User",
+        partnerName: nameById.get(partnerId) ?? fallbackName,
         lastMessage: last.body,
         lastAt: last.created_at,
         unread: msgs.filter((m) => m.recipient_id === userId && !m.read_at).length,
@@ -96,23 +132,33 @@ export async function fetchInbox(userId: string): Promise<Conversation[]> {
 }
 
 export async function fetchThread(userId: string, partnerId: string): Promise<ChatMessage[]> {
-  const messages: ChatMessage[] = [];
+  const localMatches = readLocalMessages(userId).filter(
+    (m) =>
+      (m.sender_id === userId && m.recipient_id === partnerId) ||
+      (m.sender_id === partnerId && m.recipient_id === userId),
+  );
+
+  if (isVirtualDeskPartner(partnerId)) {
+    return localMatches.sort((a, b) => (a.created_at > b.created_at ? 1 : -1));
+  }
+
+  const messages: ChatMessage[] = [...localMatches];
 
   // Firestore thread
   try {
     const q1 = query(
       collection(db, "messages"),
       where("senderId", "==", userId),
-      where("receiverId", "==", partnerId)
+      where("receiverId", "==", partnerId),
     );
     const q2 = query(
       collection(db, "messages"),
       where("senderId", "==", partnerId),
-      where("receiverId", "==", userId)
+      where("receiverId", "==", userId),
     );
     const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
 
-    const docMap = new Map();
+    const docMap = new Map<string, ChatMessage>();
     [...snap1.docs, ...snap2.docs].forEach((d) => {
       const data = d.data();
       docMap.set(d.id, {
@@ -156,27 +202,59 @@ export async function fetchThread(userId: string, partnerId: string): Promise<Ch
 }
 
 export async function sendMessage(input: { senderId: string; recipientId: string; body: string }) {
+  const trimmed = input.body.trim();
+  if (!trimmed) return;
+
+  if (isVirtualDeskPartner(input.recipientId)) {
+    appendLocalMessage(input.senderId, {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      sender_id: input.senderId,
+      recipient_id: input.recipientId,
+      body: trimmed,
+      read_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    });
+    return;
+  }
+
+  // Always cache optimistically in local storage only if remote stores both fail
+  let delivered = false;
+
   // 1. Send via Firestore
   try {
     const { sendFirestoreMessage } = await import("@/services/firestoreService");
-    await sendFirestoreMessage(input.senderId, input.recipientId, input.body.trim());
+    await sendFirestoreMessage(input.senderId, input.recipientId, trimmed);
+    delivered = true;
   } catch (fsErr) {
     console.warn("Firestore sendMessage note:", fsErr);
   }
 
   // 2. Legacy Supabase
   try {
-    await supabase.from("messages").insert({
+    const { error } = await supabase.from("messages").insert({
       sender_id: input.senderId,
       recipient_id: input.recipientId,
-      body: input.body.trim(),
+      body: trimmed,
     });
+    if (!error) delivered = true;
   } catch {
     // legacy store unavailable
+  }
+
+  if (!delivered) {
+    appendLocalMessage(input.senderId, {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      sender_id: input.senderId,
+      recipient_id: input.recipientId,
+      body: trimmed,
+      read_at: null,
+      created_at: new Date().toISOString(),
+    });
   }
 }
 
 export async function markThreadRead(userId: string, partnerId: string) {
+  if (isVirtualDeskPartner(partnerId)) return;
   try {
     await supabase
       .from("messages")
@@ -190,6 +268,14 @@ export async function markThreadRead(userId: string, partnerId: string) {
 }
 
 export async function partnerName(partnerId: string): Promise<string> {
+  if (partnerId === "sot-community-desk") return "SOT Consumer & Brand Calling Desk";
+  if (partnerId.startsWith("brand-")) {
+    return partnerId
+      .replace(/^brand-/, "")
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
   try {
     const { data } = await supabase
       .from("profiles")

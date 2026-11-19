@@ -18,6 +18,7 @@ import { fetchBrands, fetchMyBrands, fetchBrandsByIds, type Brand } from "@/lib/
 import { fetchActiveManagedBrandIds } from "@/lib/brand-platform";
 import {
   getClaimedLaunchPerks,
+  getLiveBroadcastSessions,
   type ClaimedPerkVoucher,
   type BrandBroadcastCategory,
 } from "@/lib/live-broadcasts";
@@ -60,7 +61,7 @@ import {
   BrandCxDataAndAwardsMatrix,
   BrandB2BPricingAndCheckoutPanel,
 } from "@/components/BrandExecutiveSuitePanels";
-import { getRegisteredBrandIdentity } from "@/lib/brand-operators";
+import { getCxLifecycleMatrix, getRegisteredBrandIdentity } from "@/lib/brand-operators";
 import { useRoles } from "@/hooks/useRoles";
 import { playCoinSpinSound } from "@/lib/verdict-sounds";
 import { toast } from "sonner";
@@ -79,8 +80,24 @@ function ProfilePage() {
   const [claimedPerks, setClaimedPerks] = useState<ClaimedPerkVoucher[]>(() =>
     getClaimedLaunchPerks(),
   );
-  const [dailySpinDone, setDailySpinDone] = useState(false);
-  const [bonusPoints, setBonusPoints] = useState(140);
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const [dailySpinDone, setDailySpinDone] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("sot_daily_spin_date_v1") === new Date().toISOString().slice(0, 10);
+    } catch {
+      return false;
+    }
+  });
+  const [spinPoints, setSpinPoints] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    try {
+      const saved = Number(window.localStorage.getItem("sot_daily_spin_points_v1") || "0");
+      return Number.isFinite(saved) && saved >= 0 ? saved : 0;
+    } catch {
+      return 0;
+    }
+  });
 
   // Brand Owner Live Launch Modal state
   const [launchModalOpen, setLaunchModalOpen] = useState(false);
@@ -201,7 +218,16 @@ function ProfilePage() {
     playCoinSpinSound();
     if (!dailySpinDone) {
       setDailySpinDone(true);
-      setBonusPoints((p) => p + 25);
+      const nextSpinPoints = spinPoints + 25;
+      setSpinPoints(nextSpinPoints);
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem("sot_daily_spin_date_v1", todayKey);
+          window.localStorage.setItem("sot_daily_spin_points_v1", String(nextSpinPoints));
+        } catch {
+          // ignore
+        }
+      }
       toast.success("🪙 Zwepe Gold Coin Spun! +25 SOT Consumer Trust Points unlocked!");
     } else {
       toast.info("🪙 Zwepe Coin spun! Come back tomorrow for your next +25 streak bonus.");
@@ -214,7 +240,21 @@ function ProfilePage() {
     setLaunchModalOpen(true);
   };
 
-  const totalVerdicts = (stats?.stash ?? 0) + (stats?.trash ?? 0);
+  const totalVerdicts = (stats?.stashVotes ?? stats?.stash ?? 0) + (stats?.trashVotes ?? stats?.trash ?? 0);
+  const bonusPoints = totalVerdicts * 10 + claimedPerks.length * 15 + spinPoints;
+  const primaryBrandName = managedBrands[0]?.name || "Official Brand Account";
+  const brandSessions = getLiveBroadcastSessions().filter((s) =>
+    s.brandName.toLowerCase().includes(primaryBrandName.toLowerCase()),
+  );
+  const liveReachCount = brandSessions.reduce(
+    (sum, s) => sum + (s.viewerCount ?? 0) + (s.followersNotified ?? 0),
+    0,
+  );
+  const cxRecords = getCxLifecycleMatrix(primaryBrandName);
+  const resolvedCxCount = cxRecords.filter((r) => r.finalVerdict === "stash").length;
+  const activeVouchersCount = cxRecords.filter((r) => Boolean(r.voucherCode)).length;
+  const slaResolutionPct =
+    cxRecords.length > 0 ? Math.round((resolvedCxCount / cxRecords.length) * 100) : 0;
   const voterRankTitle =
     totalVerdicts >= 20
       ? "Gold Arbitrator · Level 5 Watchdog"
@@ -311,7 +351,7 @@ function ProfilePage() {
                         Verified Brand Owner &amp; Executive
                       </span>
                       <span className="text-xs font-mono text-slate-400 tabular-nums">
-                        SLA Grade: AAA Prime (94% Resolution)
+                        SLA Resolution: {cxRecords.length > 0 ? `${slaResolutionPct}% Verified` : "No open escalations"}
                       </span>
                     </div>
 
@@ -374,10 +414,10 @@ function ProfilePage() {
                   <p className="mt-1 font-display text-2xl font-black text-[#f5d061] tabular-nums">
                     {managedBrands.length > 0
                       ? Math.round(
-                          managedBrands.reduce((s, b) => s + (Number(b.trust_score) || 76), 0) /
+                          managedBrands.reduce((s, b) => s + (Number(b.trust_score) || 0), 0) /
                             managedBrands.length,
                         )
-                      : 82}
+                      : 0}
                     %
                   </p>
                 </div>
@@ -386,7 +426,7 @@ function ProfilePage() {
                     Launch Broadcast Reach
                   </p>
                   <p className="mt-1 font-display text-2xl font-black text-emerald-400 tabular-nums">
-                    13.6K+
+                    {liveReachCount.toLocaleString()}
                   </p>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-3.5">
@@ -394,7 +434,7 @@ function ProfilePage() {
                     Recovery Vouchers Issued
                   </p>
                   <p className="mt-1 font-display text-2xl font-black text-white tabular-nums">
-                    48 Active
+                    {activeVouchersCount} Active
                   </p>
                 </div>
               </div>

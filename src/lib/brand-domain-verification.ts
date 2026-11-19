@@ -535,7 +535,11 @@ export async function fetchAllBrandClaimsForReview(): Promise<LocalBrandClaimRec
 
   if (auth.currentUser) {
     try {
-      const fsClaims = await getFirestoreBrandClaims();
+      const isPlatformOwner = auth.currentUser.email?.toLowerCase() === "borulelo@gmail.com";
+      const fsClaims = await getFirestoreBrandClaims({
+        claimantUid: auth.currentUser.uid,
+        isAdmin: isPlatformOwner,
+      });
       for (const c of fsClaims) {
         byId.set(c.id, c);
       }

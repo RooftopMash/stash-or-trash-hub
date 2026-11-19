@@ -311,10 +311,20 @@ export async function createFirestoreIncident(incident: Omit<FirestoreIncident, 
 export async function getFirestoreMessages(userId: string): Promise<FirestoreChatMessage[]> {
   const collectionPath = "messages";
   try {
-    const snapshot = await getDocs(query(collection(db, collectionPath), limit(100)));
-    return snapshot.docs
-      .map((d) => ({ id: d.id, ...d.data() }) as FirestoreChatMessage)
-      .filter((m) => m.senderId === userId || m.receiverId === userId);
+    const [sentSnap, recvSnap] = await Promise.all([
+      getDocs(query(collection(db, collectionPath), where("senderId", "==", userId), limit(50))),
+      getDocs(query(collection(db, collectionPath), where("receiverId", "==", userId), limit(50))),
+    ]);
+    const byId = new Map<string, FirestoreChatMessage>();
+    for (const d of sentSnap.docs) {
+      byId.set(d.id, { id: d.id, ...d.data() } as FirestoreChatMessage);
+    }
+    for (const d of recvSnap.docs) {
+      byId.set(d.id, { id: d.id, ...d.data() } as FirestoreChatMessage);
+    }
+    return Array.from(byId.values()).sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, collectionPath);
   }
@@ -508,10 +518,20 @@ export async function deleteFirestoreFriend(friendId: string): Promise<void> {
 // ----------------------------------------------------
 // BRAND OWNERSHIP CLAIMS (DOMAIN EMAIL VERIFICATION)
 // ----------------------------------------------------
-export async function getFirestoreBrandClaims(): Promise<FirestoreBrandClaim[]> {
+export async function getFirestoreBrandClaims(options?: {
+  claimantUid?: string;
+  isAdmin?: boolean;
+}): Promise<FirestoreBrandClaim[]> {
   const collectionPath = "brand_claims";
   try {
-    const q = query(collection(db, collectionPath), orderBy("createdAt", "desc"), limit(150));
+    const q =
+      options?.claimantUid && !options?.isAdmin
+        ? query(
+            collection(db, collectionPath),
+            where("claimantUid", "==", options.claimantUid),
+            limit(150),
+          )
+        : query(collection(db, collectionPath), orderBy("createdAt", "desc"), limit(150));
     const snapshot = await getDocs(q);
     return snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as FirestoreBrandClaim[];
   } catch (error) {

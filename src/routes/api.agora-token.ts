@@ -5,13 +5,52 @@ const { RtcRole, RtcTokenBuilder } = agoraToken;
 
 const TOKEN_TTL_SECONDS = 10 * 60;
 
-const GOOGLE_ICE_SERVERS = [
+const GOOGLE_STUN_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
   { urls: "stun:stun2.l.google.com:19302" },
   { urls: "stun:stun3.l.google.com:19302" },
   { urls: "stun:stun4.l.google.com:19302" },
 ];
+
+function buildIceServers(): { iceServers: RTCIceServer[]; turnConfigured: boolean } {
+  const turnUrl = process.env.TURN_URL?.trim();
+  const turnUsername = process.env.TURN_USERNAME?.trim();
+  const turnCredential = process.env.TURN_CREDENTIAL?.trim();
+
+  if (turnUrl) {
+    const turnEntry: RTCIceServer = {
+      urls: turnUrl.split(",").map((u) => u.trim()).filter(Boolean),
+      ...(turnUsername ? { username: turnUsername } : {}),
+      ...(turnCredential ? { credential: turnCredential } : {}),
+    };
+    return {
+      iceServers: [...GOOGLE_STUN_SERVERS, turnEntry],
+      turnConfigured: true,
+    };
+  }
+
+  return {
+    iceServers: GOOGLE_STUN_SERVERS,
+    turnConfigured: false,
+  };
+}
+
+function stableNumericUid(seed?: string, explicitUid?: number): number {
+  if (typeof explicitUid === "number" && Number.isFinite(explicitUid) && explicitUid > 0) {
+    return Math.floor(explicitUid) % 2_000_000_000;
+  }
+  if (seed) {
+    let hash = 2166136261;
+    for (let i = 0; i < seed.length; i += 1) {
+      hash ^= seed.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    const positive = (hash >>> 0) % 1_900_000_000;
+    return positive + 1;
+  }
+  return Math.floor(Math.random() * 1_900_000_000) + 1;
+}
 
 export const Route = (createFileRoute("/api/agora-token") as any)({
   server: {
@@ -22,24 +61,33 @@ export const Route = (createFileRoute("/api/agora-token") as any)({
           channelName?: string;
           mode?: "voice" | "video" | "broadcast";
           callerId?: string;
+          uid?: number;
+          role?: "publisher" | "subscriber";
         } | null;
 
-        const mode = body?.mode === "voice" || body?.mode === "video" || body?.mode === "broadcast"
-          ? body.mode
-          : "video";
+        const mode =
+          body?.mode === "voice" || body?.mode === "video" || body?.mode === "broadcast"
+            ? body.mode
+            : "video";
         const partnerId = (body?.partnerId || "community-room").trim();
         const callerId = (body?.callerId || "sot-client").trim();
 
         const ids = [callerId, partnerId].sort();
         const rawChannel = body?.channelName?.trim() || `sot-${ids.join("-")}`;
-        const channelName = rawChannel.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 63) || "sot-live-room";
-        const uid = Math.floor(Math.random() * 2_000_000_000) + 1;
+        const channelName =
+          rawChannel.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 63) || "sot-live-room";
+        const uid = stableNumericUid(
+          body?.callerId ? `${body.callerId}-${Date.now() % 1000}` : undefined,
+          body?.uid,
+        );
         const tokenExpiration = Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS;
+        const rtcRole = body?.role === "subscriber" ? RtcRole.SUBSCRIBER : RtcRole.PUBLISHER;
 
         const appId = process.env.AGORA_APP_ID?.trim();
         const appCertificate = process.env.AGORA_APP_CERTIFICATE?.trim();
+        const { iceServers, turnConfigured } = buildIceServers();
 
-        // If Agora credentials are configured, issue an official Agora RTC token + Google STUN backup
+        // Issue an Agora RTC token when AGORA_APP_ID & AGORA_APP_CERTIFICATE are configured
         if (appId && appCertificate) {
           try {
             const rtcToken = RtcTokenBuilder.buildTokenWithUid(
@@ -47,7 +95,7 @@ export const Route = (createFileRoute("/api/agora-token") as any)({
               appCertificate,
               channelName,
               uid,
-              RtcRole.PUBLISHER,
+              rtcRole,
               tokenExpiration,
               tokenExpiration,
             );
@@ -59,7 +107,8 @@ export const Route = (createFileRoute("/api/agora-token") as any)({
                 channelName,
                 uid,
                 token: rtcToken,
-                iceServers: GOOGLE_ICE_SERVERS,
+                iceServers,
+                turnConfigured,
                 expiresAt: tokenExpiration,
                 mode,
                 recording: false,
@@ -71,7 +120,7 @@ export const Route = (createFileRoute("/api/agora-token") as any)({
           }
         }
 
-        // Google WebRTC (STUN + P2P Signaling) Engine — works anywhere with zero third-party secret failures
+        // Google WebRTC (STUN + optional TURN relay + Realtime Signaling) Engine
         return Response.json(
           {
             provider: "google-webrtc",
@@ -79,7 +128,8 @@ export const Route = (createFileRoute("/api/agora-token") as any)({
             channelName,
             uid,
             token: null,
-            iceServers: GOOGLE_ICE_SERVERS,
+            iceServers,
+            turnConfigured,
             expiresAt: tokenExpiration,
             mode,
             recording: false,
@@ -90,4 +140,3 @@ export const Route = (createFileRoute("/api/agora-token") as any)({
     },
   },
 });
-

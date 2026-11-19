@@ -19,7 +19,7 @@ export function OfflineStatus() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", update);
     };
-  }, []);
+  }, [queryClient]);
 
   if (!offline) return null;
   return (

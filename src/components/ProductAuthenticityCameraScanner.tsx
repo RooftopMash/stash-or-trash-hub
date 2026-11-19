@@ -118,16 +118,11 @@ export function ProductAuthenticityCameraScanner({
 
   const handlePrintCertificate = () => {
     if (!scanResult) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast.info("Please allow popups to print the certificate.");
-      return;
-    }
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Brand PR Authenticity & Forensic Audit Certificate</title>
+        <title>Brand PR Authenticity &amp; Forensic Audit Certificate</title>
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; color: #0f172a; max-width: 800px; margin: 0 auto; }
           .header { border-bottom: 2px solid #0f172a; padding-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
@@ -143,12 +138,12 @@ export function ProductAuthenticityCameraScanner({
         <div class="header">
           <div>
             <h1 style="margin:0; font-size:24px;">STASH OR TRASH</h1>
-            <p style="margin:4px 0 0 0; color:#64748b; font-size:13px;">Official Forensic Media & Authenticity Audit Dossier</p>
+            <p style="margin:4px 0 0 0; color:#64748b; font-size:13px;">Official Forensic Media &amp; Authenticity Audit Dossier</p>
           </div>
           <div class="badge">${scanResult.counterfeitAssessment?.badgeLabel || "Verified Authentic"}</div>
         </div>
         <div class="hero">
-          <div style="font-size:12px; text-transform:uppercase; color:#64748b; font-weight:bold;">Product & Brand Profile</div>
+          <div style="font-size:12px; text-transform:uppercase; color:#64748b; font-weight:bold;">Product &amp; Brand Profile</div>
           <h2 style="margin:6px 0; font-size:26px;">${scanResult.brandInfo.brandName} — ${scanResult.brandInfo.productName || "Verified Product"}</h2>
           <p style="margin:0; color:#475569; font-size:14px;"><strong>Corporate Owner:</strong> ${scanResult.brandInfo.brandOwner} (${scanResult.brandInfo.countryOfOrigin})</p>
         </div>
@@ -167,23 +162,54 @@ export function ProductAuthenticityCameraScanner({
         <div class="card" style="margin-bottom: 20px;">
           <h3 style="margin-top:0; font-size:14px;">Forensic Attribute Verification</h3>
           <ul style="font-size:12px; color:#334155; line-height: 1.6; padding-left: 20px;">
-            <li><strong>Lighting & Shadows:</strong> ${scanResult.authenticity.forensics?.physicalLighting || "Consistent physical shadows"}</li>
-            <li><strong>Texture & Noise:</strong> ${scanResult.authenticity.forensics?.textureAndNoise || "Natural camera sensor grain verified"}</li>
-            <li><strong>Typography & Print:</strong> ${scanResult.authenticity.forensics?.textIntegrity || "Verified manufacturer typeface geometry"}</li>
-            <li><strong>AI / Deepfake Check:</strong> ${scanResult.authenticity.forensics?.aiGenerationMarkers || "Zero synthetic AI generation markers detected"}</li>
+            <li><strong>Lighting &amp; Shadows:</strong> ${scanResult.authenticity.forensics?.physicalLighting || "N/A"}</li>
+            <li><strong>Texture &amp; Noise:</strong> ${scanResult.authenticity.forensics?.textureAndNoise || "N/A"}</li>
+            <li><strong>Typography &amp; Print:</strong> ${scanResult.authenticity.forensics?.textIntegrity || "N/A"}</li>
+            <li><strong>AI / Deepfake Check:</strong> ${scanResult.authenticity.forensics?.aiGenerationMarkers || "N/A"}</li>
           </ul>
         </div>
         <div class="footer">
-          Issued by Stash Or Trash AI Forensic System • Verified for Brand PR Officers & Client Service • Timestamp: ${new Date().toISOString()}
+          Issued by Stash Or Trash Forensic System · Timestamp: ${new Date().toISOString()}
         </div>
-        <script>
-          window.onload = function() { window.print(); }
-        </script>
       </body>
       </html>
     `;
-    printWindow.document.write(html);
-    printWindow.document.close();
+
+    try {
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      iframe.setAttribute("aria-hidden", "true");
+      document.body.appendChild(iframe);
+      const doc = iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(html);
+        doc.close();
+        window.setTimeout(() => {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+          window.setTimeout(() => iframe.remove(), 1200);
+        }, 150);
+        return;
+      }
+      iframe.remove();
+    } catch {
+      // Fallback to downloadable HTML certificate
+    }
+
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sot-certificate-${(scanResult.brandInfo.brandName || "product").toLowerCase().replace(/[^a-z0-9]+/g, "-")}.html`;
+    a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast.success("Downloaded authenticity audit certificate.");
   };
 
   // Check initial permission status if supported
