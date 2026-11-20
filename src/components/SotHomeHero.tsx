@@ -445,29 +445,23 @@ export function SotHomeHero() {
       suppressHydrationWarning
       className="relative isolate overflow-hidden border-b border-slate-200 bg-white text-slate-950 pb-20 sm:pb-8"
     >
-      {/* Subtle perimeter ambient atmosphere (clear center behind typography & Verdict Stage) */}
+      {/* Full Split-Screen Falling Watermarks (Left: Falling 3D Coins · Right: Steel Trash Bins) */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-        {/* Reduced-motion fallback subtle edge watermark */}
+        {/* Reduced-motion fallback coin watermark */}
         <div
-          className="hidden motion-reduce:block absolute inset-y-0 left-0 w-1/2 opacity-[0.07]"
+          className="hidden motion-reduce:block absolute inset-y-0 left-0 w-1/2 opacity-[0.22]"
           style={{
             backgroundImage: `url(${coinsWatermark})`,
             backgroundSize: "140px 140px",
             backgroundRepeat: "repeat",
-            maskImage: "radial-gradient(ellipse at 0% 45%, black 15%, transparent 65%)",
-            WebkitMaskImage: "radial-gradient(ellipse at 0% 45%, black 15%, transparent 65%)",
           }}
         />
 
-        {/* Subtle Left Edge Falling SOrT Coins (Strictly Peripheral Accent) */}
+        {/* Left Half: Live Falling 3D SOrT Gold Coins */}
         <div
-          className="motion-reduce:hidden absolute inset-y-0 left-0 w-1/2 overflow-hidden opacity-[0.12] sm:opacity-[0.16] [perspective:900px]"
+          className="motion-reduce:hidden absolute inset-y-0 left-0 w-1/2 overflow-hidden opacity-[0.42] sm:opacity-[0.5] [perspective:900px]"
           style={{
-            filter: "sepia(0.22) saturate(1.4) contrast(1.06)",
-            maskImage:
-              "radial-gradient(ellipse at 5% 50%, black 10%, rgba(0, 0, 0, 0.35) 38%, transparent 72%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse at 5% 50%, black 10%, rgba(0, 0, 0, 0.35) 38%, transparent 72%)",
+            filter: "sepia(0.22) saturate(1.45) contrast(1.06)",
           }}
         >
           {COIN_SKY_BANDS.map((band) => (
@@ -496,27 +490,23 @@ export function SotHomeHero() {
           ))}
         </div>
 
-        {/* Subtle Right Edge Bins Watermark (Strictly Peripheral Accent) */}
+        {/* Right Half: Steel Trash Can Watermark Rain */}
         <div
-          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-[0.04] sm:opacity-[0.06]"
+          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-[0.18] sm:opacity-[0.24]"
           style={{
             backgroundImage: `url(${binsWatermark})`,
             backgroundSize: "188px 188px",
             backgroundRepeat: "repeat",
-            maskImage:
-              "radial-gradient(ellipse at 95% 50%, black 10%, rgba(0, 0, 0, 0.3) 38%, transparent 72%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse at 95% 50%, black 10%, rgba(0, 0, 0, 0.3) 38%, transparent 72%)",
           }}
         />
-        {/* Gentle editorial split glow */}
-        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-amber-50/45 via-amber-50/15 to-transparent pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-slate-100/55 via-slate-50/20 to-transparent pointer-events-none" />
+        {/* Subtle split ambient tint matching Left Gold / Right Chrome */}
+        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-b from-amber-50/35 via-transparent to-amber-50/35 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-b from-slate-100/40 via-transparent to-slate-100/40 pointer-events-none" />
       </div>
 
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:gap-10 sm:px-6 lg:py-12">
         {/* Top Header Text: Crisp Editorial Kicker + Signature Black & Gold Contrast */}
-        <div className="mx-auto max-w-3xl text-center">
+        <div className="mx-auto max-w-3xl rounded-3xl bg-white/75 px-4 py-3 text-center backdrop-blur-[2px] sm:px-8 sm:py-4">
           <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#b88914]">
             {t("hero.badge", { defaultValue: "The Brand Barometer" })}
           </p>
