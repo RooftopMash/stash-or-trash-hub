@@ -319,8 +319,8 @@ export function HeroInteractiveStage({
           />
 
           {/* Stage Label */}
-          <div className="px-3 pt-3 text-center sm:px-6 sm:pt-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-amber-800 sm:text-xs">
+          <div className="px-2 pt-3 text-center sm:px-6 sm:pt-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-800 whitespace-nowrap sm:text-xs">
               {t("hero.stashSideTitle", { defaultValue: "Stash · Gold Standard" })}
             </p>
           </div>
@@ -487,9 +487,9 @@ export function HeroInteractiveStage({
         {/* RIGHT HALF: Option A Vintage Galvanized Trash Can (TRASH) */}
         <div className="group relative flex flex-col justify-between bg-gradient-to-b from-slate-50/50 via-white to-slate-100/75">
           {/* Stage Label */}
-          <div className="px-3 pt-3 text-center sm:px-6 sm:pt-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-700 sm:text-xs">
-              {t("hero.trashSideTitle", { defaultValue: "Trash · Accountability Bin" })}
+          <div className="px-2 pt-3 text-center sm:px-6 sm:pt-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-700 whitespace-nowrap sm:text-xs">
+              {t("hero.trashSideTitle", { defaultValue: "Trash · Callout Bin" })}
             </p>
           </div>
 
