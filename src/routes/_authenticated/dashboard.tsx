@@ -1137,6 +1137,7 @@ function DashboardPage() {
                       </p>
                     </div>
                     <Button
+                      disabled={!deskAccess.allowed}
                       onClick={() => {
                         setStudioCategory("product_launch");
                         setStudioModalOpen(true);
@@ -1165,6 +1166,7 @@ function DashboardPage() {
                         </div>
                         <Button
                           size="sm"
+                          disabled={!deskAccess.allowed}
                           onClick={() => {
                             setStudioCategory(cat.id);
                             setStudioModalOpen(true);
@@ -1272,7 +1274,13 @@ function DashboardPage() {
                 <BrandInboundContactSettingsPanel
                   brandName={activeBrand.name}
                   brandSlug={activeBrand.slug}
+                  canOperate={deskAccess.allowed}
+                  gateReason={deskAccess.headline}
                   onInitiateCall={(target) => {
+                    if (!deskAccess.allowed) {
+                      toast.error(deskAccess.headline);
+                      return;
+                    }
                     setMessengerCallSession({
                       roomChannel: `sot-private-${activeBrand.slug}-${target.id}-${Date.now()}`,
                       partnerId: target.id,
@@ -1350,7 +1358,7 @@ function DashboardPage() {
                           <div className="flex flex-wrap items-center gap-2 shrink-0">
                             <Button
                               size="sm"
-                              disabled={!hasTier2}
+                              disabled={!hasTier2 || !deskAccess.allowed}
                               onClick={() => {
                                 setMessengerCallSession({
                                   roomChannel: `sot-private-${activeBrand.slug}-${clientId}-${Date.now()}`,
@@ -1369,7 +1377,7 @@ function DashboardPage() {
                             </Button>
                             <Button
                               size="sm"
-                              disabled={!hasTier2}
+                              disabled={!hasTier2 || !deskAccess.allowed}
                               onClick={() => {
                                 setMessengerCallSession({
                                   roomChannel: `sot-private-${activeBrand.slug}-${clientId}-${Date.now()}`,
@@ -1389,7 +1397,7 @@ function DashboardPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              disabled={!hasTier2}
+                              disabled={!hasTier2 || !deskAccess.allowed}
                               onClick={() =>
                                 void handleRequestToCallClient(clientName, clientId, activeBrand.name)
                               }
@@ -1400,7 +1408,7 @@ function DashboardPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              disabled={!hasTier2}
+                              disabled={!hasTier2 || !deskAccess.allowed}
                               onClick={() =>
                                 void handleIssueRecoveryVoucher(clientName, clientId, activeBrand.name)
                               }

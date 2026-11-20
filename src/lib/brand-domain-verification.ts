@@ -96,9 +96,22 @@ const FREE_WEBMAIL_DOMAINS = new Set([
   "yahoo.com",
   "yahoo.co.uk",
   "yahoo.co.za",
+  "yahoo.fr",
+  "yahoo.de",
+  "yahoo.co.jp",
+  "yahoo.com.au",
+  "ymail.com",
+  "rocketmail.com",
   "outlook.com",
+  "outlook.co.za",
   "hotmail.com",
+  "hotmail.co.uk",
+  "hotmail.fr",
+  "hotmail.de",
+  "hotmail.co.za",
   "live.com",
+  "live.co.uk",
+  "live.co.za",
   "msn.com",
   "icloud.com",
   "me.com",
@@ -107,13 +120,45 @@ const FREE_WEBMAIL_DOMAINS = new Set([
   "proton.me",
   "protonmail.com",
   "pm.me",
+  "tutanota.com",
+  "tuta.com",
+  "tuta.io",
   "gmx.com",
+  "gmx.net",
+  "gmx.de",
   "mail.com",
   "yandex.com",
+  "yandex.ru",
+  "mail.ru",
+  "bk.ru",
+  "inbox.ru",
+  "list.ru",
   "zoho.com",
+  "fastmail.com",
+  "hey.com",
+  "inbox.com",
+  "qq.com",
+  "163.com",
+  "126.com",
+  "naver.com",
+  "rediffmail.com",
   "webmail.co.za",
   "mweb.co.za",
   "telkomsa.net",
+  "vodamail.co.za",
+  "mtnloaded.co.za",
+  "absamail.co.za",
+  "iafrica.com",
+  "worldonline.co.za",
+  "polka.co.za",
+  "lantic.net",
+  "mailinator.com",
+  "guerrillamail.com",
+  "tempmail.com",
+  "10minutemail.com",
+  "yopmail.com",
+  "trashmail.com",
+  "sharklasers.com",
 ]);
 
 const AUTO_SOURCED_OWNER_IDS = new Set([
@@ -199,6 +244,86 @@ export function isFreeEmailProvider(email: string | null | undefined): boolean {
   if (!emailHost) return false;
   const reg = extractRegistrableDomain(emailHost);
   return FREE_WEBMAIL_DOMAINS.has(emailHost) || (!!reg && FREE_WEBMAIL_DOMAINS.has(reg));
+}
+
+export interface CorporateSignupEmailValidation {
+  allowed: boolean;
+  reasonCode:
+    | "corporate_domain_valid"
+    | "corporate_website_matched"
+    | "blocked_personal_domain"
+    | "blocked_domain_mismatch"
+    | "invalid_email";
+  emailDomain: string | null;
+  officialDomain: string | null;
+  headline: string;
+  explanation: string;
+}
+
+export function validateCorporateSignupEmail(
+  email: string | null | undefined,
+  brandWebsite?: string | null,
+): CorporateSignupEmailValidation {
+  const cleanEmail = (email || "").trim().toLowerCase();
+  const emailDomain = extractEmailDomain(cleanEmail);
+  const officialDomain = extractRegistrableDomain(brandWebsite);
+
+  if (!emailDomain) {
+    return {
+      allowed: false,
+      reasonCode: "invalid_email",
+      emailDomain: null,
+      officialDomain,
+      headline: "Valid corporate email address required",
+      explanation:
+        "Enter an official corporate domain email such as cx-desk@nike.com or support@toyota.co.za.",
+    };
+  }
+
+  if (isFreeEmailProvider(cleanEmail)) {
+    return {
+      allowed: false,
+      reasonCode: "blocked_personal_domain",
+      emailDomain,
+      officialDomain,
+      headline: `Personal domain blocked (@${emailDomain})`,
+      explanation: officialDomain
+        ? `Brand-owned accounts cannot use personal @${emailDomain} emails. Sign up with your @${officialDomain} corporate email (e.g., name@${officialDomain}).`
+        : `Personal webmail domain @${emailDomain} (along with Gmail, Yahoo, Outlook, iCloud, and ProtonMail) cannot register or operate an Official Brand Account. Use a corporate domain email such as @nike.com or @toyota.co.za.`,
+    };
+  }
+
+  const emailRegistrableDomain = extractRegistrableDomain(emailDomain);
+  if (officialDomain && emailRegistrableDomain !== officialDomain) {
+    return {
+      allowed: false,
+      reasonCode: "blocked_domain_mismatch",
+      emailDomain,
+      officialDomain,
+      headline: `Corporate domain mismatch: @${emailDomain} ≠ ${officialDomain}`,
+      explanation: `Your signup email domain (@${emailDomain}) does not match the Official Brand Website (${officialDomain}). Use an @${officialDomain} address or update your official corporate domain.`,
+    };
+  }
+
+  if (officialDomain && emailRegistrableDomain === officialDomain) {
+    return {
+      allowed: true,
+      reasonCode: "corporate_website_matched",
+      emailDomain,
+      officialDomain,
+      headline: `Corporate domain verified & matched: @${emailDomain}`,
+      explanation: `Email domain @${emailDomain} matches official brand website ${officialDomain}. Firebase email verification will be dispatched on registration.`,
+    };
+  }
+
+  return {
+    allowed: true,
+    reasonCode: "corporate_domain_valid",
+    emailDomain,
+    officialDomain,
+    headline: `Accepted corporate domain: @${emailDomain}`,
+    explanation: `Valid corporate domain (@${emailDomain}) detected. A verification link will be sent to confirm inbox ownership.`,
+  };
 }
 
 export function canOperateBrandDesk(input: {

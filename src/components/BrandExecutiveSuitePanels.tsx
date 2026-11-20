@@ -1284,10 +1284,14 @@ export function BrandB2BPricingAndCheckoutPanel({ brandName = "Verified Brand" }
 export function BrandInboundContactSettingsPanel({
   brandName = "Official Brand",
   brandSlug = "official-brand",
+  canOperate = true,
+  gateReason,
   onInitiateCall,
 }: {
   brandName?: string;
   brandSlug?: string;
+  canOperate?: boolean;
+  gateReason?: string;
   onInitiateCall?: (target: { id: string; name: string; topic: string; mode: "voice" | "video" }) => void;
 }) {
   const [settings, setSettings] = useState<BrandInboundContactSettings>(() =>
@@ -1362,7 +1366,17 @@ export function BrandInboundContactSettingsPanel({
     };
   }, [brandSlug]);
 
+  const requireCorporateDeskAccess = () => {
+    if (canOperate) return true;
+    toast.error(
+      gateReason ||
+        "Verify your corporate email domain or DNS TXT record to operate Brand Calling controls.",
+    );
+    return false;
+  };
+
   const handleUpdateMode = (mode: BrandDirectCallingMode) => {
+    if (!requireCorporateDeskAccess()) return;
     const updated = saveBrandContactSettings(brandSlug, { directCallingMode: mode });
     setSettings(updated);
     toast.success(
@@ -1375,16 +1389,19 @@ export function BrandInboundContactSettingsPanel({
   };
 
   const handleSaveHours = (hours: string) => {
+    if (!requireCorporateDeskAccess()) return;
     const updated = saveBrandContactSettings(brandSlug, { operatingHours: hours });
     setSettings(updated);
   };
 
   const handleSaveNotice = (notice: string) => {
+    if (!requireCorporateDeskAccess()) return;
     const updated = saveBrandContactSettings(brandSlug, { contactNotice: notice });
     setSettings(updated);
   };
 
   const handleToggleBatchRequired = () => {
+    if (!requireCorporateDeskAccess()) return;
     const updated = saveBrandContactSettings(brandSlug, {
       requireOrderOrBatchNumber: !settings.requireOrderOrBatchNumber,
     });
@@ -1397,6 +1414,7 @@ export function BrandInboundContactSettingsPanel({
   };
 
   const handleCallCustomerBack = async (req: InboundCustomerCallRequest, mode: "voice" | "video") => {
+    if (!requireCorporateDeskAccess()) return;
     await updateInboundCallRequestStatusDurable(
       req.id,
       "operator_calling",
@@ -1417,6 +1435,7 @@ export function BrandInboundContactSettingsPanel({
   };
 
   const handleDismissRequest = async (reqId: string) => {
+    if (!requireCorporateDeskAccess()) return;
     await updateInboundCallRequestStatusDurable(
       reqId,
       "resolved",
@@ -1455,6 +1474,15 @@ export function BrandInboundContactSettingsPanel({
         </div>
       </div>
 
+      {!canOperate && (
+        <div className="rounded-2xl border border-rose-500/50 bg-rose-950/60 px-4 py-3 text-xs text-rose-200">
+          <p className="font-bold text-white">Corporate Domain Verification Required to Operate Calling Desk</p>
+          <p className="mt-0.5 text-rose-200/90">
+            {gateReason || "Personal/unverified domains cannot modify brand calling modes or call customers."} Verify your corporate email or DNS TXT record above.
+          </p>
+        </div>
+      )}
+
       {/* 3 Direct Calling Modes */}
       <div className="grid gap-4 md:grid-cols-3">
         {/* Mode 1: Request-a-Call (Recommended) */}
@@ -1462,6 +1490,7 @@ export function BrandInboundContactSettingsPanel({
           onClick={() => handleUpdateMode("request_only")}
           className={cn(
             "rounded-2xl border p-4 cursor-pointer transition flex flex-col justify-between",
+            !canOperate && "opacity-60",
             settings.directCallingMode === "request_only"
               ? "border-[#d6a928] bg-slate-950 ring-2 ring-[#d6a928]/30"
               : "border-slate-800 bg-slate-950/50 hover:border-slate-700",
@@ -1498,6 +1527,7 @@ export function BrandInboundContactSettingsPanel({
           onClick={() => handleUpdateMode("open")}
           className={cn(
             "rounded-2xl border p-4 cursor-pointer transition flex flex-col justify-between",
+            !canOperate && "opacity-60",
             settings.directCallingMode === "open"
               ? "border-emerald-500 bg-slate-950 ring-2 ring-emerald-500/30"
               : "border-slate-800 bg-slate-950/50 hover:border-slate-700",
@@ -1534,6 +1564,7 @@ export function BrandInboundContactSettingsPanel({
           onClick={() => handleUpdateMode("disabled")}
           className={cn(
             "rounded-2xl border p-4 cursor-pointer transition flex flex-col justify-between",
+            !canOperate && "opacity-60",
             settings.directCallingMode === "disabled"
               ? "border-rose-500 bg-slate-950 ring-2 ring-rose-500/30"
               : "border-slate-800 bg-slate-950/50 hover:border-slate-700",
@@ -1579,6 +1610,7 @@ export function BrandInboundContactSettingsPanel({
             </label>
             <Input
               value={settings.operatingHours}
+              disabled={!canOperate}
               onChange={(e) => handleSaveHours(e.target.value)}
               placeholder="e.g. 08:00 - 17:00 (SAST Desk)"
               className="h-9 border-slate-800 bg-slate-900 text-xs text-white"
@@ -1591,9 +1623,10 @@ export function BrandInboundContactSettingsPanel({
             </label>
             <button
               type="button"
+              disabled={!canOperate}
               onClick={handleToggleBatchRequired}
               className={cn(
-                "h-9 w-full rounded-md border px-3 text-xs font-bold flex items-center justify-between transition cursor-pointer",
+                "h-9 w-full rounded-md border px-3 text-xs font-bold flex items-center justify-between transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                 settings.requireOrderOrBatchNumber
                   ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
                   : "border-slate-800 bg-slate-900 text-slate-400",
@@ -1610,6 +1643,7 @@ export function BrandInboundContactSettingsPanel({
             </label>
             <Input
               value={settings.contactNotice}
+              disabled={!canOperate}
               onChange={(e) => handleSaveNotice(e.target.value)}
               placeholder="e.g. Operators respond to call requests within 15 minutes."
               className="h-9 border-slate-800 bg-slate-900 text-xs text-white"
@@ -1679,6 +1713,7 @@ export function BrandInboundContactSettingsPanel({
                 <div className="flex items-center gap-2 shrink-0">
                   <Button
                     size="sm"
+                    disabled={!canOperate}
                     onClick={() => handleCallCustomerBack(req, "voice")}
                     className="h-8 gap-1.5 bg-emerald-600 font-bold text-white hover:bg-emerald-500 text-xs"
                   >
@@ -1686,6 +1721,7 @@ export function BrandInboundContactSettingsPanel({
                   </Button>
                   <Button
                     size="sm"
+                    disabled={!canOperate}
                     onClick={() => handleCallCustomerBack(req, "video")}
                     className="h-8 gap-1.5 bg-slate-950 font-bold text-[#f5d061] hover:bg-slate-800 text-xs border border-slate-700"
                   >
@@ -1694,6 +1730,7 @@ export function BrandInboundContactSettingsPanel({
                   <Button
                     size="sm"
                     variant="ghost"
+                    disabled={!canOperate}
                     onClick={() => handleDismissRequest(req.id)}
                     className="h-8 text-xs text-slate-400 hover:text-white"
                   >

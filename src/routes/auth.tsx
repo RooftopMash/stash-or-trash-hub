@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
+  sendEmailVerification,
+  signOut as fbSignOut,
   signInWithPopup,
   GoogleAuthProvider,
   GithubAuthProvider,
@@ -23,13 +25,33 @@ import {
   setActiveBrandPlanTier,
   type BrandPlanTierId,
 } from "@/lib/brand-operators";
-import { isFreeEmailProvider } from "@/lib/brand-domain-verification";
+import {
+  extractEmailDomain,
+  extractRegistrableDomain,
+  isFreeEmailProvider,
+  validateCorporateSignupEmail,
+} from "@/lib/brand-domain-verification";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Recycle, Sparkles, Loader2, Building2, Coins, ShieldCheck, UserCheck, Copy, ExternalLink, AlertTriangle, KeyRound } from "lucide-react";
+import {
+  Recycle,
+  Sparkles,
+  Loader2,
+  Building2,
+  Coins,
+  ShieldCheck,
+  ShieldAlert,
+  CheckCircle2,
+  Globe,
+  UserCheck,
+  Copy,
+  ExternalLink,
+  AlertTriangle,
+  KeyRound,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
@@ -63,9 +85,11 @@ function AuthPage() {
   const [registeredBrandName, setRegisteredBrandName] = useState(
     () => getRegisteredBrandIdentity().name,
   );
+  const [brandWebsite, setBrandWebsite] = useState("");
   const [selectedBrandTier, setSelectedBrandTier] = useState<BrandPlanTierId>("cx_launch_matrix");
   const [operatorName, setOperatorName] = useState("");
   const [operatorRole, setOperatorRole] = useState("CX & Launch Desk Operator");
+  const [corporateAuthError, setCorporateAuthError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [showDomainGuide, setShowDomainGuide] = useState(false);
@@ -75,6 +99,16 @@ function AuthPage() {
     currentHostname.includes(".run.app") ||
     currentHostname.includes("localhost") ||
     currentHostname.includes(".vercel.app");
+
+  const corporateEmailCheck = useMemo(() => {
+    if (accountDoor !== "brand_owner" || !email.trim()) return null;
+    if (!email.includes("@")) return null;
+    return validateCorporateSignupEmail(email, brandWebsite);
+  }, [accountDoor, email, brandWebsite]);
+
+  useEffect(() => {
+    setCorporateAuthError(null);
+  }, [email, brandWebsite, accountDoor, activeTab]);
 
   useEffect(() => {
     if (user) {
@@ -113,15 +147,25 @@ function AuthPage() {
         displayName.trim() ||
         getRegisteredBrandIdentity().name;
       const effectiveEmail = (cleanEmail || email.trim() || "").toLowerCase();
+      const emailDomain = extractEmailDomain(effectiveEmail);
       const isDevSandbox = effectiveEmail === "borulelo@gmail.com";
       const hasVerifiedCorpEmail =
         Boolean(effectiveEmail) &&
         !isFreeEmailProvider(effectiveEmail) &&
         Boolean(auth.currentUser?.emailVerified);
+      const normalizedSite = brandWebsite.trim()
+        ? /^https?:\/\//i.test(brandWebsite.trim())
+          ? brandWebsite.trim()
+          : `https://${brandWebsite.trim()}`
+        : emailDomain && !isFreeEmailProvider(effectiveEmail)
+          ? `https://${extractRegistrableDomain(emailDomain) || emailDomain}`
+          : undefined;
 
       setRegisteredBrandIdentity({
         name: targetBrandName,
         ownerEmail: effectiveEmail || undefined,
+        ...(normalizedSite ? { website: normalizedSite } : {}),
+        verifiedDomain: emailDomain && !isFreeEmailProvider(effectiveEmail) ? emailDomain : undefined,
         verified: isDevSandbox ? false : hasVerifiedCorpEmail,
         verificationStatus: isDevSandbox
           ? "sandbox_preview"
@@ -139,9 +183,7 @@ function AuthPage() {
       }
       if (!hasVerifiedCorpEmail && !isDevSandbox) {
         toast.info(
-          isFreeEmailProvider(effectiveEmail)
-            ? "Personal email detected: Complete Corporate Domain or DNS TXT Verification in your Dashboard to unlock verified brand controls."
-            : "Brand Desk opened in pending verification mode — confirm your corporate email or DNS TXT record in the Dashboard.",
+          "Brand Desk opened in email/DNS confirmation mode — verify your corporate inbox link or DNS TXT record in the Dashboard to unlock live corporate writes.",
         );
       }
     }
@@ -161,7 +203,7 @@ function AuthPage() {
     }
   };
 
-  const handleInstantSignIn = (role: "personal" | "developer" | "brand") => {
+  const handleInstantSignIn = (role: "personal" | "developer") => {
     setBusy(true);
     try {
       if (role === "developer") {
@@ -172,15 +214,6 @@ function AuthPage() {
         });
         toast.success("Signed in as Borulelo@gmail.com with Developer Admin privileges!");
         finalizePortalRouting("Borulelo@gmail.com");
-      } else if (role === "brand") {
-        setAccountDoor("brand_owner");
-        const bName = registeredBrandName.trim() || "Nando's South Africa";
-        signInWithLocalFallback({
-          email: "sandbox.preview@gmail.com",
-          displayName: `${bName} Sandbox Preview`,
-        });
-        toast.info(`Opened ${bName} Sandbox Preview (unverified — verify corporate domain in Dashboard to unlock live corporate writes).`);
-        finalizePortalRouting("sandbox.preview@gmail.com");
       } else {
         setAccountDoor("consumer");
         const cleanEmail = email.trim() || "member@stashortrash.app";
@@ -202,6 +235,14 @@ function AuthPage() {
     if (!cleanEmail || !password) {
       toast.error("Please enter both email and password.");
       return;
+    }
+    if (accountDoor === "brand_owner") {
+      const corpCheck = validateCorporateSignupEmail(cleanEmail, brandWebsite);
+      if (!corpCheck.allowed) {
+        setCorporateAuthError(`${corpCheck.headline} — ${corpCheck.explanation}`);
+        toast.error(corpCheck.headline);
+        return;
+      }
     }
     setBusy(true);
     try {
@@ -265,6 +306,14 @@ function AuthPage() {
       toast.error("Please provide an email and password.");
       return;
     }
+    if (accountDoor === "brand_owner") {
+      const corpCheck = validateCorporateSignupEmail(cleanEmail, brandWebsite);
+      if (!corpCheck.allowed) {
+        setCorporateAuthError(`${corpCheck.headline} — ${corpCheck.explanation}`);
+        toast.error(corpCheck.headline);
+        return;
+      }
+    }
     if (password.length < 6) {
       toast.error("Password should be at least 6 characters long.");
       return;
@@ -279,11 +328,16 @@ function AuthPage() {
       if (effectiveName) {
         await updateProfile(userCred.user, { displayName: effectiveName }).catch(() => {});
       }
-      toast.success(
-        accountDoor === "brand_owner"
-          ? `Official Brand Account (${effectiveName || "Brand"}) registered! Entering Brand Executive Suite.`
-          : t("auth.created") || "Personal Member Account created (100% Free Forever)!",
-      );
+      if (accountDoor === "brand_owner") {
+        await sendEmailVerification(userCred.user).catch(() => {});
+        toast.success(
+          `Official Brand Account (${effectiveName || "Brand"}) registered! Verification link sent to ${cleanEmail}.`,
+        );
+      } else {
+        toast.success(
+          t("auth.created") || "Personal Member Account created (100% Free Forever)!",
+        );
+      }
       finalizePortalRouting(cleanEmail);
     } catch (err: unknown) {
       const fbErr = err as { code?: string; message?: string };
@@ -306,7 +360,7 @@ function AuthPage() {
         signInWithLocalFallback({ email: cleanEmail, displayName: effectiveName });
         toast.success(
           accountDoor === "brand_owner"
-            ? `Official Brand Account (${effectiveName}) registered and signed in!`
+            ? `Official Brand Account (${effectiveName}) registered with corporate email ${cleanEmail}! Complete DNS TXT verification in Dashboard.`
             : `Personal Member Account (${effectiveName}) created — 100% Free Forever!`,
         );
         finalizePortalRouting(cleanEmail);
@@ -363,13 +417,25 @@ function AuthPage() {
           provider = new GoogleAuthProvider();
       }
 
-      await signInWithPopup(auth, provider);
+      const cred = await signInWithPopup(auth, provider);
+      const oauthEmail = cred.user.email || "";
+      if (accountDoor === "brand_owner") {
+        const corpCheck = validateCorporateSignupEmail(oauthEmail, brandWebsite);
+        if (!corpCheck.allowed) {
+          await fbSignOut(auth).catch(() => {});
+          setCorporateAuthError(
+            `${corpCheck.headline} — OAuth signed in with ${oauthEmail || "a personal account"}, which is blocked for Official Brand Desks. Use Google Workspace or Microsoft 365 with your corporate domain (e.g., @nike.com, @toyota.co.za).`,
+          );
+          toast.error(corpCheck.headline);
+          return;
+        }
+      }
       toast.success(
         accountDoor === "brand_owner"
-          ? "Official Brand Account authenticated — opening Brand Command Center."
+          ? `Official Brand Account (${oauthEmail}) authenticated — opening Brand Command Center.`
           : t("auth.welcome") || "Welcome back!",
       );
-      finalizePortalRouting();
+      finalizePortalRouting(oauthEmail || undefined);
     } catch (e: unknown) {
       const fbErr = e as { code?: string; message?: string };
       if (fbErr.code === "auth/popup-closed-by-user" || fbErr.code === "auth/cancelled-popup-request") {
@@ -387,15 +453,15 @@ function AuthPage() {
         ))
       ) {
         setShowDomainGuide(true);
-        const fallbackEmail =
-          email.trim() ||
-          (accountDoor === "brand_owner"
-            ? `${providerName}.unverified@gmail.com`
-            : `${providerName}.member@sot.app`);
-        const fallbackName =
-          accountDoor === "brand_owner"
-            ? registeredBrandName.trim() || "Official Brand Account"
-            : displayName.trim() || `${providerName.toUpperCase()} Member`;
+        if (accountDoor === "brand_owner") {
+          setCorporateAuthError(
+            "OAuth popups require domain authorization or corporate SSO. Register or sign in below using your official corporate domain email (e.g., @nike.com, @toyota.co.za).",
+          );
+          toast.error("Personal/unverified OAuth fallback is disabled for Official Brand Accounts.");
+          return;
+        }
+        const fallbackEmail = email.trim() || `${providerName}.member@sot.app`;
+        const fallbackName = displayName.trim() || `${providerName.toUpperCase()} Member`;
         signInWithLocalFallback({ email: fallbackEmail, displayName: fallbackName });
         toast.info(
           fbErr.code === "auth/unauthorized-domain" || fbErr.message?.includes("unauthorized-domain")
@@ -616,9 +682,24 @@ function AuthPage() {
             </div>
           </div>
 
-          {/* Registered Brand Identity + Tier Level + Active Desk Operator Box */}
+          {/* Registered Brand Identity + Mandatory Corporate Domain + Active Desk Operator Box */}
           {accountDoor === "brand_owner" && (
             <div className="mb-4 space-y-3 rounded-xl border border-[#d6a928]/50 bg-slate-950 p-3.5 text-white">
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-100">
+                <div className="flex items-center gap-1.5 font-black uppercase tracking-wider text-[#f5d061]">
+                  <ShieldCheck className="h-3.5 w-3.5 text-[#d6a928]" />
+                  Mandatory Corporate Domain Policy
+                </div>
+                <p className="mt-0.5 text-[11px] text-slate-300 leading-relaxed">
+                  Brand-owned accounts require an official corporate email (e.g.{" "}
+                  <strong className="text-white">@nike.com</strong>,{" "}
+                  <strong className="text-white">@toyota.co.za</strong>). Personal emails (
+                  <span className="font-mono text-rose-300">@gmail.com</span>,{" "}
+                  <span className="font-mono text-rose-300">@yahoo.com</span>,{" "}
+                  <span className="font-mono text-rose-300">@outlook.com</span>) are strictly blocked from operational Brand Desks.
+                </p>
+              </div>
+
               <div>
                 <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#f5d061]">
                   <Building2 className="h-3.5 w-3.5 text-[#d6a928]" />
@@ -645,6 +726,23 @@ function AuthPage() {
                     <option value="cx_launch_matrix">Tier 2: CX &amp; Launch Matrix (R4,950/mo)</option>
                     <option value="enterprise_intelligence">Tier 3: Enterprise Intelligence (R14,900/mo)</option>
                   </select>
+                </div>
+
+                <div className="mt-2">
+                  <label
+                    htmlFor="brand-website-domain"
+                    className="mb-1 flex items-center gap-1.5 text-[11px] font-bold text-slate-300"
+                  >
+                    <Globe className="h-3 w-3 text-[#d6a928]" />
+                    Official Brand Website / Corporate Domain (Optional match check)
+                  </label>
+                  <Input
+                    id="brand-website-domain"
+                    value={brandWebsite}
+                    onChange={(e) => setBrandWebsite(e.target.value)}
+                    placeholder="e.g. nike.com or toyota.co.za"
+                    className="h-8 border-slate-700 bg-slate-900 text-xs text-white"
+                  />
                 </div>
               </div>
 
@@ -780,6 +878,20 @@ function AuthPage() {
             <div className="h-px flex-1 bg-border" />
           </div>
 
+          {corporateAuthError && accountDoor === "brand_owner" && (
+            <div
+              role="alert"
+              data-testid="corporate-domain-error"
+              className="mb-4 flex items-start gap-2 rounded-xl border border-rose-500/60 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-200"
+            >
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+              <div className="space-y-0.5">
+                <p className="font-bold">Corporate Domain Verification Required</p>
+                <p className="leading-relaxed opacity-90">{corporateAuthError}</p>
+              </div>
+            </div>
+          )}
+
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "signin" | "signup")}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">{t("auth.signIn") || "Sign in"}</TabsTrigger>
@@ -799,10 +911,13 @@ function AuthPage() {
                   value={email}
                   onChange={setEmail}
                   placeholder={
-                    accountDoor === "brand_owner" ? "cx-desk@yourbrand.com" : "name@example.com"
+                    accountDoor === "brand_owner" ? "cx-desk@nike.com or support@toyota.co.za" : "name@example.com"
                   }
                   required
                 />
+                {corporateEmailCheck && (
+                  <CorporateDomainInlineStatus check={corporateEmailCheck} />
+                )}
                 <Field
                   id="si-pw"
                   label={t("auth.password") || "Password"}
@@ -833,11 +948,22 @@ function AuthPage() {
             </TabsContent>
 
             <TabsContent value="signup" className="mt-4">
-              <div className="mb-3 rounded-lg bg-primary/5 border border-primary/15 px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+              <div
+                className={cn(
+                  "mb-3 rounded-lg border px-3 py-2 text-xs flex items-center gap-2",
+                  accountDoor === "brand_owner"
+                    ? "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200"
+                    : "border-primary/15 bg-primary/5 text-muted-foreground",
+                )}
+              >
+                {accountDoor === "brand_owner" ? (
+                  <ShieldCheck className="h-4 w-4 text-[#d6a928] shrink-0" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+                )}
                 <span>
                   {accountDoor === "brand_owner"
-                    ? "Register an Official Brand Account — separate from personal member profiles."
+                    ? "Corporate email required (@nike.com, @toyota.co.za) — personal domains (@gmail.com, @yahoo.com, @outlook.com) are blocked."
                     : "100% Free Personal Member Account — never paywalled."}
                 </span>
               </div>
@@ -857,13 +983,22 @@ function AuthPage() {
                 />
                 <Field
                   id="su-email"
-                  label={t("auth.email") || "Email"}
+                  label={
+                    accountDoor === "brand_owner"
+                      ? "Official Corporate Email (@company.com)"
+                      : t("auth.email") || "Email"
+                  }
                   type="email"
                   value={email}
                   onChange={setEmail}
-                  placeholder="name@example.com"
+                  placeholder={
+                    accountDoor === "brand_owner" ? "cx-lead@nike.com or desk@toyota.co.za" : "name@example.com"
+                  }
                   required
                 />
+                {corporateEmailCheck && (
+                  <CorporateDomainInlineStatus check={corporateEmailCheck} />
+                )}
                 <Field
                   id="su-pw"
                   label={t("auth.password") || "Password"}
@@ -894,6 +1029,35 @@ function AuthPage() {
             </TabsContent>
           </Tabs>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function CorporateDomainInlineStatus({
+  check,
+}: {
+  check: ReturnType<typeof validateCorporateSignupEmail>;
+}) {
+  return (
+    <div
+      data-testid="corporate-domain-inline-status"
+      data-allowed={check.allowed ? "true" : "false"}
+      className={cn(
+        "flex items-start gap-2 rounded-lg border px-2.5 py-2 text-[11px] leading-snug",
+        check.allowed
+          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          : "border-rose-500/50 bg-rose-500/10 text-rose-700 dark:text-rose-200",
+      )}
+    >
+      {check.allowed ? (
+        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+      ) : (
+        <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500" />
+      )}
+      <div>
+        <p className="font-bold">{check.headline}</p>
+        <p className="mt-0.5 opacity-90">{check.explanation}</p>
       </div>
     </div>
   );
