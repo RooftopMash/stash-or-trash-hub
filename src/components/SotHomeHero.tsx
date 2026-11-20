@@ -443,33 +443,31 @@ export function SotHomeHero() {
   return (
     <section
       suppressHydrationWarning
-      className="relative isolate overflow-hidden border-b-2 border-[#d6a928]/30 bg-white text-slate-950"
+      className="relative isolate overflow-hidden border-b border-slate-200 bg-white text-slate-950 pb-20 sm:pb-8"
     >
-      {/* Split-screen brand watermark: chaotic/colliding falling SOrT Krugerrands left vs uniform falling Option A Trash Cans right */}
+      {/* Subtle perimeter ambient atmosphere (clear center behind typography & Verdict Stage) */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-        {/* Reduced-motion fallback static watermark tile on Left Half (identical scatter aesthetic) */}
+        {/* Reduced-motion fallback subtle edge watermark */}
         <div
-          className="hidden motion-reduce:block absolute inset-y-0 left-0 w-1/2 opacity-40 sm:opacity-50"
+          className="hidden motion-reduce:block absolute inset-y-0 left-0 w-1/2 opacity-[0.07]"
           style={{
             backgroundImage: `url(${coinsWatermark})`,
             backgroundSize: "140px 140px",
             backgroundRepeat: "repeat",
-            filter: "sepia(0.28) saturate(1.85) hue-rotate(6deg) contrast(1.12) brightness(0.98)",
-            maskImage: "linear-gradient(to right, black 70%, transparent 100%)",
-            WebkitMaskImage: "linear-gradient(to right, black 70%, transparent 100%)",
+            maskImage: "radial-gradient(ellipse at 0% 45%, black 15%, transparent 65%)",
+            WebkitMaskImage: "radial-gradient(ellipse at 0% 45%, black 15%, transparent 65%)",
           }}
         />
 
-        {/* Left Half: Realistic Non-Uniform Falling SOrT Gold Krugerrands across the entire section height */}
+        {/* Subtle Left Edge Falling SOrT Coins (Strictly Peripheral Accent) */}
         <div
-          className="motion-reduce:hidden absolute inset-y-0 left-0 w-1/2 overflow-hidden opacity-[0.46] sm:opacity-[0.58] [perspective:900px]"
+          className="motion-reduce:hidden absolute inset-y-0 left-0 w-1/2 overflow-hidden opacity-[0.12] sm:opacity-[0.16] [perspective:900px]"
           style={{
-            filter:
-              "sepia(0.28) saturate(1.85) hue-rotate(6deg) contrast(1.12) brightness(0.98) drop-shadow(0 3px 6px rgba(180,130,20,0.3))",
+            filter: "sepia(0.22) saturate(1.4) contrast(1.06)",
             maskImage:
-              "linear-gradient(to right, black 72%, rgba(0, 0, 0, 0.45) 88%, transparent 100%)",
+              "radial-gradient(ellipse at 5% 50%, black 10%, rgba(0, 0, 0, 0.35) 38%, transparent 72%)",
             WebkitMaskImage:
-              "linear-gradient(to right, black 72%, rgba(0, 0, 0, 0.45) 88%, transparent 100%)",
+              "radial-gradient(ellipse at 5% 50%, black 10%, rgba(0, 0, 0, 0.35) 38%, transparent 72%)",
           }}
         >
           {COIN_SKY_BANDS.map((band) => (
@@ -498,54 +496,55 @@ export function SotHomeHero() {
           ))}
         </div>
 
-        {/* Right Half: Uniform Falling Option A Vintage Trash Cans Watermark */}
+        {/* Subtle Right Edge Bins Watermark (Strictly Peripheral Accent) */}
         <div
-          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-[0.14] sm:opacity-20"
+          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-[0.04] sm:opacity-[0.06]"
           style={{
             backgroundImage: `url(${binsWatermark})`,
             backgroundSize: "188px 188px",
             backgroundRepeat: "repeat",
-            maskImage: "linear-gradient(to left, black 65%, transparent 100%)",
-            WebkitMaskImage: "linear-gradient(to left, black 65%, transparent 100%)",
+            maskImage:
+              "radial-gradient(ellipse at 95% 50%, black 10%, rgba(0, 0, 0, 0.3) 38%, transparent 72%)",
+            WebkitMaskImage:
+              "radial-gradient(ellipse at 95% 50%, black 10%, rgba(0, 0, 0, 0.3) 38%, transparent 72%)",
           }}
         />
-        {/* Subtle split-screen atmospheric ambient tones */}
-        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-amber-100/20 via-amber-50/10 to-transparent pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-slate-200/25 via-slate-100/10 to-transparent pointer-events-none" />
+        {/* Gentle editorial split glow */}
+        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-amber-50/45 via-amber-50/15 to-transparent pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-slate-100/55 via-slate-50/20 to-transparent pointer-events-none" />
       </div>
 
-      <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:py-16">
-        {/* Top Header Text: Signature Black & Gold Two-Tone Contrast */}
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:gap-10 sm:px-6 lg:py-12">
+        {/* Top Header Text: Crisp Editorial Kicker + Signature Black & Gold Contrast */}
         <div className="mx-auto max-w-3xl text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#d6a928]/50 bg-slate-950 px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.18em] text-[#f5d061] shadow-sm">
-            <Coins className="h-3.5 w-3.5 text-[#d6a928]" aria-hidden="true" />
-            <span>{t("hero.badge", { defaultValue: "The Brand Barometer" })}</span>
-          </div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#b88914]">
+            {t("hero.badge", { defaultValue: "The Brand Barometer" })}
+          </p>
 
-          <h1 className="mt-5 font-display text-4xl font-black tracking-tight sm:text-6xl leading-[1.08]">
+          <h1 className="mt-3 font-display text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl leading-[1.08]">
             <span className="block text-slate-950">
               {t("hero.headlineBlack", { defaultValue: "Keep what serves you." })}
             </span>
-            <span className="mt-1 block text-[#d6a928] drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]">
+            <span className="mt-1 block text-[#d6a928]">
               {t("hero.headlineGold", { defaultValue: "Challenge what does not." })}
             </span>
           </h1>
 
-          <p className="mx-auto mt-4 max-w-2xl text-base font-bold leading-7 text-slate-900 sm:text-lg">
+          <p className="mx-auto mt-3.5 max-w-2xl text-sm font-semibold leading-6 text-slate-800 sm:text-base">
             {t("hero.subtitle", {
               defaultValue:
                 "Vote Stash or Trash on your real brand experiences — the CX & PR signal that matters.",
             })}
           </p>
-          <p className="mx-auto mt-1.5 max-w-xl text-sm font-medium leading-6 text-slate-600 sm:text-base">
+          <p className="mx-auto mt-1 max-w-xl text-xs font-medium leading-5 text-slate-500 sm:text-sm">
             {t("hero.tagline", {
               defaultValue:
-                "Every verdict brings brands closer to the people they serve. Cast yours. 🔥",
+                "Every verdict brings brands closer to the people they serve. Cast yours.",
             })}
           </p>
         </div>
 
-        {/* Hero Interactive Objects: Always Side-by-Side on Mobile AND Desktop (Coin Left & Bin Right), NO surface planes */}
+        {/* Unified SOT Verdict Stage: Coin (Left) & Bin (Right) Anchored on Shared Barometer Card */}
         <HeroInteractiveStage
           activeObject={activeObject}
           setActiveObject={setActiveObject}
@@ -558,7 +557,7 @@ export function SotHomeHero() {
 
         {/* Transition Toast when clicked */}
         {statusMessage && (
-          <div className="mx-auto flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-xs font-bold text-white shadow-lg animate-in fade-in slide-in-from-bottom-2">
+          <div className="mx-auto flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-2 text-xs font-bold text-white shadow-lg animate-in fade-in slide-in-from-bottom-2">
             <Sparkles className="h-4 w-4 text-[#d6a928]" />
             <span>{statusMessage}</span>
           </div>

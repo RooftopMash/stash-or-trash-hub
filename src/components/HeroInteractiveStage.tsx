@@ -36,23 +36,26 @@ export function HeroInteractiveStage({
 }: HeroInteractiveStageProps) {
   const { t } = useTranslation();
 
+  // Live Barometer Split connecting Coin (Stash) & Bin (Trash)
+  const totalVotes = Math.max(1, totalStashes + totalTrashes);
+  const stashPct = Math.round((totalStashes / totalVotes) * 100);
+  const trashPct = 100 - stashPct;
+
   // =========================================================================
   // 1. SOrT KRUGERRAND COIN: True 3D World-Y Vertical Spin -> Euler Cone -> Flat
-  //    Uses rotateX(camPitch) -> translateY(dropY) -> rotateY(phi) -> rotateX(leanDeg) -> rotateZ(psi)
-  //    So phi ALWAYS spins cleanly around vertical world Y (zero pinwheel twist!)
   // =========================================================================
-  const COIN_SIZE = 196;
+  const COIN_SIZE = 188;
   const COIN_RADIUS = COIN_SIZE / 2;
   const COIN_THICKNESS = 10;
   const halfT = COIN_THICKNESS / 2;
   const rimSlices = useMemo(() => Array.from({ length: COIN_THICKNESS - 1 }, (_, i) => i + 1), []);
 
   const [coinPose, setCoinPose] = useState({
-    phi: 0, // vertical Y-axis spin / Euler cone precession (deg)
-    leanDeg: 0, // 0deg = dead 90deg perpendicular upright, 90deg = flat horizontal on table
-    psi: 0, // no-slip counter-rotation as coin leans into cone (+sin(lean)*dPhi)
-    camPitch: 0, // 0deg straight-on at idle -> -20deg elevated view as coin cones & lies flat
-    dropY: 0, // lowers center smoothly onto bottom rim height as coin settles flat
+    phi: 0,
+    leanDeg: 0,
+    psi: 0,
+    camPitch: 0,
+    dropY: 0,
     glintX: -120,
     glintOpacity: 0,
     shadowScaleX: 0.92,
@@ -95,23 +98,19 @@ export function HeroInteractiveStage({
         const progress = Math.min(1, (now - startTime) / totalDuration);
 
         if (progress < 0.38) {
-          // Phase 1: Pure 90deg upright vertical spin around world Y (initial ~3 full spins)
           const u = progress / 0.38;
-          leanDeg = 4 * Math.pow(u, 4); // Holds strictly upright before leaning begins
+          leanDeg = 4 * Math.pow(u, 4);
           const omegaPhi = 1140 - 380 * u;
           phi += omegaPhi * dt;
         } else if (progress < 0.88) {
-          // Phase 2: Realistic Euler's Disk cone while rolling rim buzzes faster
           const u = (progress - 0.38) / 0.5;
-          leanDeg = 4 + 84.5 * Math.pow(u, 0.82); // 4deg upright -> 88.5deg nearly table-flat
+          leanDeg = 4 + 84.5 * Math.pow(u, 0.82);
           const speedUp = 720 + 1380 * Math.pow(Math.min(1, u / 0.9), 1.15);
           const tailBrake = u > 0.9 ? 1 - ((u - 0.9) / 0.1) * 0.45 : 1;
           const dPhi = speedUp * tailBrake * dt;
           phi += dPhi;
-          // Exact no-slip counter-rotation cancels out planar twist as lean reaches 90deg
           psi += Math.sin((leanDeg * Math.PI) / 180) * dPhi;
         } else {
-          // Phase 3: Settling dead 90deg-lean (0deg flat) with SOrT aligned neatly forward
           const w = (progress - 0.88) / 0.12;
           if (lockedNetStart === null) {
             lockedNetStart = phi - psi;
@@ -221,13 +220,10 @@ export function HeroInteractiveStage({
   const fillPct = Math.round((windowTrashCount / activeWindowMeta.capacity) * 100);
   const isOverflowing = fillRatio >= 1;
 
-  // Inner trash pile height synced cleanly to selected timeframe's Trash volume
   const pileTranslateY =
     fillRatio <= 0 ? 22 : Math.max(-2, 18.5 - Math.min(1.05, fillRatio) * 18.5);
   const pileScaleX = 0.9 + Math.min(1, fillRatio) * 0.1;
 
-  // Steel lid sits straight & flush (0deg, 0px shift) until volume reaches high fill / overflow,
-  // lifting cleanly vertically on fill or tilting open only when hovered/tapped.
   const lidOpenState = activeObject === "bin" || lidHovered || droppingParcel;
   const lidLiftY = droppingParcel
     ? -18
@@ -258,11 +254,61 @@ export function HeroInteractiveStage({
   };
 
   return (
-    <div className="flex min-h-[225px] items-center justify-center sm:min-h-[355px]">
-      {/* Strictly Side-by-Side (grid-cols-2) on BOTH Mobile and Desktop */}
-      <div className="mx-auto grid w-full max-w-4xl grid-cols-2 items-end gap-2 sm:gap-8">
-        {/* LEFT COLUMN: SOrT 22k Gold Krugerrand Coin (STASH) — NO surface plane underneath */}
-        <div className="group relative flex flex-col items-center p-1 sm:p-4">
+    <div
+      data-testid="sot-verdict-stage"
+      className="mx-auto w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+    >
+      {/* Unified Barometer Scale Bridge directly linking Coin (Stash) and Bin (Trash) */}
+      <div className="border-b border-slate-200 bg-slate-50/70 px-4 py-3 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold sm:text-xs">
+          <div className="flex items-center gap-2 text-amber-900">
+            <Coins className="h-3.5 w-3.5 text-[#d6a928]" aria-hidden="true" />
+            <span className="tabular-nums">
+              {stashPct}% {t("vote.stash", { defaultValue: "Stash" })}
+            </span>
+            <span aria-hidden="true" className="text-slate-300">
+              ·
+            </span>
+            <span className="font-medium text-slate-500 hidden sm:inline">
+              {t("hero.stashScaleLabel", { defaultValue: "Keep what serves you" })}
+            </span>
+          </div>
+
+          <span className="text-[11px] font-semibold text-slate-500 tabular-nums hidden md:inline">
+            {totalVotes.toLocaleString()}{" "}
+            {t("hero.realPeopleVerdicts", { defaultValue: "Community Verdicts" })}
+          </span>
+
+          <div className="flex items-center gap-2 text-slate-900">
+            <span className="font-medium text-slate-500 hidden sm:inline">
+              {t("hero.trashScaleLabel", { defaultValue: "Challenge what fails" })}
+            </span>
+            <span aria-hidden="true" className="text-slate-300 hidden sm:inline">
+              ·
+            </span>
+            <span className="tabular-nums">
+              {trashPct}% {t("vote.trash", { defaultValue: "Trash" })}
+            </span>
+            <Recycle className="h-3.5 w-3.5 text-rose-600" aria-hidden="true" />
+          </div>
+        </div>
+
+        <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-slate-200">
+          <div
+            className="bg-gradient-to-r from-[#f5d061] to-[#d6a928] transition-all duration-700"
+            style={{ width: `${stashPct}%` }}
+          />
+          <div
+            className="bg-gradient-to-r from-slate-700 to-slate-950 transition-all duration-700"
+            style={{ width: `${trashPct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Symmetrical Split Stage: Grounded Horizon Pedestal for Coin & Bin */}
+      <div className="grid grid-cols-2 items-stretch divide-x divide-slate-200/80">
+        {/* LEFT HALF: SOrT 22k Gold Krugerrand Coin (STASH) */}
+        <div className="group relative flex flex-col justify-between bg-gradient-to-b from-[#fffdf7] via-white to-[#fdf5dc]/60">
           <VerdictSuccess
             active={activeObject === "coin"}
             inline
@@ -271,6 +317,15 @@ export function HeroInteractiveStage({
               defaultValue: "Keep what serves you · Gold standard",
             })}
           />
+
+          {/* Stage Label */}
+          <div className="px-3 pt-3 text-center sm:px-6 sm:pt-4">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-amber-800 sm:text-xs">
+              {t("hero.stashSideTitle", { defaultValue: "Stash · Gold Standard" })}
+            </p>
+          </div>
+
+          {/* Grounded Interactive Coin Canvas */}
           <button
             type="button"
             aria-label={t("feed.stashesOfDay", { defaultValue: "Stashes of the Day" })}
@@ -284,13 +339,13 @@ export function HeroInteractiveStage({
                 runEulerSpin(950);
               }
             }}
-            className="relative flex w-full cursor-pointer flex-col items-center justify-center rounded-2xl p-1 sm:p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6a928]"
+            className="relative flex w-full cursor-pointer flex-col items-center justify-end px-2 pt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d6a928]"
           >
-            <div className="relative flex h-40 w-full items-center justify-center sm:h-68 [perspective:1050px]">
-              {/* Soft floating contact shadow ONLY (no surface plane / box underneath) */}
+            <div className="relative flex h-40 w-full items-end justify-center pb-3 sm:h-60 sm:pb-4 [perspective:1050px]">
+              {/* Grounded elliptical contact shadow resting directly on the pedestal surface */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute bottom-2 sm:bottom-3 h-4 sm:h-6 w-24 sm:w-44 rounded-full bg-slate-950/28 blur-md transition-transform duration-100"
+                className="pointer-events-none absolute bottom-2 sm:bottom-3 h-4 sm:h-5 w-24 sm:w-40 rounded-full bg-amber-950/25 blur-md transition-transform duration-100"
                 style={{
                   transform: `scale(${coinPose.shadowScaleX}, ${coinPose.shadowScaleY})`,
                 }}
@@ -299,13 +354,13 @@ export function HeroInteractiveStage({
               {/* 3D Milled SOrT Krugerrand Coin */}
               <div
                 className={cn(
-                  "origin-center transition-transform duration-200",
+                  "origin-bottom transition-transform duration-200",
                   !coinSpinning && "sot-coin-art group-hover:scale-105",
                 )}
                 style={{ transformStyle: "preserve-3d" }}
               >
                 <div
-                  className="scale-[0.62] sm:scale-100"
+                  className="origin-bottom scale-[0.66] sm:scale-100"
                   style={{ transformStyle: "preserve-3d" }}
                 >
                   <div
@@ -324,7 +379,6 @@ export function HeroInteractiveStage({
                         transform: `rotateY(${coinPose.phi}deg) rotateX(${coinPose.leanDeg}deg) rotateZ(${coinPose.psi}deg)`,
                       }}
                     >
-                      {/* Solid 22k Copper-Gold Milled Edge Slices */}
                       {rimSlices.map((idx) => {
                         const zOffset = halfT - idx;
                         return (
@@ -343,7 +397,6 @@ export function HeroInteractiveStage({
                         );
                       })}
 
-                      {/* Reverse / Back Gold Face */}
                       <div
                         aria-hidden="true"
                         className="pointer-events-none absolute inset-[2%] overflow-hidden rounded-full border-2 border-[#b4831a]"
@@ -361,7 +414,6 @@ export function HeroInteractiveStage({
                         />
                       </div>
 
-                      {/* Specular Light Glint Across Face During Spin */}
                       {coinPose.glintOpacity > 0 ? (
                         <div
                           aria-hidden="true"
@@ -378,7 +430,6 @@ export function HeroInteractiveStage({
                         </div>
                       ) : null}
 
-                      {/* Front Obverse SOrT $ Krugerrand Face */}
                       <img
                         src={coinIcon}
                         alt="SOrT 22k Gold Krugerrand Coin"
@@ -402,34 +453,47 @@ export function HeroInteractiveStage({
             </span>
           </button>
 
-          <div className="mt-1.5 sm:mt-3 flex w-full flex-col items-center gap-1 sm:gap-1.5 text-center">
-            <Link
-              to="/feed"
-              search={{ filter: "stash" }}
-              onClick={() =>
-                triggerVerdictSuccess({
-                  label: t("feed.stashesOfDay", { defaultValue: "STASHES OF THE DAY" }),
-                  sublabel: t("hero.stashesOfDaySub", {
-                    defaultValue: "Keep what serves you · Community Gold Standard",
-                  }),
-                })
-              }
-              className="inline-flex w-full items-center justify-center gap-1 sm:gap-2 rounded-full border-2 border-slate-950 bg-[#d6a928] px-2 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-950 shadow-[0_4px_18px_rgba(214,169,40,0.28)] transition hover:brightness-105"
-            >
-              <Coins className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-              <span className="truncate">
-                {t("feed.stashesOfDay", { defaultValue: "Stashes" })} ({totalStashes})
-              </span>
-              <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 hidden sm:inline" />
-            </Link>
-            <p className="text-[10px] sm:text-xs font-bold text-slate-700 hidden sm:block">
-              {t("hero.tapCoin", { defaultValue: "Tap coin to spin & view Stashes" })}
-            </p>
+          {/* Architectural Horizon Pedestal Shelf + Baseline-Aligned CTA */}
+          <div className="border-t border-amber-200/80 bg-gradient-to-b from-amber-50/75 to-white px-2.5 py-3 sm:px-6 sm:py-4">
+            <div className="flex min-h-[28px] items-center justify-center text-center">
+              <p className="text-[11px] font-medium text-slate-600 sm:text-xs">
+                {t("hero.tapCoin", { defaultValue: "Tap coin to spin & view Stashes" })}
+              </p>
+            </div>
+            <div className="mt-2.5">
+              <Link
+                to="/feed"
+                search={{ filter: "stash" }}
+                onClick={() =>
+                  triggerVerdictSuccess({
+                    label: t("feed.stashesOfDay", { defaultValue: "STASHES OF THE DAY" }),
+                    sublabel: t("hero.stashesOfDaySub", {
+                      defaultValue: "Keep what serves you · Community Gold Standard",
+                    }),
+                  })
+                }
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-950 bg-[#d6a928] px-3 py-2.5 text-xs font-extrabold text-slate-950 shadow-xs transition hover:brightness-105 whitespace-nowrap sm:px-5 sm:text-sm"
+              >
+                <Coins className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+                <span className="tabular-nums">
+                  {t("vote.stash", { defaultValue: "Stash" })} ({totalStashes})
+                </span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 hidden sm:inline" />
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Option A Vintage Galvanized Trash Can (TRASH) — NO surface plane underneath */}
-        <div className="group relative flex flex-col items-center p-1 sm:p-4">
+        {/* RIGHT HALF: Option A Vintage Galvanized Trash Can (TRASH) */}
+        <div className="group relative flex flex-col justify-between bg-gradient-to-b from-slate-50/50 via-white to-slate-100/75">
+          {/* Stage Label */}
+          <div className="px-3 pt-3 text-center sm:px-6 sm:pt-4">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-700 sm:text-xs">
+              {t("hero.trashSideTitle", { defaultValue: "Trash · Accountability Bin" })}
+            </p>
+          </div>
+
+          {/* Grounded Interactive Galvanized Bin Canvas */}
           <button
             type="button"
             aria-label={t("hero.slamTrashAria", {
@@ -444,25 +508,25 @@ export function HeroInteractiveStage({
               }
             }}
             onMouseLeave={() => setLidHovered(false)}
-            className="relative flex w-full cursor-pointer flex-col items-center justify-center rounded-2xl p-1 sm:p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+            className="relative flex w-full cursor-pointer flex-col items-center justify-end px-2 pt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-900"
           >
             <div
               className={cn(
-                "relative flex h-40 w-full items-center justify-center sm:h-68 transition-transform duration-150",
+                "relative flex h-40 w-full items-end justify-center pb-3 sm:h-60 sm:pb-4 transition-transform duration-150",
                 binSlamming && "translate-y-1 scale-x-[1.03] scale-y-[0.97]",
               )}
             >
-              {/* Soft grounded elliptical contact shadow ONLY (no rectangular floor plane) */}
+              {/* Grounded elliptical contact shadow resting on matching pedestal horizon */}
               <div
                 aria-hidden="true"
                 className={cn(
-                  "sot-bin-shadow pointer-events-none absolute bottom-2 sm:bottom-3 h-4 sm:h-6 w-24 sm:w-44 rounded-full bg-slate-950/30 blur-md transition-transform duration-200",
+                  "sot-bin-shadow pointer-events-none absolute bottom-2 sm:bottom-3 h-4 sm:h-5 w-24 sm:w-40 rounded-full bg-slate-950/30 blur-md transition-transform duration-200",
                   (activeObject === "bin" || binSlamming) && "scale-x-110 opacity-45",
                 )}
               />
 
-              {/* Layered Progressive Option A Vintage Galvanized Can (Zero floor plane) */}
-              <div className="relative h-36 w-36 sm:h-64 sm:w-64">
+              {/* Layered Progressive Option A Vintage Galvanized Can */}
+              <div className="relative h-36 w-36 sm:h-52 sm:w-52">
                 {/* Crumpled trash dropping inside on click */}
                 <div
                   aria-hidden="true"
@@ -524,25 +588,13 @@ export function HeroInteractiveStage({
             </span>
           </button>
 
-          <div className="mt-1.5 sm:mt-3 flex w-full flex-col items-center gap-1 sm:gap-1.5 text-center">
-            <Link
-              to="/feed"
-              search={{ filter: "trash" }}
-              className="inline-flex w-full items-center justify-center gap-1 sm:gap-2 rounded-full bg-slate-900 px-2 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider text-white shadow-sm transition hover:bg-slate-800"
-            >
-              <Recycle className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-              <span className="truncate">
-                {t("feed.trashesOfDay", { defaultValue: "Trashes" })} ({totalTrashes})
-              </span>
-              <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 hidden sm:inline" />
-            </Link>
-
-            {/* Compact timeframe selector driving the Option A bin pile & lid height live */}
-            <div className="flex flex-wrap items-center justify-center gap-1.5">
+          {/* Architectural Horizon Pedestal Shelf + Baseline-Aligned CTA */}
+          <div className="border-t border-slate-200 bg-gradient-to-b from-slate-100/80 to-white px-2.5 py-3 sm:px-6 sm:py-4">
+            <div className="flex min-h-[28px] flex-wrap items-center justify-center gap-1.5">
               <div
                 role="group"
                 aria-label="Choose Trash timeframe volume"
-                className="inline-flex items-center rounded-full border border-slate-200 bg-white/90 p-0.5 text-[9px] sm:text-[10px] font-bold"
+                className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5 text-[10px] font-bold sm:text-[11px]"
               >
                 {(["hour", "day", "week"] as const).map((w) => (
                   <button
@@ -550,7 +602,7 @@ export function HeroInteractiveStage({
                     type="button"
                     onClick={() => setTrashWindow(w)}
                     className={cn(
-                      "rounded-full px-1.5 sm:px-2 py-0.5 cursor-pointer transition-colors",
+                      "rounded-md px-1.5 sm:px-2.5 py-0.5 cursor-pointer transition-colors whitespace-nowrap",
                       trashWindow === w
                         ? "bg-rose-600 text-white"
                         : "text-slate-600 hover:text-slate-950",
@@ -562,12 +614,26 @@ export function HeroInteractiveStage({
               </div>
               <span
                 className={cn(
-                  "text-[9px] sm:text-[10px] font-extrabold",
-                  isOverflowing ? "text-rose-600" : "text-slate-500",
+                  "text-[10px] font-bold tabular-nums sm:text-[11px]",
+                  isOverflowing ? "text-rose-600" : "text-slate-600",
                 )}
               >
-                {fillPct}%{isOverflowing ? " · Overflow" : ""}
+                {fillPct}%{isOverflowing ? " · Full" : ""}
               </span>
+            </div>
+
+            <div className="mt-2.5">
+              <Link
+                to="/feed"
+                search={{ filter: "trash" }}
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-extrabold text-white shadow-xs transition hover:bg-slate-800 whitespace-nowrap sm:px-5 sm:text-sm"
+              >
+                <Recycle className="h-3.5 w-3.5 shrink-0 text-rose-400 sm:h-4 sm:w-4" />
+                <span className="tabular-nums">
+                  {t("vote.trash", { defaultValue: "Trash" })} ({totalTrashes})
+                </span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 hidden sm:inline" />
+              </Link>
             </div>
           </div>
         </div>
