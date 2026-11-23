@@ -255,22 +255,23 @@ const BASE_CHAOTIC_COINS: FallingCoinSpec[] = [
   },
 ];
 
-// Keep 7 distinct falling coins (horizontal, erratic tumblers, collision pair) across 4 staggered bands = 28 DOM nodes (down from 660!)
-const CHAOTIC_FALLING_COINS: FallingCoinSpec[] = [
-  { id: "h-1", leftPct: 8, sizePx: 22, animationName: "sot-fall-coin-horiz-cw", durationSec: 9.8, delaySec: -1.7, opacity: 0.95 },
-  { id: "h-2", leftPct: 68, sizePx: 19, animationName: "sot-fall-coin-horiz-ccw", durationSec: 8.9, delaySec: -4.9, opacity: 0.92 },
-  { id: "e-1", leftPct: 44, sizePx: 18, animationName: "sot-fall-coin-erratic-a", durationSec: 9.4, delaySec: -6.2, opacity: 0.88 },
-  { id: "e-2", leftPct: 24, sizePx: 23, animationName: "sot-fall-coin-erratic-b", durationSec: 11.4, delaySec: -3.4, opacity: 0.96 },
-  { id: "e-3", leftPct: 84, sizePx: 18, animationName: "sot-fall-coin-erratic-c", durationSec: 8.3, delaySec: -1.1, opacity: 0.88 },
-  { id: "c1-l", leftPct: 32, sizePx: 21, animationName: "sot-fall-collide-1-left", durationSec: 9.2, delaySec: -2.1, opacity: 0.98 },
-  { id: "c1-r", leftPct: 38, sizePx: 20, animationName: "sot-fall-collide-1-right", durationSec: 9.2, delaySec: -2.1, opacity: 0.98 },
-];
-
+// Full 22 chaotic falling trajectories (6 horizontal spinners, 12 erratic 3D tumblers, 2 mid-air collision pairs)
+// across 14 staggered sky bands = 308 live 3D coins layered over 2 GPU-composited coin rain layers (~660+ visual coins total).
 const COIN_SKY_BANDS = [
-  { id: "band-top", topPct: -10, phaseShiftSec: -4.2, shiftPct: 3 },
-  { id: "band-mid1", topPct: 18, phaseShiftSec: -1.6, shiftPct: -4 },
-  { id: "band-mid2", topPct: 48, phaseShiftSec: -5.1, shiftPct: 5 },
-  { id: "band-low", topPct: 76, phaseShiftSec: -2.8, shiftPct: -3 },
+  { id: "band-1", topPct: -14, phaseShiftSec: -0.9, shiftPct: 2 },
+  { id: "band-2", topPct: -6, phaseShiftSec: -5.4, shiftPct: -5 },
+  { id: "band-3", topPct: 2, phaseShiftSec: -2.7, shiftPct: 4 },
+  { id: "band-4", topPct: 10, phaseShiftSec: -7.1, shiftPct: -3 },
+  { id: "band-5", topPct: 18, phaseShiftSec: -1.8, shiftPct: 6 },
+  { id: "band-6", topPct: 26, phaseShiftSec: -6.3, shiftPct: -4 },
+  { id: "band-7", topPct: 34, phaseShiftSec: -3.5, shiftPct: 3 },
+  { id: "band-8", topPct: 42, phaseShiftSec: -8.2, shiftPct: -6 },
+  { id: "band-9", topPct: 50, phaseShiftSec: -2.1, shiftPct: 5 },
+  { id: "band-10", topPct: 58, phaseShiftSec: -4.9, shiftPct: -2 },
+  { id: "band-11", topPct: 66, phaseShiftSec: -7.6, shiftPct: 4 },
+  { id: "band-12", topPct: 74, phaseShiftSec: -1.3, shiftPct: -5 },
+  { id: "band-13", topPct: 82, phaseShiftSec: -5.8, shiftPct: 3 },
+  { id: "band-14", topPct: 90, phaseShiftSec: -3.2, shiftPct: -4 },
 ];
 
 const cascade = [
@@ -429,40 +430,60 @@ export function SotHomeHero() {
           }}
         />
 
-        {/* Left Half: Live Falling 3D SOrT Gold Coins */}
+        {/* Left Half: Dense Multi-Depth Falling 3D SOrT Gold Coins */}
         <div
-          className="motion-reduce:hidden absolute inset-y-0 left-0 w-1/2 overflow-hidden opacity-[0.42] sm:opacity-[0.5] [perspective:900px]"
+          className="motion-reduce:hidden absolute inset-y-0 left-0 w-1/2 overflow-hidden opacity-[0.46] sm:opacity-[0.56] [perspective:900px]"
           style={{
             filter: "sepia(0.22) saturate(1.45) contrast(1.06)",
           }}
         >
+          {/* Seamless GPU-composited coin depth rain layers */}
+          <div
+            className="sot-watermark-rain-coins-mid absolute inset-x-0 -top-[210px] bottom-0 opacity-45"
+            style={{
+              backgroundImage: `url(${coinsWatermark})`,
+              backgroundSize: "210px 210px",
+              backgroundRepeat: "repeat",
+            }}
+          />
+          <div
+            className="sot-watermark-rain-coins absolute inset-x-0 -top-[140px] bottom-0 opacity-55"
+            style={{
+              backgroundImage: `url(${coinsWatermark})`,
+              backgroundSize: "140px 140px",
+              backgroundRepeat: "repeat",
+              backgroundPosition: "35px 0px",
+            }}
+          />
+
+          {/* 308 live 3D tumbling, horizontal-spinning, and mid-air colliding coins */}
           {COIN_SKY_BANDS.map((band) => (
             <div key={band.id} className="absolute inset-x-0" style={{ top: `${band.topPct}%` }}>
-              {CHAOTIC_FALLING_COINS.map((coin) => {
-                const shiftedLeft = Math.max(3, Math.min(93, coin.leftPct + band.shiftPct));
+              {BASE_CHAOTIC_COINS.map((coin) => {
+                const shiftedLeft = Math.max(2, Math.min(94, coin.leftPct + band.shiftPct));
                 return (
-                    <img
-                      key={`${band.id}-${coin.id}`}
-                      src={coinIcon}
-                      alt=""
-                      aria-hidden="true"
-                      width={coin.sizePx}
-                      height={coin.sizePx}
-                      decoding="async"
-                      className="sot-falling-coin-item absolute top-0 select-none"
-                      style={{
-                        left: `${shiftedLeft}%`,
-                        width: `${coin.sizePx}px`,
-                        height: `${coin.sizePx}px`,
-                        opacity: coin.opacity,
-                        animation: `${coin.animationName} ${coin.durationSec}s linear ${coin.delaySec + band.phaseShiftSec}s infinite`,
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
+                  <img
+                    key={`${band.id}-${coin.id}`}
+                    src={coinIcon}
+                    alt=""
+                    aria-hidden="true"
+                    width={coin.sizePx}
+                    height={coin.sizePx}
+                    decoding="async"
+                    className="sot-falling-coin-item absolute top-0 select-none"
+                    style={{
+                      left: `${shiftedLeft}%`,
+                      width: `${coin.sizePx}px`,
+                      height: `${coin.sizePx}px`,
+                      opacity: coin.opacity,
+                      animation: `${coin.animationName} ${coin.durationSec}s linear ${coin.delaySec + band.phaseShiftSec}s infinite`,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
 
           {/* Right Half: Steel Trash Can Watermark Rain (GPU-composited translate3d layer) */}
           <div className="absolute inset-y-0 right-0 w-1/2 overflow-hidden opacity-[0.18] sm:opacity-[0.24]">

@@ -592,10 +592,22 @@
 
 @keyframes sot-rain-falling-coins {
   0% {
-    transform: translate3d(0, -140px, 0);
+    transform: translate3d(0, 0, 0);
   }
   100% {
+    transform: translate3d(0, 140px, 0);
+  }
+}
+
+@keyframes sot-rain-falling-coins-mid {
+  0% {
     transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-3px, 105px, 0);
+  }
+  100% {
+    transform: translate3d(0, 210px, 0);
   }
 }
 
@@ -622,9 +634,15 @@
 }
 
 .sot-watermark-rain-coins {
-  animation: sot-rain-falling-coins 16s linear infinite;
+  animation: sot-rain-falling-coins 13s linear infinite;
   will-change: transform;
   filter: drop-shadow(0 4px 10px rgba(214, 169, 40, 0.25)) brightness(1.02);
+}
+
+.sot-watermark-rain-coins-mid {
+  animation: sot-rain-falling-coins-mid 19s linear infinite;
+  will-change: transform;
+  filter: drop-shadow(0 3px 8px rgba(214, 169, 40, 0.22));
 }
 
 /* =========================================================================
