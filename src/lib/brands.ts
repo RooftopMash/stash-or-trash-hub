@@ -1,7 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { BUCKET, signImages } from "@/lib/stash";
 import { INTERNATIONAL_SEED_BRANDS, SOUTH_AFRICAN_SEED_BRANDS } from "@/lib/seed-brands";
-import { createFirestoreBrand, getFirestoreBrands } from "@/services/firestoreService";
+import {
+  castFirestoreBrandVote,
+  createFirestoreBrand,
+  getFirestoreBrands,
+  getFirestoreBrandVotes,
+} from "@/services/firestoreService";
 import { getLocalImportedBrands } from "@/lib/wikidata-import";
 
 export type Brand = {
@@ -654,7 +659,6 @@ export async function fetchBrandStats(brandId: string): Promise<BrandStats> {
   let fsStash = 0;
   let fsTrash = 0;
   try {
-    const { getFirestoreBrandVotes } = await import("@/services/firestoreService");
     const fsVotes = await getFirestoreBrandVotes(brandId);
     fsStash = fsVotes.filter((v) => v.voteType === "stash").length;
     fsTrash = fsVotes.filter((v) => v.voteType === "trash").length;
@@ -740,7 +744,6 @@ export async function fetchBrandVerdict(
   const stats = await fetchBrandStats(brandId);
   let myVerdict: "stash" | "trash" | null = null;
   try {
-    const { getFirestoreBrandVotes } = await import("@/services/firestoreService");
     const votes = await getFirestoreBrandVotes(brandId);
     if (userId) {
       const found = votes.find((v) => v.userId === userId);
@@ -763,7 +766,6 @@ export async function fetchBrandVerdict(
 export async function castBrandVote(brandId: string, userId: string, verdict: "stash" | "trash") {
   // Sync to Firestore
   try {
-    const { castFirestoreBrandVote } = await import("@/services/firestoreService");
     await castFirestoreBrandVote(brandId, userId, verdict);
   } catch (fsErr) {
     console.warn("Firestore vote sync note:", fsErr);

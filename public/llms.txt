@@ -1,22 +1,24 @@
-# SOT — Stash Or Trash | The Brand Barometer
+# SOrT — Stash Or Trash | The Brand Barometer
 
-> SOT (Stash Or Trash) is a modern Consumer Experience (CX) & Public Relations (PR) platform where real customers deliver live verdicts on brand experiences.
+> SOrT (Stash Or Trash) is the live Consumer Experience (CX) & Public Accountability Brand Barometer where real customers cast receipt- and scan-backed verdicts on brands worldwide.
 
 ## Core Services & Features
-- **Brand Barometer**: Real-time crowd-sourced customer trust scores and ratings across verified retail, hospitality, tech, and FMCG brands.
-- **Stash vs Trash Verdicts**: Users vote "Stash" (commendation) or "Trash" (constructive criticism) based on verified real-world product and service experiences.
-- **Anti-Counterfeit & Packaging Scanner**: AI-assisted barcode, luxury logo, and optical inspection verifying product authenticity and tracing parent company ownership.
-- **Brand Suite & Resolution Desk**: Direct brand-to-consumer communication channels, allowing verified corporate teams to resolve issues, turnaround complaints, and build consumer trust.
-- **Awards & Milestones**: Monthly and annual recognition for top-performing brands maintaining high customer trust factors.
+- **Brand Barometer**: Real-time crowd-sourced customer trust ratings and Moody's-grade trust trajectories across retail, hospitality, financial, automotive, tech, and FMCG brands.
+- **Stash vs Trash Verdicts**: Consumers vote "Stash" (commendation) or "Trash" (constructive accountability callout) backed by proof.
+- **AI Authenticity & Barcode Scanner**: Barcode, SKU, batch, and optical packaging inspection to catch counterfeits and trace parent corporate ownership.
+- **Corporate Brand Command Suite**: Domain-verified corporate teams collaborate directly with customers, manage shift operators, and resolve escalations within SLA windows.
+- **Awards & Milestones**: Recognition for verified brands maintaining high customer trust factors.
 
 ## Key Public Routes
-- Homepage: https://stash-or-trash-hub.vercel.app/
-- Live Verdict Feed: https://stash-or-trash-hub.vercel.app/feed
-- Verified Brand Directory: https://stash-or-trash-hub.vercel.app/brands
-- AI Authenticity & Barcode Scanner: https://stash-or-trash-hub.vercel.app/scan
-- Brand Barometer Awards: https://stash-or-trash-hub.vercel.app/awards
+- [Homepage & Live Brand Barometer](https://stash-or-trash-hub.vercel.app/)
+- [Live Consumer Verdict Feed](https://stash-or-trash-hub.vercel.app/feed)
+- [Verified Global Brand Directory](https://stash-or-trash-hub.vercel.app/brands)
+- [AI Barcode & Authenticity Scanner](https://stash-or-trash-hub.vercel.app/scan)
+- [Discover Releases, Innovations & Collaborations](https://stash-or-trash-hub.vercel.app/discover)
+- [Brand Barometer Trust Awards](https://stash-or-trash-hub.vercel.app/awards)
+- [Privacy Policy](https://stash-or-trash-hub.vercel.app/privacy)
+- [Terms of Service](https://stash-or-trash-hub.vercel.app/terms)
 
-## Entity Structure
-- Organization Name: Stash Or Trash (SOT)
-- Primary Purpose: CX/PR Brand Barometer & Consumer Accountability Platform
+## Entity Details
+- Organization: Stash Or Trash (SOrT)
 - Supported Locales: English, Spanish, French, German, Portuguese, Zulu, Xhosa, Sesotho

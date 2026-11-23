@@ -769,7 +769,7 @@ function AssetCandidatesPage() {
 
                 {/* LAYER 1 (z-10): Empty Open Galvanized Barrel & Dark Interior */}
                 <img
-                  src="/assets/candidates/trash_can_a_open.png"
+                  src="/assets/candidates/trash_can_a_open.webp"
                   alt="Option A galvanized trash can interior and body"
                   referrerPolicy="no-referrer"
                   className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain drop-shadow-[0_10px_18px_rgba(15,23,42,0.28)] select-none"
@@ -777,7 +777,7 @@ function AssetCandidatesPage() {
 
                 {/* LAYER 2 (z-15): Progressive Rising Rubbish Heap Seated Inside Barrel */}
                 <img
-                  src="/assets/candidates/trash_can_a_pile.png"
+                  src="/assets/candidates/trash_can_a_pile.webp"
                   alt=""
                   aria-hidden="true"
                   referrerPolicy="no-referrer"
@@ -790,7 +790,7 @@ function AssetCandidatesPage() {
 
                 {/* LAYER 3 (z-20): Front Curved Steel Rim Lip Mask (Keeps Rising Trash Inside the Can) */}
                 <img
-                  src="/assets/candidates/trash_can_a_front_lip.png"
+                  src="/assets/candidates/trash_can_a_front_lip.webp"
                   alt=""
                   aria-hidden="true"
                   referrerPolicy="no-referrer"
@@ -799,7 +799,7 @@ function AssetCandidatesPage() {
 
                 {/* LAYER 4 (z-30): Domed Steel Lid Moving Simultaneously With Fill Ratio */}
                 <img
-                  src="/assets/candidates/trash_can_a_lid.png"
+                  src="/assets/candidates/trash_can_a_lid.webp"
                   alt="Option A galvanized steel domed lid"
                   referrerPolicy="no-referrer"
                   className="pointer-events-none absolute inset-0 z-30 h-full w-full object-contain select-none transition-all duration-300 ease-[cubic-bezier(0.34,1.45,0.64,1)]"
@@ -940,10 +940,10 @@ function AssetCandidatesPage() {
                   <img
                     src={
                       isOverflowing
-                        ? "/assets/candidates/trash_can_a_overflow.png"
+                        ? "/assets/candidates/trash_can_a_overflow.webp"
                         : fillRatio >= 0.45
-                          ? "/assets/candidates/trash_can_a_open.png"
-                          : "/assets/candidates/trash_can_a_closed.png"
+                          ? "/assets/candidates/trash_can_a_open.webp"
+                          : "/assets/candidates/trash_can_a_closed.webp"
                     }
                     alt="Option A trash small icon"
                     referrerPolicy="no-referrer"

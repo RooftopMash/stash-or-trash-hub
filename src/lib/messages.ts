@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
+import { getFirestoreUserProfile, sendFirestoreMessage } from "@/services/firestoreService";
 
 export type ChatMessage = {
   id: string;
@@ -222,7 +223,6 @@ export async function sendMessage(input: { senderId: string; recipientId: string
 
   // 1. Send via Firestore
   try {
-    const { sendFirestoreMessage } = await import("@/services/firestoreService");
     await sendFirestoreMessage(input.senderId, input.recipientId, trimmed);
     delivered = true;
   } catch (fsErr) {
@@ -288,7 +288,6 @@ export async function partnerName(partnerId: string): Promise<string> {
   }
 
   try {
-    const { getFirestoreUserProfile } = await import("@/services/firestoreService");
     const userDoc = await getFirestoreUserProfile(partnerId);
     if (userDoc?.displayName) return userDoc.displayName;
   } catch {

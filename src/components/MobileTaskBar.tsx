@@ -67,14 +67,20 @@ export function MobileTaskBar() {
         {/* 2. FEED: Stashes (Gold) or Trashes (Red) or All */}
         <Link
           to="/feed"
-          search={{ filter: filter === "trash" ? "trash" : "stash" }}
+          search={
+            filter === "trash"
+              ? { filter: "trash" }
+              : filter === "stash"
+                ? { filter: "stash" }
+                : undefined
+          }
           className={cn(
             "flex flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[10px] font-bold transition-all",
             isFeed
               ? filter === "trash"
-                ? "text-[#e34b4b] font-black scale-105"
-                : "text-[#b88c1b] font-black scale-105"
-              : "text-slate-500 hover:text-slate-800",
+                ? "text-[#c92a2a] font-black scale-105"
+                : "text-amber-900 font-black scale-105"
+              : "text-slate-600 hover:text-slate-900",
           )}
         >
           <div

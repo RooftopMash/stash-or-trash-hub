@@ -1,10 +1,8 @@
-import { getApp, getApps, initializeApp } from "firebase/app";
 import {
   FacebookAuthProvider,
   GoogleAuthProvider,
   OAuthProvider,
   TwitterAuthProvider,
-  getAuth,
   GithubAuthProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
@@ -15,29 +13,14 @@ import {
   setPersistence,
   browserLocalPersistence,
   type User,
-  type Auth,
 } from "firebase/auth";
-import appletConfig from "../../../firebase-applet-config.json";
+import { app as firebaseApp, auth as firebaseAuth } from "@/lib/firebase";
 
-const metaEnv = (typeof import.meta !== "undefined" && (import.meta as any).env) ? (import.meta as any).env : {};
-const config = {
-  apiKey: metaEnv.VITE_FIREBASE_API_KEY || appletConfig.apiKey,
-  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || appletConfig.authDomain,
-  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || appletConfig.projectId,
-  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || appletConfig.storageBucket,
-  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || appletConfig.messagingSenderId,
-  appId: metaEnv.VITE_FIREBASE_APP_ID || appletConfig.appId,
-};
-
-export const firebaseApp = getApps().length ? getApp() : initializeApp(config);
-export const firebaseAuth: Auth = getAuth(firebaseApp);
-
-if (typeof window !== "undefined") {
-  void setPersistence(firebaseAuth, browserLocalPersistence).catch(() => {});
-}
+export { firebaseApp, firebaseAuth };
 
 export {
   browserLocalPersistence,
+  setPersistence,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,

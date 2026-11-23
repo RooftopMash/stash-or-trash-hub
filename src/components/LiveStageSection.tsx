@@ -381,7 +381,7 @@ export function LiveStageSection({
                       size="sm"
                       onClick={() => void handleClaimPerk(session)}
                       className={cn(
-                        "h-8 px-3 text-xs font-black shrink-0",
+                        "h-8 px-3 text-xs font-black shrink-0 transition-none",
                         isClaimed
                           ? "bg-emerald-600 text-white hover:bg-emerald-500"
                           : "bg-[#d6a928] text-slate-950 hover:bg-[#e5b935]",

@@ -202,10 +202,8 @@ export default defineConfig({
         "@radix-ui/react-toggle",
         "@radix-ui/react-toggle-group",
         "@radix-ui/react-tooltip",
-        "@google/genai",
         "@zxing/library",
         "agora-rtc-sdk-ng",
-        "agora-token",
         "class-variance-authority",
         "clsx",
         "cmdk",
@@ -238,7 +236,7 @@ export default defineConfig({
       legalComments: "none",
     },
     build: {
-      sourcemap: false,
+      sourcemap: true,
       minify: true,
       chunkSizeWarningLimit: 2500,
       rollupOptions: {

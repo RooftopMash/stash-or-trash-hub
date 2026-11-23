@@ -297,7 +297,7 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
 
           <PWAInstallButton />
 
-          {loading ? null : user ? (
+          {!loading && user ? (
             <div className="flex shrink-0 items-center gap-1.5">
               <Button
                 variant="ghost"

@@ -592,39 +592,38 @@
 
 @keyframes sot-rain-falling-coins {
   0% {
-    background-position: 0px 0px;
+    transform: translate3d(0, -140px, 0);
   }
   100% {
-    background-position: 0px 140px;
+    transform: translate3d(0, 0, 0);
   }
 }
 
 /* =========================================================================
-   STEEL TRASH CAN FALLING WATERMARK ANIMATION
-   Mirrors the physical weight, brushed metallic specular reflections,
-   and subtle natural drift of the hero Steel Trash Can object.
+   STEEL TRASH CAN FALLING WATERMARK ANIMATION (GPU-Composited Transform)
+   Uses translate3d across an oversized tile layer so zero paint/layout occurs.
    ========================================================================= */
 @keyframes sot-rain-falling-bins {
   0% {
-    background-position: 0px 0px;
+    transform: translate3d(0, 0, 0);
   }
   25% {
-    background-position: 2px 35px;
+    transform: translate3d(2px, 47px, 0);
   }
   50% {
-    background-position: 0px 70px;
+    transform: translate3d(0, 94px, 0);
   }
   75% {
-    background-position: -2px 105px;
+    transform: translate3d(-2px, 141px, 0);
   }
   100% {
-    background-position: 0px 140px;
+    transform: translate3d(0, 188px, 0);
   }
 }
 
 .sot-watermark-rain-coins {
   animation: sot-rain-falling-coins 16s linear infinite;
-  will-change: background-position;
+  will-change: transform;
   filter: drop-shadow(0 4px 10px rgba(214, 169, 40, 0.25)) brightness(1.02);
 }
 
@@ -817,11 +816,12 @@
 .sot-falling-coin-item {
   transform-style: preserve-3d;
   backface-visibility: visible;
+  will-change: transform;
 }
 
 .sot-watermark-rain-bins {
   animation: sot-rain-falling-bins 18s ease-in-out infinite;
-  will-change: background-position, filter;
+  will-change: transform;
   /* Visual styling matching the Option A Vintage Galvanized Trash Can */
   filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.24)) contrast(1.08) brightness(0.99);
 }

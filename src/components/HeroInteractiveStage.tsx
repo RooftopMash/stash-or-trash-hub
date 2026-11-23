@@ -269,18 +269,18 @@ export function HeroInteractiveStage({
             <span aria-hidden="true" className="text-slate-300">
               ·
             </span>
-            <span className="font-medium text-slate-500 hidden sm:inline">
+            <span className="font-medium text-slate-600 hidden sm:inline">
               {t("hero.stashScaleLabel", { defaultValue: "Keep what serves you" })}
             </span>
           </div>
 
-          <span className="text-[11px] font-semibold text-slate-500 tabular-nums hidden md:inline">
+          <span className="text-[11px] font-semibold text-slate-600 tabular-nums hidden md:inline">
             {totalVotes.toLocaleString()}{" "}
             {t("hero.realPeopleVerdicts", { defaultValue: "Community Verdicts" })}
           </span>
 
           <div className="flex items-center gap-2 text-slate-900">
-            <span className="font-medium text-slate-500 hidden sm:inline">
+            <span className="font-medium text-slate-600 hidden sm:inline">
               {t("hero.trashScaleLabel", { defaultValue: "Challenge what fails" })}
             </span>
             <span aria-hidden="true" className="text-slate-300 hidden sm:inline">
@@ -320,7 +320,7 @@ export function HeroInteractiveStage({
 
           {/* Stage Label */}
           <div className="px-2 pt-3 text-center sm:px-6 sm:pt-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-800 whitespace-nowrap sm:text-xs">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-900 whitespace-nowrap sm:text-xs">
               {t("hero.stashSideTitle", { defaultValue: "Stash · Gold Standard" })}
             </p>
           </div>
@@ -542,18 +542,24 @@ export function HeroInteractiveStage({
 
                 {/* Layer 1: Open barrel */}
                 <img
-                  src="/assets/candidates/trash_can_a_open.png"
+                  src="/assets/candidates/trash_can_a_open.webp"
                   alt="SOrT Option A Vintage Galvanized Trash Can"
                   translate="no"
+                  width={208}
+                  height={208}
+                  decoding="async"
                   fetchPriority="high"
                   className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain drop-shadow-[0_10px_18px_rgba(15,23,42,0.22)] select-none"
                 />
 
                 {/* Layer 2: Rising inner trash pile synced to timeframe */}
                 <img
-                  src="/assets/candidates/trash_can_a_pile.png"
+                  src="/assets/candidates/trash_can_a_pile.webp"
                   alt=""
                   aria-hidden="true"
+                  width={208}
+                  height={208}
+                  decoding="async"
                   className="pointer-events-none absolute inset-0 z-15 h-full w-full object-contain select-none transition-all duration-500 ease-out"
                   style={{
                     opacity: windowTrashCount <= 0 ? 0 : Math.min(1, 0.35 + fillRatio * 0.8),
@@ -563,17 +569,24 @@ export function HeroInteractiveStage({
 
                 {/* Layer 3: Front curved rim lip */}
                 <img
-                  src="/assets/candidates/trash_can_a_front_lip.png"
+                  src="/assets/candidates/trash_can_a_front_lip.webp"
                   alt=""
                   aria-hidden="true"
+                  width={208}
+                  height={208}
+                  decoding="async"
                   className="pointer-events-none absolute inset-0 z-20 h-full w-full object-contain select-none"
                 />
 
                 {/* Layer 4: Domed galvanized steel lid seated squarely & lifting straight */}
                 <img
-                  src="/assets/candidates/trash_can_a_lid.png"
+                  src="/assets/candidates/trash_can_a_lid.webp"
                   alt=""
                   aria-hidden="true"
+                  width={208}
+                  height={208}
+                  decoding="async"
+                  fetchPriority="high"
                   className="pointer-events-none absolute inset-0 z-30 h-full w-full object-contain select-none transition-all duration-300 ease-[cubic-bezier(0.34,1.45,0.64,1)]"
                   style={{
                     transform: `translateY(${lidLiftY}%) translateX(${lidShiftX}%) rotate(${lidTiltDeg}deg)`,

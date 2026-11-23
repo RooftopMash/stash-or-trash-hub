@@ -135,7 +135,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       {
         name: "viewport",
-        content: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover",
+        content: "width=device-width, initial-scale=1.0, viewport-fit=cover",
       },
       { name: "theme-color", content: "#000000" },
       { name: "mobile-web-app-capable", content: "yes" },
@@ -178,9 +178,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "manifest", href: "/site.webmanifest" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "preconnect", href: "https://apis.google.com" },
       {
+        rel: "preload",
+        as: "image",
+        href: "/assets/candidates/trash_can_a_open.webp",
+        fetchPriority: "high",
+      },
+      {
+        id: "sot-google-fonts",
         rel: "stylesheet",
+        media: "print",
         href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap",
       },
     ],
@@ -227,7 +234,29 @@ function RootComponent() {
 
   useEffect(() => {
     installProductionSecurityShield();
-    autoSeedFirestoreIfEmpty();
+
+    // Activate non-blocking Google Fonts stylesheet immediately after first paint
+    if (typeof document !== "undefined") {
+      const gfLink = document.getElementById("sot-google-fonts") as HTMLLinkElement | null;
+      if (gfLink && gfLink.media !== "all") {
+        gfLink.media = "all";
+      }
+    }
+
+    // Defer optional Firestore catalog seeding so initial LCP/hydration is completely unblocked
+    let idleTimer: ReturnType<typeof setTimeout> | number | null = null;
+    let usedIdleCallback = false;
+    if (typeof window !== "undefined") {
+      const runSeed = () => {
+        autoSeedFirestoreIfEmpty();
+      };
+      if (typeof window.requestIdleCallback === "function") {
+        usedIdleCallback = true;
+        idleTimer = window.requestIdleCallback(runSeed, { timeout: 4500 });
+      } else {
+        idleTimer = globalThis.setTimeout(runSeed, 3500);
+      }
+    }
 
     // Dynamically inject Brand Barometer JSON-LD schema into head
     if (typeof document !== "undefined") {
@@ -300,6 +329,16 @@ function RootComponent() {
         // ignore
       }
     }
+
+    return () => {
+      if (idleTimer !== null && typeof window !== "undefined") {
+        if (usedIdleCallback && typeof window.cancelIdleCallback === "function") {
+          window.cancelIdleCallback(idleTimer as number);
+        } else {
+          globalThis.clearTimeout(idleTimer);
+        }
+      }
+    };
   }, []);
 
   return (

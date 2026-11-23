@@ -255,50 +255,22 @@ const BASE_CHAOTIC_COINS: FallingCoinSpec[] = [
   },
 ];
 
-// Expand deterministically to 55 coins/band across 12 bands (660 coins total ≈ 3.75x)
+// Keep 7 distinct falling coins (horizontal, erratic tumblers, collision pair) across 4 staggered bands = 28 DOM nodes (down from 660!)
 const CHAOTIC_FALLING_COINS: FallingCoinSpec[] = [
-  ...BASE_CHAOTIC_COINS,
-  ...BASE_CHAOTIC_COINS.map((coin, idx): FallingCoinSpec => {
-    // Keep collision pairs aligned horizontally and synchronized in phase/duration
-    const isRightPartner = coin.id.endsWith("-r");
-    const timingIdx = isRightPartner ? idx - 1 : idx;
-    const basePairLeft = isRightPartner ? coin.leftPct - 6 : coin.leftPct;
-    const wrappedPairLeft = ((basePairLeft + 34) % 82) + 3;
-    const leftPct = isRightPartner ? wrappedPairLeft + 6 : wrappedPairLeft;
-    return {
-      id: `w2-${coin.id}`,
-      leftPct,
-      sizePx: Math.max(15, Math.min(24, coin.sizePx + ((idx % 3) - 1))),
-      animationName: coin.animationName,
-      durationSec: Number((coin.durationSec * (0.92 + (timingIdx % 4) * 0.05)).toFixed(2)),
-      delaySec: Number((coin.delaySec - 3.9 - (timingIdx % 5) * 0.85).toFixed(2)),
-      opacity: coin.opacity,
-    };
-  }),
-  ...BASE_CHAOTIC_COINS.slice(0, 11).map((coin, idx): FallingCoinSpec => ({
-    id: `w3-${coin.id}`,
-    leftPct: ((coin.leftPct + 61 + idx * 5) % 88) + 4,
-    sizePx: Math.max(15, Math.min(22, coin.sizePx - 1 + (idx % 2))),
-    animationName: coin.animationName,
-    durationSec: Number((coin.durationSec * (0.88 + (idx % 3) * 0.08)).toFixed(2)),
-    delaySec: Number((coin.delaySec - 6.7 - (idx % 4) * 0.9).toFixed(2)),
-    opacity: Math.max(0.84, coin.opacity - 0.04),
-  })),
+  { id: "h-1", leftPct: 8, sizePx: 22, animationName: "sot-fall-coin-horiz-cw", durationSec: 9.8, delaySec: -1.7, opacity: 0.95 },
+  { id: "h-2", leftPct: 68, sizePx: 19, animationName: "sot-fall-coin-horiz-ccw", durationSec: 8.9, delaySec: -4.9, opacity: 0.92 },
+  { id: "e-1", leftPct: 44, sizePx: 18, animationName: "sot-fall-coin-erratic-a", durationSec: 9.4, delaySec: -6.2, opacity: 0.88 },
+  { id: "e-2", leftPct: 24, sizePx: 23, animationName: "sot-fall-coin-erratic-b", durationSec: 11.4, delaySec: -3.4, opacity: 0.96 },
+  { id: "e-3", leftPct: 84, sizePx: 18, animationName: "sot-fall-coin-erratic-c", durationSec: 8.3, delaySec: -1.1, opacity: 0.88 },
+  { id: "c1-l", leftPct: 32, sizePx: 21, animationName: "sot-fall-collide-1-left", durationSec: 9.2, delaySec: -2.1, opacity: 0.98 },
+  { id: "c1-r", leftPct: 38, sizePx: 20, animationName: "sot-fall-collide-1-right", durationSec: 9.2, delaySec: -2.1, opacity: 0.98 },
 ];
 
 const COIN_SKY_BANDS = [
-  { id: "band-top", topPct: -14, phaseShiftSec: -4.2, shiftPct: 3 },
-  { id: "band-0", topPct: -4, phaseShiftSec: -1.4, shiftPct: -4 },
-  { id: "band-1", topPct: 6, phaseShiftSec: 0, shiftPct: 5 },
-  { id: "band-2", topPct: 16, phaseShiftSec: -3.1, shiftPct: -2 },
-  { id: "band-3", topPct: 26, phaseShiftSec: -6.4, shiftPct: 4 },
-  { id: "band-4", topPct: 36, phaseShiftSec: -2.2, shiftPct: -5 },
-  { id: "band-5", topPct: 46, phaseShiftSec: -5.1, shiftPct: 6 },
-  { id: "band-6", topPct: 56, phaseShiftSec: -1.9, shiftPct: -3 },
-  { id: "band-7", topPct: 66, phaseShiftSec: -4.7, shiftPct: 3 },
-  { id: "band-8", topPct: 76, phaseShiftSec: -2.5, shiftPct: -4 },
-  { id: "band-9", topPct: 85, phaseShiftSec: -5.8, shiftPct: 5 },
-  { id: "band-10", topPct: 94, phaseShiftSec: -3.6, shiftPct: -2 },
+  { id: "band-top", topPct: -10, phaseShiftSec: -4.2, shiftPct: 3 },
+  { id: "band-mid1", topPct: 18, phaseShiftSec: -1.6, shiftPct: -4 },
+  { id: "band-mid2", topPct: 48, phaseShiftSec: -5.1, shiftPct: 5 },
+  { id: "band-low", topPct: 76, phaseShiftSec: -2.8, shiftPct: -3 },
 ];
 
 const cascade = [
@@ -469,64 +441,68 @@ export function SotHomeHero() {
               {CHAOTIC_FALLING_COINS.map((coin) => {
                 const shiftedLeft = Math.max(3, Math.min(93, coin.leftPct + band.shiftPct));
                 return (
-                  <img
-                    key={`${band.id}-${coin.id}`}
-                    src={coinIcon}
-                    alt=""
-                    aria-hidden="true"
-                    decoding="async"
-                    className="sot-falling-coin-item absolute top-0 select-none"
-                    style={{
-                      left: `${shiftedLeft}%`,
-                      width: `${coin.sizePx}px`,
-                      height: `${coin.sizePx}px`,
-                      opacity: coin.opacity,
-                      animation: `${coin.animationName} ${coin.durationSec}s linear ${coin.delaySec + band.phaseShiftSec}s infinite`,
-                    }}
-                  />
-                );
-              })}
-            </div>
-          ))}
+                    <img
+                      key={`${band.id}-${coin.id}`}
+                      src={coinIcon}
+                      alt=""
+                      aria-hidden="true"
+                      width={coin.sizePx}
+                      height={coin.sizePx}
+                      decoding="async"
+                      className="sot-falling-coin-item absolute top-0 select-none"
+                      style={{
+                        left: `${shiftedLeft}%`,
+                        width: `${coin.sizePx}px`,
+                        height: `${coin.sizePx}px`,
+                        opacity: coin.opacity,
+                        animation: `${coin.animationName} ${coin.durationSec}s linear ${coin.delaySec + band.phaseShiftSec}s infinite`,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Right Half: Steel Trash Can Watermark Rain (GPU-composited translate3d layer) */}
+          <div className="absolute inset-y-0 right-0 w-1/2 overflow-hidden opacity-[0.18] sm:opacity-[0.24]">
+            <div
+              className="sot-watermark-rain-bins absolute inset-x-0 -top-[188px] bottom-0"
+              style={{
+                backgroundImage: `url(${binsWatermark})`,
+                backgroundSize: "188px 188px",
+                backgroundRepeat: "repeat",
+              }}
+            />
+          </div>
+          {/* Subtle split ambient tint matching Left Gold / Right Chrome */}
+          <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-b from-amber-50/35 via-transparent to-amber-50/35 pointer-events-none" />
+          <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-b from-slate-100/40 via-transparent to-slate-100/40 pointer-events-none" />
         </div>
 
-        {/* Right Half: Steel Trash Can Watermark Rain */}
-        <div
-          className="sot-watermark-rain-bins absolute inset-y-0 right-0 w-1/2 opacity-[0.18] sm:opacity-[0.24]"
-          style={{
-            backgroundImage: `url(${binsWatermark})`,
-            backgroundSize: "188px 188px",
-            backgroundRepeat: "repeat",
-          }}
-        />
-        {/* Subtle split ambient tint matching Left Gold / Right Chrome */}
-        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-b from-amber-50/35 via-transparent to-amber-50/35 pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-b from-slate-100/40 via-transparent to-slate-100/40 pointer-events-none" />
-      </div>
+        <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:gap-10 sm:px-6 lg:py-12">
+          {/* Top Header Text: Crisp Editorial Kicker + Signature Black & Gold Contrast */}
+          <div className="mx-auto max-w-3xl rounded-3xl bg-white/80 px-4 py-3 text-center backdrop-blur-[2px] sm:px-8 sm:py-4">
+            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#855e00]">
+              {t("hero.badge", { defaultValue: "The Brand Barometer" })}
+            </p>
 
-      <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:gap-10 sm:px-6 lg:py-12">
-        {/* Top Header Text: Crisp Editorial Kicker + Signature Black & Gold Contrast */}
-        <div className="mx-auto max-w-3xl rounded-3xl bg-white/75 px-4 py-3 text-center backdrop-blur-[2px] sm:px-8 sm:py-4">
-          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#b88914]">
-            {t("hero.badge", { defaultValue: "The Brand Barometer" })}
-          </p>
+            <h1 className="mt-3 font-display text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl leading-[1.08]">
+              <span className="block text-slate-950">
+                {t("hero.headlineBlack", { defaultValue: "Keep what serves you." })}
+              </span>
+              <span className="mt-1 block text-[#9c7205]">
+                {t("hero.headlineGold", { defaultValue: "Challenge what does not." })}
+              </span>
+            </h1>
 
-          <h1 className="mt-3 font-display text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl leading-[1.08]">
-            <span className="block text-slate-950">
-              {t("hero.headlineBlack", { defaultValue: "Keep what serves you." })}
-            </span>
-            <span className="mt-1 block text-[#d6a928]">
-              {t("hero.headlineGold", { defaultValue: "Challenge what does not." })}
-            </span>
-          </h1>
-
-          <p className="mx-auto mt-3.5 max-w-2xl text-sm font-semibold leading-6 text-slate-800 sm:text-base">
-            {t("hero.subtitle", {
-              defaultValue:
-                "Vote Stash or Trash on your real brand experiences — the CX & PR signal that matters.",
-            })}
-          </p>
-          <p className="mx-auto mt-1 max-w-xl text-xs font-medium leading-5 text-slate-500 sm:text-sm">
+            <p className="mx-auto mt-3.5 max-w-2xl text-sm font-semibold leading-6 text-slate-800 sm:text-base">
+              {t("hero.subtitle", {
+                defaultValue:
+                  "Vote Stash or Trash on your real brand experiences — the CX & PR signal that matters.",
+              })}
+            </p>
+            <p className="mx-auto mt-1 max-w-xl text-xs font-medium leading-5 text-slate-600 sm:text-sm">
             {t("hero.tagline", {
               defaultValue:
                 "Every verdict brings brands closer to the people they serve. Cast yours.",
@@ -562,7 +538,7 @@ export function SotHomeHero() {
         <div className="mx-auto w-full max-w-5xl rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#b88914]">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#855e00]">
                 More Than Stash Or Trash · Complete Brand-Consumer Ecosystem
               </p>
               <h2 className="mt-0.5 font-display text-xl font-black text-slate-950">
@@ -957,14 +933,14 @@ export function SotHomeHero() {
 
             {/* Action link */}
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
-              <span className="text-slate-500">
+              <span className="text-slate-600">
                 {t("hero.realPeopleVerdicts", {
                   defaultValue: "Real consumer verdicts shaping trust scores in real time.",
                 })}
               </span>
               <Link
                 to="/brands"
-                className="font-bold text-primary hover:underline inline-flex items-center gap-1"
+                className="font-bold text-amber-900 hover:underline inline-flex items-center gap-1"
               >
                 {t("hero.searchOrBrowse", { defaultValue: "Search brands or browse below" })}{" "}
                 <ChevronRight className="size-3.5" />

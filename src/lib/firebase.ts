@@ -1,13 +1,32 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import {
+  getAuth,
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  type Auth,
+} from "firebase/auth";
 import { getFirestore, doc, getDocFromServer } from "firebase/firestore";
 import firebaseConfig from "../../firebase-applet-config.json";
 
 // Initialize Firebase App
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Auth and Firestore instances with the configured firestoreDatabaseId
-export const auth = getAuth(app);
+// Initialize Auth without eager popup/iframe resolver (passed lazily during signInWithPopup)
+function createFirebaseAuth(): Auth {
+  if (typeof window === "undefined") {
+    return getAuth(app);
+  }
+  try {
+    return initializeAuth(app, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+    });
+  } catch {
+    return getAuth(app);
+  }
+}
+
+export const auth = createFirebaseAuth();
 export const firestore = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const db = firestore; // Alias for db
 
@@ -70,8 +89,4 @@ export async function testConnection() {
       console.error("Please check your Firebase configuration.");
     }
   }
-}
-
-if (typeof window !== "undefined") {
-  testConnection().catch(() => {});
 }

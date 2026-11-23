@@ -8,6 +8,7 @@ import {
   sendEmailVerification,
   signOut as fbSignOut,
   signInWithPopup,
+  browserPopupRedirectResolver,
   GoogleAuthProvider,
   GithubAuthProvider,
   OAuthProvider,
@@ -417,7 +418,7 @@ function AuthPage() {
           provider = new GoogleAuthProvider();
       }
 
-      const cred = await signInWithPopup(auth, provider);
+      const cred = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
       const oauthEmail = cred.user.email || "";
       if (accountDoor === "brand_owner") {
         const corpCheck = validateCorporateSignupEmail(oauthEmail, brandWebsite);

@@ -1,7 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import agoraToken from "agora-token";
-
-const { RtcRole, RtcTokenBuilder } = agoraToken;
 
 const TOKEN_TTL_SECONDS = 10 * 60;
 
@@ -81,15 +78,18 @@ export const Route = (createFileRoute("/api/agora-token") as any)({
           body?.uid,
         );
         const tokenExpiration = Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS;
-        const rtcRole = body?.role === "subscriber" ? RtcRole.SUBSCRIBER : RtcRole.PUBLISHER;
 
         const appId = process.env.AGORA_APP_ID?.trim();
         const appCertificate = process.env.AGORA_APP_CERTIFICATE?.trim();
         const { iceServers, turnConfigured } = buildIceServers();
 
         // Issue an Agora RTC token when AGORA_APP_ID & AGORA_APP_CERTIFICATE are configured
-        if (appId && appCertificate) {
+        if (import.meta.env.SSR && appId && appCertificate) {
           try {
+            const { default: agoraToken } = await import("agora-token");
+            const { RtcRole, RtcTokenBuilder } = agoraToken;
+            const rtcRole =
+              body?.role === "subscriber" ? RtcRole.SUBSCRIBER : RtcRole.PUBLISHER;
             const rtcToken = RtcTokenBuilder.buildTokenWithUid(
               appId,
               appCertificate,
