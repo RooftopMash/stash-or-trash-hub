@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   ArrowRight,
@@ -33,6 +33,15 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { LiveStageSection } from "@/components/LiveStageSection";
 import { HeroInteractiveStage } from "@/components/HeroInteractiveStage";
 import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
+import { ZwepeRainControlPanel } from "@/components/ZwepeRainControlPanel";
+import {
+  ZWEPE_COIN_DEFAULTS,
+  loadSavedZwepeConfig,
+  resolveEffectiveDurationSec,
+  resolveGravityTimingFunction,
+  saveZwepeConfig,
+  type ZwepeCoinRainConfig,
+} from "@/lib/zwepe-coin-config";
 import { useRoles } from "@/hooks/useRoles";
 import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import { cn } from "@/lib/utils";
@@ -287,6 +296,72 @@ export function SotHomeHero() {
   const { persona } = useRoles();
   const [activeObject, setActiveObject] = useState<"coin" | "bin" | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [zwepeConfig, setZwepeConfig] = useState<ZwepeCoinRainConfig>(ZWEPE_COIN_DEFAULTS);
+
+  useEffect(() => {
+    setZwepeConfig(loadSavedZwepeConfig());
+  }, []);
+
+  const handleZwepeConfigChange = (next: ZwepeCoinRainConfig) => {
+    setZwepeConfig(next);
+    saveZwepeConfig(next);
+  };
+
+  const handleZwepeConfigReset = () => {
+    const reset = { ...ZWEPE_COIN_DEFAULTS };
+    setZwepeConfig(reset);
+    saveZwepeConfig(reset);
+  };
+
+  const gravityTiming = useMemo(
+    () => resolveGravityTimingFunction(zwepeConfig.gravity),
+    [zwepeConfig.gravity],
+  );
+
+  const visibleFallingCoins = useMemo(() => {
+    const total = Math.max(0, Math.min(660, Math.round(zwepeConfig.count)));
+    const bandCount = COIN_SKY_BANDS.length;
+    const coinsPerBand = BASE_CHAOTIC_COINS.length;
+    const items: Array<{
+      key: string;
+      topPct: number;
+      leftPct: number;
+      sizePx: number;
+      opacity: number;
+      animation: string;
+    }> = [];
+
+    for (let i = 0; i < total; i += 1) {
+      const band = COIN_SKY_BANDS[i % bandCount];
+      const coinIdx = Math.floor(i / bandCount) % coinsPerBand;
+      const cycle = Math.floor(i / (bandCount * coinsPerBand));
+      const coin = BASE_CHAOTIC_COINS[coinIdx];
+      const extraShift = cycle * 11;
+      const shiftedLeft = Math.max(
+        2,
+        Math.min(94, (coin.leftPct + band.shiftPct + extraShift) % 94),
+      );
+      const duration = resolveEffectiveDurationSec(
+        coin.durationSec,
+        zwepeConfig.speed,
+        zwepeConfig.gravity,
+      );
+      const scaledDelay =
+        (coin.delaySec + band.phaseShiftSec - cycle * 2.1) /
+        Math.max(0.25, zwepeConfig.speed);
+
+      items.push({
+        key: `zc-${i}-${band.id}-${coin.id}`,
+        topPct: band.topPct,
+        leftPct: shiftedLeft,
+        sizePx: coin.sizePx,
+        opacity: coin.opacity,
+        animation: `${coin.animationName} ${duration}s ${gravityTiming} ${scaledDelay.toFixed(2)}s infinite`,
+      });
+    }
+
+    return items;
+  }, [zwepeConfig.count, zwepeConfig.speed, zwepeConfig.gravity, gravityTiming]);
 
   const { data: feedItems } = useQuery({
     queryKey: ["feed", "anon"],
@@ -413,9 +488,19 @@ export function SotHomeHero() {
     }
   };
 
+  const midRainDuration = resolveEffectiveDurationSec(19, zwepeConfig.speed, zwepeConfig.gravity);
+  const nearRainDuration = resolveEffectiveDurationSec(13, zwepeConfig.speed, zwepeConfig.gravity);
+
   return (
     <section
       suppressHydrationWarning
+      style={
+        {
+          "--zwepe-rain-count": zwepeConfig.count,
+          "--zwepe-rain-speed": zwepeConfig.speed,
+          "--zwepe-rain-gravity": zwepeConfig.gravity,
+        } as CSSProperties
+      }
       className="relative isolate overflow-hidden border-b border-slate-200 bg-white text-slate-950 pb-20 sm:pb-8"
     >
       {/* Full Split-Screen Falling Watermarks (Left: Falling 3D Coins · Right: Steel Trash Bins) */}
@@ -438,50 +523,54 @@ export function SotHomeHero() {
           }}
         >
           {/* Seamless GPU-composited coin depth rain layers */}
-          <div
-            className="sot-watermark-rain-coins-mid absolute inset-x-0 -top-[210px] bottom-0 opacity-45"
-            style={{
-              backgroundImage: `url(${coinsWatermark})`,
-              backgroundSize: "210px 210px",
-              backgroundRepeat: "repeat",
-            }}
-          />
-          <div
-            className="sot-watermark-rain-coins absolute inset-x-0 -top-[140px] bottom-0 opacity-55"
-            style={{
-              backgroundImage: `url(${coinsWatermark})`,
-              backgroundSize: "140px 140px",
-              backgroundRepeat: "repeat",
-              backgroundPosition: "35px 0px",
-            }}
-          />
+          {zwepeConfig.depthLayerOpacity > 0 && (
+            <>
+              <div
+                className="sot-watermark-rain-coins-mid absolute inset-x-0 -top-[210px] bottom-0"
+                style={{
+                  backgroundImage: `url(${coinsWatermark})`,
+                  backgroundSize: "210px 210px",
+                  backgroundRepeat: "repeat",
+                  opacity: Number((zwepeConfig.depthLayerOpacity * 0.8).toFixed(2)),
+                  animationDuration: `${midRainDuration}s`,
+                  animationTimingFunction: gravityTiming,
+                }}
+              />
+              <div
+                className="sot-watermark-rain-coins absolute inset-x-0 -top-[140px] bottom-0"
+                style={{
+                  backgroundImage: `url(${coinsWatermark})`,
+                  backgroundSize: "140px 140px",
+                  backgroundRepeat: "repeat",
+                  backgroundPosition: "35px 0px",
+                  opacity: zwepeConfig.depthLayerOpacity,
+                  animationDuration: `${nearRainDuration}s`,
+                  animationTimingFunction: gravityTiming,
+                }}
+              />
+            </>
+          )}
 
-          {/* 308 live 3D tumbling, horizontal-spinning, and mid-air colliding coins */}
-          {COIN_SKY_BANDS.map((band) => (
-            <div key={band.id} className="absolute inset-x-0" style={{ top: `${band.topPct}%` }}>
-              {BASE_CHAOTIC_COINS.map((coin) => {
-                const shiftedLeft = Math.max(2, Math.min(94, coin.leftPct + band.shiftPct));
-                return (
-                  <img
-                    key={`${band.id}-${coin.id}`}
-                    src={coinIcon}
-                    alt=""
-                    aria-hidden="true"
-                    width={coin.sizePx}
-                    height={coin.sizePx}
-                    decoding="async"
-                    className="sot-falling-coin-item absolute top-0 select-none"
-                    style={{
-                      left: `${shiftedLeft}%`,
-                      width: `${coin.sizePx}px`,
-                      height: `${coin.sizePx}px`,
-                      opacity: coin.opacity,
-                      animation: `${coin.animationName} ${coin.durationSec}s linear ${coin.delaySec + band.phaseShiftSec}s infinite`,
-                    }}
-                  />
-                );
-              })}
-            </div>
+          {/* Configurable live 3D tumbling, horizontal-spinning, and mid-air colliding coins */}
+          {visibleFallingCoins.map((coin) => (
+            <img
+              key={coin.key}
+              src={coinIcon}
+              alt=""
+              aria-hidden="true"
+              width={coin.sizePx}
+              height={coin.sizePx}
+              decoding="async"
+              className="sot-falling-coin-item absolute select-none"
+              style={{
+                top: `${coin.topPct}%`,
+                left: `${coin.leftPct}%`,
+                width: `${coin.sizePx}px`,
+                height: `${coin.sizePx}px`,
+                opacity: coin.opacity,
+                animation: coin.animation,
+              }}
+            />
           ))}
         </div>
 
@@ -501,7 +590,12 @@ export function SotHomeHero() {
           <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-b from-slate-100/40 via-transparent to-slate-100/40 pointer-events-none" />
         </div>
 
-        <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:gap-10 sm:px-6 lg:py-12">
+        <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 lg:py-10">
+          <ZwepeRainControlPanel
+            config={zwepeConfig}
+            onChange={handleZwepeConfigChange}
+            onReset={handleZwepeConfigReset}
+          />
           {/* Top Header Text: Crisp Editorial Kicker + Signature Black & Gold Contrast */}
           <div className="mx-auto max-w-3xl rounded-3xl bg-white/80 px-4 py-3 text-center backdrop-blur-[2px] sm:px-8 sm:py-4">
             <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#855e00]">
