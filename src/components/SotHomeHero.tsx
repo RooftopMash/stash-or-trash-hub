@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useMemo, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   ArrowRight,
@@ -33,14 +33,10 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { LiveStageSection } from "@/components/LiveStageSection";
 import { HeroInteractiveStage } from "@/components/HeroInteractiveStage";
 import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
-import { ZwepeRainControlPanel } from "@/components/ZwepeRainControlPanel";
 import {
   ZWEPE_COIN_DEFAULTS,
-  loadSavedZwepeConfig,
   resolveEffectiveDurationSec,
   resolveGravityTimingFunction,
-  saveZwepeConfig,
-  type ZwepeCoinRainConfig,
 } from "@/lib/zwepe-coin-config";
 import { useRoles } from "@/hooks/useRoles";
 import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
@@ -296,22 +292,7 @@ export function SotHomeHero() {
   const { persona } = useRoles();
   const [activeObject, setActiveObject] = useState<"coin" | "bin" | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [zwepeConfig, setZwepeConfig] = useState<ZwepeCoinRainConfig>(ZWEPE_COIN_DEFAULTS);
-
-  useEffect(() => {
-    setZwepeConfig(loadSavedZwepeConfig());
-  }, []);
-
-  const handleZwepeConfigChange = (next: ZwepeCoinRainConfig) => {
-    setZwepeConfig(next);
-    saveZwepeConfig(next);
-  };
-
-  const handleZwepeConfigReset = () => {
-    const reset = { ...ZWEPE_COIN_DEFAULTS };
-    setZwepeConfig(reset);
-    saveZwepeConfig(reset);
-  };
+  const zwepeConfig = ZWEPE_COIN_DEFAULTS;
 
   const gravityTiming = useMemo(
     () => resolveGravityTimingFunction(zwepeConfig.gravity),
@@ -590,12 +571,7 @@ export function SotHomeHero() {
           <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-b from-slate-100/40 via-transparent to-slate-100/40 pointer-events-none" />
         </div>
 
-        <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 lg:py-10">
-          <ZwepeRainControlPanel
-            config={zwepeConfig}
-            onChange={handleZwepeConfigChange}
-            onReset={handleZwepeConfigReset}
-          />
+        <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:gap-10 sm:px-6 lg:py-12">
           {/* Top Header Text: Crisp Editorial Kicker + Signature Black & Gold Contrast */}
           <div className="mx-auto max-w-3xl rounded-3xl bg-white/80 px-4 py-3 text-center backdrop-blur-[2px] sm:px-8 sm:py-4">
             <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#855e00]">

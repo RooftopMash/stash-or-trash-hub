@@ -10,10 +10,10 @@ export interface ZwepeCoinRainConfig {
 }
 
 export const ZWEPE_COIN_DEFAULTS: ZwepeCoinRainConfig = {
-  count: 308,
-  speed: 1.0,
-  gravity: 1.0,
-  depthLayerOpacity: 0.55,
+  count: 660,
+  speed: 1.5,
+  gravity: 1.65,
+  depthLayerOpacity: 0.85,
 };
 
 export const ZWEPE_COIN_LIMITS = {
@@ -34,9 +34,9 @@ export const ZWEPE_COIN_PRESETS: Array<{
     config: { count: 88, speed: 0.85, gravity: 0.8, depthLayerOpacity: 0.35 },
   },
   {
-    id: "default",
+    id: "balanced",
     label: "Balanced",
-    config: { ...ZWEPE_COIN_DEFAULTS },
+    config: { count: 308, speed: 1.0, gravity: 1.0, depthLayerOpacity: 0.55 },
   },
   {
     id: "dense",
@@ -46,11 +46,11 @@ export const ZWEPE_COIN_PRESETS: Array<{
   {
     id: "storm",
     label: "Gold Storm",
-    config: { count: 660, speed: 1.5, gravity: 1.65, depthLayerOpacity: 0.85 },
+    config: { ...ZWEPE_COIN_DEFAULTS },
   },
 ];
 
-export const ZWEPE_CONFIG_STORAGE_KEY = "sot-zwepe-rain-config-v1";
+export const ZWEPE_CONFIG_STORAGE_KEY = "sot-zwepe-rain-config-v2";
 
 export function clampNumber(value: number, min: number, max: number, fallback: number): number {
   if (!Number.isFinite(value)) return fallback;
