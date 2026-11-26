@@ -33,6 +33,7 @@ import {
   validateCorporateSignupEmail,
 } from "@/lib/brand-domain-verification";
 import { Button } from "@/components/ui/button";
+import { SotPlatformDomainSeal } from "@/components/SotPlatformDomainSeal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -568,6 +569,9 @@ function AuthPage() {
               : "border-border bg-card",
           )}
         >
+          {/* Exclusive Official SOrT Platform Domain Verification */}
+          <SotPlatformDomainSeal variant="compact" className="mb-4" />
+
           {/* Header */}
           <div className="mb-5 text-center">
             <span

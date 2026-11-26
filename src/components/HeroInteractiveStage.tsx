@@ -628,7 +628,7 @@ export function HeroInteractiveStage({
               <span
                 className={cn(
                   "text-[10px] font-bold tabular-nums sm:text-[11px]",
-                  isOverflowing ? "text-rose-600" : "text-slate-600",
+                  isOverflowing ? "text-rose-700" : "text-slate-600",
                 )}
               >
                 {fillPct}%{isOverflowing ? " · Full" : ""}

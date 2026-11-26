@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Radio,
@@ -16,8 +16,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { LiveBroadcastModal } from "@/components/LiveBroadcastModal";
 import { useRoles } from "@/hooks/useRoles";
+
+const LiveBroadcastModal = lazy(() =>
+  import("@/components/LiveBroadcastModal").then((m) => ({ default: m.LiveBroadcastModal })),
+);
 import { useTranslation } from "@/hooks/useTranslation";
 import { playCoinSpinSound, playTrashSound } from "@/lib/verdict-sounds";
 import {
@@ -247,7 +250,7 @@ export function LiveStageSection({
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-slate-400">
+        <div className="flex items-center gap-2 text-xs text-slate-300">
           <BellRing className="h-3.5 w-3.5 text-[#d6a928]" />
           <span>{t("liveStage.followersAlerted", { defaultValue: "Followers are auto-alerted when a Brand goes live" })}</span>
         </div>
@@ -323,7 +326,7 @@ export function LiveStageSection({
                       {session.viewerCount}
                     </span>
                     {session.followersNotified ? (
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-slate-300">
                         · 🔔 {session.followersNotified.toLocaleString()} alerted
                       </span>
                     ) : null}
@@ -339,7 +342,7 @@ export function LiveStageSection({
                 </p>
 
                 {/* Host & Location Metadata */}
-                <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
                   <span className="font-semibold text-slate-200">{session.hostName}</span>
                   <span>·</span>
                   <span>{session.hostRoleLabel}</span>
@@ -366,7 +369,7 @@ export function LiveStageSection({
                           <span className="text-[10px] font-black uppercase tracking-wider text-[#f5d061]">
                             {session.launchPerk.discountLabel}
                           </span>
-                          <span className="text-[10px] text-slate-400 tabular-nums">
+                          <span className="text-[10px] text-slate-300 tabular-nums">
                             ({session.launchPerk.totalAvailable - session.launchPerk.claimedCount} {t("liveStage.promoLeft", { defaultValue: "left" })})
                           </span>
                         </div>
@@ -410,7 +413,7 @@ export function LiveStageSection({
                   <span className="text-[#f5d061] tabular-nums">
                     🪙 {stashPct}% {t("vote.stash", { defaultValue: "Stash" })} ({session.stashVotes})
                   </span>
-                  <span className="text-[10px] uppercase tracking-wider text-slate-400">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-300">
                     {session.persona === "brand_owner"
                       ? t("liveStage.launchPulse", { defaultValue: "Live Launch Pulse" })
                       : t("liveStage.communityVerdict", { defaultValue: "Live Community Verdict" })}
@@ -476,19 +479,23 @@ export function LiveStageSection({
         })}
       </div>
 
-      <LiveBroadcastModal
-        open={studioOpen}
-        onOpenChange={setStudioOpen}
-        brandName={selectedSession?.brandName || brandNameFilter || "SOT Brand Showcase"}
-        brandSlug={selectedSession?.brandSlug}
-        brandOwner={selectedSession?.brandOwner || "Verified Brand Owner"}
-        productName={selectedSession?.title || "Live Product Launch & Client Q&A"}
-        defaultMode="broadcast"
-        customRoomChannel={selectedSession?.roomChannel}
-        initialPersona={launchPersona}
-        initialBrandCategory={launchCategory}
-        activeBroadcastId={selectedSession?.id}
-      />
+      {studioOpen && (
+        <Suspense fallback={null}>
+          <LiveBroadcastModal
+            open={studioOpen}
+            onOpenChange={setStudioOpen}
+            brandName={selectedSession?.brandName || brandNameFilter || "SOT Brand Showcase"}
+            brandSlug={selectedSession?.brandSlug}
+            brandOwner={selectedSession?.brandOwner || "Verified Brand Owner"}
+            productName={selectedSession?.title || "Live Product Launch & Client Q&A"}
+            defaultMode="broadcast"
+            customRoomChannel={selectedSession?.roomChannel}
+            initialPersona={launchPersona}
+            initialBrandCategory={launchCategory}
+            activeBroadcastId={selectedSession?.id}
+          />
+        </Suspense>
+      )}
     </section>
   );
 }

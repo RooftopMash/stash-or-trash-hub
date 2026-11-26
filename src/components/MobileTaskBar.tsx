@@ -50,7 +50,7 @@ export function MobileTaskBar() {
             "flex flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[10px] font-bold transition-all",
             isHome
               ? "text-slate-950 font-black scale-105"
-              : "text-slate-500 hover:text-slate-800",
+              : "text-slate-600 hover:text-slate-900",
           )}
         >
           <div
@@ -135,7 +135,7 @@ export function MobileTaskBar() {
             "flex flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[10px] font-bold transition-all",
             isBrands
               ? "text-[#2563eb] font-black scale-105"
-              : "text-slate-500 hover:text-slate-800",
+              : "text-slate-600 hover:text-slate-900",
           )}
         >
           <div
@@ -156,7 +156,7 @@ export function MobileTaskBar() {
             "flex flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[10px] font-bold transition-all",
             isAwards
               ? "text-amber-700 font-black scale-105"
-              : "text-slate-500 hover:text-slate-800",
+              : "text-slate-600 hover:text-slate-900",
           )}
         >
           <div
@@ -177,7 +177,7 @@ export function MobileTaskBar() {
             "flex flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[10px] font-bold transition-all",
             isDashboard
               ? "text-slate-950 font-black scale-105"
-              : "text-slate-500 hover:text-slate-800",
+              : "text-slate-600 hover:text-slate-900",
           )}
         >
           <div

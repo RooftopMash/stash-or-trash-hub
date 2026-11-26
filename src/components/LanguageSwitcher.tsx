@@ -187,7 +187,7 @@ export function TopLanguageStrip() {
                   "inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer",
                   activeExtra
                     ? "bg-[#d6a928] text-slate-950 font-bold"
-                    : "text-slate-400 hover:bg-white/10 hover:text-white",
+                    : "text-slate-300 hover:bg-white/10 hover:text-white",
                 )}
               >
                 <span translate="no" className="notranslate">

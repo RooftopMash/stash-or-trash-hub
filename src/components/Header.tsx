@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,24 +6,33 @@ import { useRoles } from "@/hooks/useRoles";
 import { useUnreadCount } from "@/hooks/useUnreadCount";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { Button } from "@/components/ui/button";
-import { SubmitDialog } from "@/components/SubmitDialog";
-import { ProductScannerModal } from "@/components/ProductScannerModal";
-import { LiveBroadcastModal, type IncomingSotCallPayload } from "@/components/LiveBroadcastModal";
-import {
-  MessengerPrivateCallModal,
-  type MessengerCallSession,
-} from "@/components/MessengerPrivateCallModal";
+import type { IncomingSotCallPayload } from "@/components/LiveBroadcastModal";
+import type { MessengerCallSession } from "@/components/MessengerPrivateCallModal";
 import { LanguageSwitcher, TopLanguageStrip } from "@/components/LanguageSwitcher";
 import { UserProfile, getAccountPreferences } from "@/components/UserProfile";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
-import { Bell, Building2, Coins, LayoutDashboard, MessageCircle, Shield, Scan, PhoneIncoming, PhoneOff } from "lucide-react";
+import { Bell, Building2, Coins, LayoutDashboard, MessageCircle, Plus, Shield, Scan, PhoneIncoming, PhoneOff } from "lucide-react";
 import { SotWordmark } from "@/components/SotWordmark";
 import { getRegisteredBrandIdentity } from "@/lib/brand-operators";
 import { supabase } from "@/integrations/supabase/client";
 import { usePageTheme } from "@/lib/page-theme";
 import type { AiScanResult } from "@/lib/ai-scanner";
-import { broadcastCallStatus, startIncomingRingtone } from "@/lib/rtc-signaling";
 import { cn } from "@/lib/utils";
+
+const SubmitDialog = lazy(() =>
+  import("@/components/SubmitDialog").then((m) => ({ default: m.SubmitDialog })),
+);
+const ProductScannerModal = lazy(() =>
+  import("@/components/ProductScannerModal").then((m) => ({ default: m.ProductScannerModal })),
+);
+const LiveBroadcastModal = lazy(() =>
+  import("@/components/LiveBroadcastModal").then((m) => ({ default: m.LiveBroadcastModal })),
+);
+const MessengerPrivateCallModal = lazy(() =>
+  import("@/components/MessengerPrivateCallModal").then((m) => ({
+    default: m.MessengerPrivateCallModal,
+  })),
+);
 
 export function Header({ onPosted }: { onPosted?: () => void }) {
   const { user, loading } = useAuth();
@@ -86,25 +95,41 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
       bc.onmessage = (ev) => handleIncoming(ev.data as IncomingSotCallPayload, true);
     }
 
-    const chan = supabase
-      .channel("sot-call-ring")
-      .on("broadcast", { event: "incoming-call" }, ({ payload }) => {
-        if (payload) handleIncoming(payload as IncomingSotCallPayload, false);
-      })
-      .subscribe();
+    let chan: ReturnType<typeof supabase.channel> | null = null;
+    if (user?.id) {
+      try {
+        chan = supabase
+          .channel("sot-call-ring")
+          .on("broadcast", { event: "incoming-call" }, ({ payload }) => {
+            if (payload) handleIncoming(payload as IncomingSotCallPayload, false);
+          })
+          .subscribe();
+      } catch {
+        // Non-blocking realtime guard
+      }
+    }
 
     return () => {
       bc?.close();
-      void supabase.removeChannel(chan);
+      if (chan) {
+        void supabase.removeChannel(chan);
+      }
     };
   }, [user?.id, isBrand]);
 
   // Play & dispose subtle Web Audio ringtone while incoming call banner is active
   useEffect(() => {
     if (!incomingCall) return;
-    const stopRing = startIncomingRingtone();
+    let cancelled = false;
+    let stopRing: (() => void) | null = null;
+    void import("@/lib/rtc-signaling").then(({ startIncomingRingtone }) => {
+      if (!cancelled) {
+        stopRing = startIncomingRingtone();
+      }
+    });
     return () => {
-      stopRing();
+      cancelled = true;
+      stopRing?.();
     };
   }, [incomingCall]);
   const [prefilledPost, setPrefilledPost] = useState<{
@@ -329,7 +354,18 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
                   </span>
                 )}
               </Button>
-              {persona !== "brand_owner" && <SubmitDialog onPosted={onPosted} />}
+              {persona !== "brand_owner" && (
+                <Button
+                  size="sm"
+                  className="gap-1.5 font-semibold"
+                  onClick={() => {
+                    setPrefilledPost(null);
+                    setSubmitDialogOpen(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4" /> {t("submit.trigger")}
+                </Button>
+              )}
               <UserProfile variant="navbar" />
             </div>
           ) : (
@@ -403,11 +439,13 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
                 size="sm"
                 variant="outline"
                 onClick={() => {
-                  broadcastCallStatus({
-                    roomChannel: incomingCall.roomChannel,
-                    senderId: user?.id || "recipient",
-                    type: "call-declined",
-                    reason: `${user?.email?.split("@")[0] || "Recipient"} declined the call.`,
+                  void import("@/lib/rtc-signaling").then(({ broadcastCallStatus }) => {
+                    broadcastCallStatus({
+                      roomChannel: incomingCall.roomChannel,
+                      senderId: user?.id || "recipient",
+                      type: "call-declined",
+                      reason: `${user?.email?.split("@")[0] || "Recipient"} declined the call.`,
+                    });
                   });
                   setIncomingCall(null);
                 }}
@@ -420,46 +458,67 @@ export function Header({ onPosted }: { onPosted?: () => void }) {
         </div>
       )}
 
-      {/* Global Product Scanner Modal */}
-      <ProductScannerModal
-        open={scannerOpen}
-        onOpenChange={setScannerOpen}
-        onApplyToPost={handleApplyFromScanner}
-      />
+      {/* Global Product Scanner Modal (Lazy-loaded on demand) */}
+      {scannerOpen && (
+        <Suspense fallback={null}>
+          <ProductScannerModal
+            open={scannerOpen}
+            onOpenChange={setScannerOpen}
+            onApplyToPost={handleApplyFromScanner}
+          />
+        </Suspense>
+      )}
 
-      {/* Messenger-Style Private 1-on-1 Call Window */}
-      <MessengerPrivateCallModal
-        open={messengerCallOpen}
-        onOpenChange={setMessengerCallOpen}
-        session={messengerCallSession}
-        onCallEnded={() => setMessengerCallSession(null)}
-      />
+      {/* Messenger-Style Private 1-on-1 Call Window (Lazy-loaded on demand) */}
+      {messengerCallOpen && (
+        <Suspense fallback={null}>
+          <MessengerPrivateCallModal
+            open={messengerCallOpen}
+            onOpenChange={setMessengerCallOpen}
+            session={messengerCallSession}
+            onCallEnded={() => setMessengerCallSession(null)}
+          />
+        </Suspense>
+      )}
 
-      {/* Global Voice / Video Call & Live Situation Broadcast Modal */}
-      <LiveBroadcastModal
-        open={liveStudioOpen}
-        onOpenChange={setLiveStudioOpen}
-        brandName={activeCallPartner || "Direct User / Brand Call"}
-        defaultMode={activeCallMode}
-        customRoomChannel={activeCallRoom}
-        callDirection={isBrand ? "brand_to_user" : "user_to_user"}
-      />
+      {/* Global Voice / Video Call & Live Situation Broadcast Modal (Lazy-loaded on demand) */}
+      {liveStudioOpen && (
+        <Suspense fallback={null}>
+          <LiveBroadcastModal
+            open={liveStudioOpen}
+            onOpenChange={setLiveStudioOpen}
+            brandName={activeCallPartner || "Direct User / Brand Call"}
+            defaultMode={activeCallMode}
+            customRoomChannel={activeCallRoom}
+            callDirection={isBrand ? "brand_to_user" : "user_to_user"}
+          />
+        </Suspense>
+      )}
 
-      {/* Submit Dialog opened with prefilled scanner data */}
-      {prefilledPost && (
-        <SubmitDialog
-          open={submitDialogOpen}
-          onOpenChange={setSubmitDialogOpen}
-          defaultBrandId={prefilledPost.matchedBrandId}
-          initialValues={{
-            title: `${prefilledPost.brandName} ${prefilledPost.productName || ""}`.trim(),
-            description: `Brand: ${prefilledPost.brandName} | Corporate Owner: ${prefilledPost.brandOwner}\n${prefilledPost.scanResult.brandInfo.parentCompanyContext}\n[Forensic Authenticity Score: ${prefilledPost.scanResult.authenticity.score}% - ${prefilledPost.scanResult.authenticity.badgeLabel}]`,
-            category: prefilledPost.category,
-            file: prefilledPost.file || null,
-            aiScanResult: prefilledPost.scanResult,
-          }}
-          onPosted={onPosted}
-        />
+      {/* Submit Dialog (Lazy-loaded when opened directly or via scanner) */}
+      {submitDialogOpen && (
+        <Suspense fallback={null}>
+          <SubmitDialog
+            open={submitDialogOpen}
+            onOpenChange={(nextOpen) => {
+              setSubmitDialogOpen(nextOpen);
+              if (!nextOpen) setPrefilledPost(null);
+            }}
+            defaultBrandId={prefilledPost?.matchedBrandId}
+            initialValues={
+              prefilledPost
+                ? {
+                    title: `${prefilledPost.brandName} ${prefilledPost.productName || ""}`.trim(),
+                    description: `Brand: ${prefilledPost.brandName} | Corporate Owner: ${prefilledPost.brandOwner}\n${prefilledPost.scanResult.brandInfo.parentCompanyContext}\n[Forensic Authenticity Score: ${prefilledPost.scanResult.authenticity.score}% - ${prefilledPost.scanResult.authenticity.badgeLabel}]`,
+                    category: prefilledPost.category,
+                    file: prefilledPost.file || null,
+                    aiScanResult: prefilledPost.scanResult,
+                  }
+                : undefined
+            }
+            onPosted={onPosted}
+          />
+        </Suspense>
       )}
     </header>
   );

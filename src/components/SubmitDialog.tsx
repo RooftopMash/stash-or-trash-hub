@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { createItem } from "@/lib/stash";
 import { BrandSearch } from "@/components/BrandSearch";
-import { ProductScannerModal } from "@/components/ProductScannerModal";
 import {
   Dialog,
   DialogContent,
@@ -29,15 +28,21 @@ import {
   CheckCircle2,
   X,
 } from "lucide-react";
-import coinIcon from "@/assets/icon-coin.png";
-import binIcon from "@/assets/icon-bin.png";
+import coinIcon from "@/assets/icon-coin.webp";
+import binIcon from "@/assets/icon-bin.webp";
 import { cn } from "@/lib/utils";
 import { playStashSound, playTrashSound } from "@/lib/verdict-sounds";
 import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
-import { ReceiptVerifierModal } from "@/components/ReceiptVerifierModal";
 import { VerifiedPurchaseBadge } from "@/components/VerifiedPurchaseBadge";
 import { PrePublicationShield } from "@/components/PrePublicationShield";
 import type { ReceiptVerificationData } from "@/lib/ai-services";
+
+const ProductScannerModal = lazy(() =>
+  import("@/components/ProductScannerModal").then((m) => ({ default: m.ProductScannerModal })),
+);
+const ReceiptVerifierModal = lazy(() =>
+  import("@/components/ReceiptVerifierModal").then((m) => ({ default: m.ReceiptVerifierModal })),
+);
 import type { Verdict } from "@/lib/stash";
 import type { AiScanResult } from "@/lib/ai-scanner";
 import { toast } from "sonner";
@@ -511,23 +516,31 @@ export function SubmitDialog({
       </Dialog>
 
       {/* Embedded Scanner Modal */}
-      <ProductScannerModal
-        open={scannerOpen}
-        onOpenChange={setScannerOpen}
-        onApplyToPost={handleScannerApply}
-      />
+      {scannerOpen && (
+        <Suspense fallback={null}>
+          <ProductScannerModal
+            open={scannerOpen}
+            onOpenChange={setScannerOpen}
+            onApplyToPost={handleScannerApply}
+          />
+        </Suspense>
+      )}
 
       {/* Embedded AI Receipt & Proof Verifier Modal */}
-      <ReceiptVerifierModal
-        open={receiptVerifierOpen}
-        onOpenChange={setReceiptVerifierOpen}
-        onVerified={(verified) => {
-          setReceiptVerification(verified);
-          toast.success(
-            `Proof verified! "Verified Purchase" badge attached for ${verified.storeName}.`,
-          );
-        }}
-      />
+      {receiptVerifierOpen && (
+        <Suspense fallback={null}>
+          <ReceiptVerifierModal
+            open={receiptVerifierOpen}
+            onOpenChange={setReceiptVerifierOpen}
+            onVerified={(verified) => {
+              setReceiptVerification(verified);
+              toast.success(
+                `Proof verified! "Verified Purchase" badge attached for ${verified.storeName}.`,
+              );
+            }}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

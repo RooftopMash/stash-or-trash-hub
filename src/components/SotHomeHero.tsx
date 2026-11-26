@@ -33,6 +33,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { LiveStageSection } from "@/components/LiveStageSection";
 import { HeroInteractiveStage } from "@/components/HeroInteractiveStage";
 import { VerdictSuccess, triggerVerdictSuccess } from "@/components/VerdictSuccess";
+import { SotPlatformDomainSeal } from "@/components/SotPlatformDomainSeal";
 import {
   ZWEPE_COIN_DEFAULTS,
   resolveEffectiveDurationSec,
@@ -305,7 +306,7 @@ export function SotHomeHero() {
     const coinsPerBand = BASE_CHAOTIC_COINS.length;
     const items: Array<{
       key: string;
-      topPct: number;
+      topPx: number;
       leftPct: number;
       sizePx: number;
       opacity: number;
@@ -333,7 +334,7 @@ export function SotHomeHero() {
 
       items.push({
         key: `zc-${i}-${band.id}-${coin.id}`,
-        topPct: band.topPct,
+        topPx: Math.round((band.topPct / 100) * 2600),
         leftPct: shiftedLeft,
         sizePx: coin.sizePx,
         opacity: coin.opacity,
@@ -349,7 +350,7 @@ export function SotHomeHero() {
     queryFn: () => fetchFeed(null),
   });
 
-  const { data: brands = [] } = useQuery({
+  const { data: brands = [], isLoading: brandsLoading } = useQuery({
     queryKey: ["brands"],
     queryFn: fetchBrands,
   });
@@ -500,6 +501,7 @@ export function SotHomeHero() {
         <div
           className="motion-reduce:hidden absolute inset-y-0 left-0 w-1/2 overflow-hidden opacity-[0.46] sm:opacity-[0.56] [perspective:900px]"
           style={{
+            contain: "strict",
             filter: "sepia(0.22) saturate(1.45) contrast(1.06)",
           }}
         >
@@ -544,7 +546,7 @@ export function SotHomeHero() {
               decoding="async"
               className="sot-falling-coin-item absolute select-none"
               style={{
-                top: `${coin.topPct}%`,
+                top: `${coin.topPx}px`,
                 left: `${coin.leftPct}%`,
                 width: `${coin.sizePx}px`,
                 height: `${coin.sizePx}px`,
@@ -556,7 +558,10 @@ export function SotHomeHero() {
         </div>
 
           {/* Right Half: Steel Trash Can Watermark Rain (GPU-composited translate3d layer) */}
-          <div className="absolute inset-y-0 right-0 w-1/2 overflow-hidden opacity-[0.18] sm:opacity-[0.24]">
+          <div
+            className="absolute inset-y-0 right-0 w-1/2 overflow-hidden opacity-[0.18] sm:opacity-[0.24]"
+            style={{ contain: "strict" }}
+          >
             <div
               className="sot-watermark-rain-bins absolute inset-x-0 -top-[188px] bottom-0"
               style={{
@@ -574,15 +579,18 @@ export function SotHomeHero() {
         <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:gap-10 sm:px-6 lg:py-12">
           {/* Top Header Text: Crisp Editorial Kicker + Signature Black & Gold Contrast */}
           <div className="mx-auto max-w-3xl rounded-3xl bg-white/80 px-4 py-3 text-center backdrop-blur-[2px] sm:px-8 sm:py-4">
-            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#855e00]">
-              {t("hero.badge", { defaultValue: "The Brand Barometer" })}
-            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#855e00]">
+                {t("hero.badge", { defaultValue: "The Brand Barometer" })}
+              </p>
+              <SotPlatformDomainSeal variant="pill" />
+            </div>
 
             <h1 className="mt-3 font-display text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl leading-[1.08]">
               <span className="block text-slate-950">
                 {t("hero.headlineBlack", { defaultValue: "Keep what serves you." })}
               </span>
-              <span className="mt-1 block text-[#9c7205]">
+              <span className="mt-1 block text-[#855e00]">
                 {t("hero.headlineGold", { defaultValue: "Challenge what does not." })}
               </span>
             </h1>
@@ -869,7 +877,7 @@ export function SotHomeHero() {
                     {barometerBrands.length} {t("nav.brands", { defaultValue: "Brands" })}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-600">
                   {t("hero.liveSentimentDesc", {
                     defaultValue:
                       "Filter and compare brand sentiments within defined market tiers.",
@@ -881,7 +889,7 @@ export function SotHomeHero() {
               <div className="flex items-center gap-2">
                 <label
                   htmlFor="barometer-sort-select"
-                  className="text-xs font-semibold text-slate-500"
+                  className="text-xs font-semibold text-slate-600"
                 >
                   {t("hero.sortBy", { defaultValue: "Sort Barometer:" })}
                 </label>
@@ -939,7 +947,7 @@ export function SotHomeHero() {
                     {getTierInfo(barometerTier).label} ({getTierInfo(barometerTier).pricePoint}):
                   </span>{" "}
                   {getTierInfo(barometerTier).description}{" "}
-                  <span translate="no" className="notranslate text-slate-500 italic">
+                  <span translate="no" className="notranslate text-slate-600 italic">
                     {getTierInfo(barometerTier).examples.slice(0, 4).join(", ")}.
                   </span>
                 </div>
@@ -947,79 +955,100 @@ export function SotHomeHero() {
             )}
 
             {/* Top Brands in this Barometer Tier */}
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {barometerBrands.slice(0, 4).map((brand) => {
-                const tierInfo = getTierInfo(getBrandTier(brand.name, brand.category));
-                const trust = Number(brand.trust_score) || 0;
-                return (
-                  <Link
-                    key={brand.id}
-                    to="/brands/$slug"
-                    params={{ slug: brand.slug }}
-                    className="group flex flex-col justify-between rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2">
-                        <BrandLogo
-                          name={brand.name}
-                          url={brand.signedLogoUrl}
-                          className="size-8 rounded-lg text-xs"
-                        />
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold leading-none",
-                            tierInfo.badgeClass,
-                          )}
-                        >
-                          <span className="font-mono text-[9px]">{tierInfo.pricePoint}</span>
-                          <span>{tierInfo.shortName}</span>
-                        </span>
+            <div className="mt-4 grid min-h-[164px] gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {brandsLoading && barometerBrands.length === 0
+                ? [0, 1, 2, 3].map((idx) => (
+                    <div
+                      key={`barometer-skeleton-${idx}`}
+                      aria-hidden="true"
+                      className="flex min-h-[164px] flex-col justify-between rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="size-8 rounded-lg bg-slate-200/70" />
+                          <div className="h-4 w-16 rounded-md bg-slate-200/70" />
+                        </div>
+                        <div className="mt-3 h-4 w-28 rounded bg-slate-200/70" />
+                        <div className="mt-1.5 h-3 w-20 rounded bg-slate-200/60" />
                       </div>
-                      <h4
-                        translate="no"
-                        className="notranslate mt-2.5 font-display text-sm font-bold text-slate-950 truncate group-hover:text-primary transition-colors"
+                      <div className="mt-3 border-t border-slate-100 pt-2.5">
+                        <div className="h-3 w-full rounded bg-slate-200/60" />
+                        <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-200" />
+                      </div>
+                    </div>
+                  ))
+                : barometerBrands.slice(0, 4).map((brand) => {
+                    const tierInfo = getTierInfo(getBrandTier(brand.name, brand.category));
+                    const trust = Number(brand.trust_score) || 0;
+                    return (
+                      <Link
+                        key={brand.id}
+                        to="/brands/$slug"
+                        params={{ slug: brand.slug }}
+                        className="group flex min-h-[164px] flex-col justify-between rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50"
                       >
-                        {brand.name}
-                      </h4>
-                      <p className="text-[11px] text-slate-500 truncate">
-                        {brand.category || "Consumer Brand"}
-                      </p>
-                    </div>
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <BrandLogo
+                              name={brand.name}
+                              url={brand.signedLogoUrl}
+                              className="size-8 rounded-lg text-xs"
+                            />
+                            <span
+                              className={cn(
+                                "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold leading-none",
+                                tierInfo.badgeClass,
+                              )}
+                            >
+                              <span className="font-mono text-[9px]">{tierInfo.pricePoint}</span>
+                              <span>{tierInfo.shortName}</span>
+                            </span>
+                          </div>
+                          <h4
+                            translate="no"
+                            className="notranslate mt-2.5 font-display text-sm font-bold text-slate-950 truncate group-hover:text-primary transition-colors"
+                          >
+                            {brand.name}
+                          </h4>
+                          <p className="text-[11px] text-slate-600 truncate">
+                            {brand.category || "Consumer Brand"}
+                          </p>
+                        </div>
 
-                    <div className="mt-3 border-t border-slate-100 pt-2.5">
-                      <div className="flex items-center justify-between text-[11px] font-bold">
-                        <span className="text-slate-500">
-                          {t("hero.trustScore", { defaultValue: "Trust score" })}:
-                        </span>
-                        <span
-                          className={
-                            trust >= 75
-                              ? "text-emerald-600"
-                              : trust >= 50
-                                ? "text-amber-600"
-                                : "text-rose-600"
-                          }
-                        >
-                          {trust}%
-                        </span>
-                      </div>
-                      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className={cn(
-                            "h-full rounded-full transition-all duration-500",
-                            trust >= 75
-                              ? "bg-emerald-500"
-                              : trust >= 50
-                                ? "bg-amber-500"
-                                : "bg-rose-500",
-                          )}
-                          style={{ width: `${Math.max(5, Math.min(100, trust))}%` }}
-                        />
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+                        <div className="mt-3 border-t border-slate-100 pt-2.5">
+                          <div className="flex items-center justify-between text-[11px] font-bold">
+                            <span className="text-slate-600">
+                              {t("hero.trustScore", { defaultValue: "Trust score" })}:
+                            </span>
+                            <span
+                              className={
+                                trust >= 75
+                                  ? "text-emerald-700"
+                                  : trust >= 50
+                                    ? "text-amber-700"
+                                    : "text-rose-700"
+                              }
+                            >
+                              {trust}%
+                            </span>
+                          </div>
+                          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                            <div
+                              className={cn(
+                                "h-full rounded-full transition-all duration-500",
+                                trust >= 75
+                                  ? "bg-emerald-500"
+                                  : trust >= 50
+                                    ? "bg-amber-500"
+                                    : "bg-rose-500",
+                              )}
+                              style={{ width: `${Math.max(5, Math.min(100, trust))}%` }}
+                            />
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
             </div>
 
             {/* Action link */}
@@ -1068,7 +1097,7 @@ export function SotHomeHero() {
                     })}
                 </p>
                 {topStashedItem?.brandName && (
-                  <p className="mt-2 text-xs font-semibold text-slate-500">
+                  <p className="mt-2 text-xs font-semibold text-slate-600">
                     {t("hero.brandLabel", { defaultValue: "Brand" })}:{" "}
                     <span translate="no" className="notranslate text-slate-900 font-bold">
                       {topStashedItem.brandName}
@@ -1115,7 +1144,7 @@ export function SotHomeHero() {
                     })}
                 </p>
                 {topTrashedItem?.brandName && (
-                  <p className="mt-2 text-xs font-semibold text-slate-500">
+                  <p className="mt-2 text-xs font-semibold text-slate-600">
                     {t("hero.brandLabel", { defaultValue: "Brand" })}:{" "}
                     <span translate="no" className="notranslate text-slate-900 font-bold">
                       {topTrashedItem.brandName}
@@ -1155,6 +1184,9 @@ export function SotHomeHero() {
             </span>
           ))}
         </div>
+
+        {/* Exclusive Stash Or Trash Colored Domain Verification Seal */}
+        <SotPlatformDomainSeal variant="banner" className="mt-1" />
       </div>
     </section>
   );
