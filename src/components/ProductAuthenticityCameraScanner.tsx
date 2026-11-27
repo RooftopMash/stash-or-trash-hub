@@ -42,6 +42,7 @@ import {
   runAiScan,
   parseQrPayload,
   evaluateQrAuthenticity,
+  isSafeVerificationUrl,
   type AiScanResult,
   type ParsedQrPayload,
   type QrAuthenticityVerdict,
@@ -110,7 +111,9 @@ export function ProductAuthenticityCameraScanner({
   const [parsedQr, setParsedQr] = useState<ParsedQrPayload | null>(null);
   const [qrVerdict, setQrVerdict] = useState<QrAuthenticityVerdict | null>(null);
   const [manualQrInput, setManualQrInput] = useState("");
-  const [manualInputTab, setManualInputTab] = useState<"barcode" | "qr_code">("barcode");
+  const [manualInputTab, setManualInputTab] = useState<"barcode" | "qr_code">(
+    initialMode === "qr_code" ? "qr_code" : "barcode"
+  );
   const [industrySector, setIndustrySector] = useState<string>("auto");
   const [serialOrPartInput, setSerialOrPartInput] = useState("");
   const [storeCityInput, setStoreCityInput] = useState("");
@@ -124,6 +127,30 @@ export function ProductAuthenticityCameraScanner({
   const scanLoopRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const isDetectingRef = useRef(false);
+  const activeModeRef = useRef<InspectionMode>(initialMode);
+
+  const handleModeChange = useCallback((mode: InspectionMode) => {
+    setActiveMode(mode);
+    activeModeRef.current = mode;
+    setDetectedCode(null);
+    if (mode === "qr_code") {
+      setManualInputTab("qr_code");
+    } else if (mode === "barcode") {
+      setManualInputTab("barcode");
+      setParsedQr(null);
+      setQrVerdict(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    setActiveMode(initialMode);
+    activeModeRef.current = initialMode;
+    if (initialMode === "qr_code") {
+      setManualInputTab("qr_code");
+    } else if (initialMode === "barcode") {
+      setManualInputTab("barcode");
+    }
+  }, [initialMode]);
 
   const handlePrintCertificate = () => {
     if (!scanResult) return;
@@ -281,7 +308,8 @@ export function ProductAuthenticityCameraScanner({
 
     isDetectingRef.current = true;
     const video = videoRef.current;
-    detectBarcodeOrQr(video)
+    const currentMode = activeModeRef.current;
+    detectBarcodeOrQr(video, currentMode)
       .then((detected) => {
         if (detected && detected.rawValue) {
           const isQr = detected.format === "qr_code";
@@ -292,11 +320,14 @@ export function ProductAuthenticityCameraScanner({
             evalRes = evaluateQrAuthenticity(parsed);
             setParsedQr(parsed);
             setQrVerdict(evalRes);
+          } else {
+            setParsedQr(null);
+            setQrVerdict(null);
           }
 
           const country = isQr && parsed?.gtin ? getGs1CountryPrefix(parsed.gtin) : getGs1CountryPrefix(detected.rawValue);
           setDetectedCode((prev) => {
-            if (prev?.rawValue !== detected.rawValue) {
+            if (prev?.rawValue !== detected.rawValue || prev?.format !== detected.format) {
               playScanChime();
               if (typeof navigator !== "undefined" && navigator.vibrate) {
                 navigator.vibrate([60, 40, 60]);
@@ -429,6 +460,9 @@ export function ProductAuthenticityCameraScanner({
         const parsed = parseQrPayload(effectiveQr);
         setParsedQr(parsed);
         setQrVerdict(evaluateQrAuthenticity(parsed));
+      } else {
+        setParsedQr(null);
+        setQrVerdict(null);
       }
 
       setAnalyzingStep("Executing forensic edge & logo geometry inspection...");
@@ -555,14 +589,24 @@ export function ProductAuthenticityCameraScanner({
     const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
     const base64 = dataUrl.split(",")[1];
 
-    // Detect barcode on snapshot
-    const barcodeSnapshot = await detectBarcodeOrQr(canvas);
-    const barcodeVal = barcodeSnapshot?.rawValue || detectedCode?.rawValue;
+    // Detect barcode or QR on snapshot using current mode priority
+    const snapshot = await detectBarcodeOrQr(canvas, activeMode);
+    const effectiveFormat = snapshot?.format || detectedCode?.format;
+    const effectiveValue = snapshot?.rawValue || detectedCode?.rawValue;
+    const isQrHit = effectiveFormat === "qr_code";
 
     const blob = await (await fetch(dataUrl)).blob();
     const file = new File([blob], `auth-scan-${Date.now()}.jpg`, { type: "image/jpeg" });
 
-    await processImageForAuthenticity(base64, "image/jpeg", dataUrl, file, barcodeVal, activeMode);
+    await processImageForAuthenticity(
+      base64,
+      "image/jpeg",
+      dataUrl,
+      file,
+      !isQrHit ? effectiveValue : undefined,
+      activeMode,
+      isQrHit ? effectiveValue : undefined
+    );
   };
 
   // Upload photo/video fallback
@@ -572,20 +616,49 @@ export function ProductAuthenticityCameraScanner({
 
     const isVideo = file.type.startsWith("video/");
     setScanning(true);
-    setAnalyzingStep(isVideo ? "Extracting representative video frame..." : "Optimizing image resolution...");
+    setAnalyzingStep(isVideo ? "Extracting representative video frame..." : "Optimizing image resolution & scanning QR/barcode...");
 
     try {
-      if (isVideo) {
-        const { dataUrl, base64, mimeType, qrData, barcodeData } = await extractFrameFromVideo(file);
-        await processImageForAuthenticity(base64, mimeType, dataUrl, file, barcodeData || qrData || undefined, activeMode);
-      } else {
-        const { dataUrl, base64, mimeType, qrData, barcodeData } = await fileToOptimizedBase64(file);
-        await processImageForAuthenticity(base64, mimeType, dataUrl, file, barcodeData || qrData || undefined, activeMode);
+      const extracted = isVideo
+        ? await extractFrameFromVideo(file)
+        : await fileToOptimizedBase64(file);
+      const { dataUrl, base64, mimeType, qrData, barcodeData } = extracted;
+
+      const resolvedMode: InspectionMode =
+        qrData && !barcodeData && activeMode === "barcode" ? "qr_code" : activeMode;
+
+      if (qrData) {
+        const parsed = parseQrPayload(qrData);
+        setParsedQr(parsed);
+        setQrVerdict(evaluateQrAuthenticity(parsed));
+        setDetectedCode({
+          format: "qr_code",
+          rawValue: qrData,
+          country: parsed.gtin ? getGs1CountryPrefix(parsed.gtin) : null,
+        });
+      } else if (barcodeData) {
+        setDetectedCode({
+          format: "barcode",
+          rawValue: barcodeData,
+          country: getGs1CountryPrefix(barcodeData),
+        });
       }
+
+      await processImageForAuthenticity(
+        base64,
+        mimeType,
+        dataUrl,
+        file,
+        barcodeData || undefined,
+        resolvedMode,
+        qrData || undefined
+      );
     } catch (err: any) {
       toast.error(err.message || "Failed to process media file");
       setScanning(false);
       setAnalyzingStep("");
+    } finally {
+      e.target.value = "";
     }
   };
 
@@ -689,73 +762,102 @@ Verified on Stash Or Trash Brand Barometer`;
   return (
     <div className={`flex flex-col w-full bg-card rounded-2xl border border-border shadow-2xl overflow-hidden ${standalone ? "max-w-4xl mx-auto" : ""}`}>
       {/* Top Bar Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
-        <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-inner">
-            <Scan className="h-5 w-5" />
+      <div className="flex flex-col gap-3 px-4 sm:px-5 py-4 border-b border-border bg-muted/30">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-inner shrink-0">
+              {activeMode === "qr_code" ? <QrCode className="h-5 w-5" /> : <Scan className="h-5 w-5" />}
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-bold font-display leading-tight flex items-center gap-2 flex-wrap">
+                {t("scanner.title", { defaultValue: "Authenticity & Anti-Counterfeit Scanner" })}
+                <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary bg-primary/5">
+                  AI Forensic v2.5
+                </Badge>
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {activeMode === "qr_code"
+                  ? t("scanner.qrSubtitle", { defaultValue: "Scan GS1 Digital Links, Certilogo tags, and verification QR codes to validate genuine brand portals" })
+                  : t("scanner.subtitle", { defaultValue: "Scan product barcodes, QR codes, luxury logos, and care tags to verify genuine vs. counterfeit" })}
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-base sm:text-lg font-bold font-display leading-tight flex items-center gap-2">
-              {t("scanner.title", { defaultValue: "Authenticity & Anti-Counterfeit Scanner" })}
-              <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary bg-primary/5">
-                AI Forensic v2.5
-              </Badge>
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {t("scanner.subtitle", { defaultValue: "Scan product barcodes, luxury logos, and care tags to verify genuine vs. counterfeit" })}
-            </p>
-          </div>
-        </div>
 
-        {/* Mode Selector Pill Buttons (when on camera view) */}
-        {!scanResult && (
-          <div className="hidden sm:flex items-center gap-1 bg-background/80 p-1 rounded-xl border border-border text-xs">
-            <button
-              onClick={() => setActiveMode("barcode")}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
-                activeMode === "barcode"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+          {/* Mode Selector Pill Buttons — visible on BOTH mobile and desktop */}
+          {!scanResult && (
+            <div
+              role="tablist"
+              aria-label="Scanner Inspection Mode"
+              className="grid grid-cols-2 sm:flex sm:items-center gap-1 bg-background/90 p-1 rounded-xl border border-border text-xs w-full lg:w-auto shrink-0"
             >
-              <Scan className="h-3.5 w-3.5" /> {t("scanner.modeBarcode", { defaultValue: "Barcode (1D)" })}
-            </button>
-            <button
-              onClick={() => setActiveMode("qr_code")}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
-                activeMode === "qr_code"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <QrCode className="h-3.5 w-3.5" /> {t("scanner.modeQr", { defaultValue: "QR Code (GS1)" })}
-            </button>
-            <button
-              onClick={() => setActiveMode("logo")}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
-                activeMode === "logo"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Tag className="h-3.5 w-3.5" /> {t("scanner.modeLogo", { defaultValue: "Logo & Tag" })}
-            </button>
-            <button
-              onClick={() => setActiveMode("full_product")}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
-                activeMode === "full_product"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Eye className="h-3.5 w-3.5" /> {t("scanner.modeFullProduct", { defaultValue: "Full Product" })}
-            </button>
-          </div>
-        )}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeMode === "barcode"}
+                onClick={() => handleModeChange("barcode")}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                  activeMode === "barcode"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Scan className="h-3.5 w-3.5 shrink-0" /> {t("scanner.modeBarcode", { defaultValue: "Barcode (1D)" })}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeMode === "qr_code"}
+                onClick={() => handleModeChange("qr_code")}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                  activeMode === "qr_code"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <QrCode className="h-3.5 w-3.5 shrink-0" /> {t("scanner.modeQr", { defaultValue: "QR Code (GS1)" })}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeMode === "logo"}
+                onClick={() => handleModeChange("logo")}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                  activeMode === "logo"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Tag className="h-3.5 w-3.5 shrink-0" /> {t("scanner.modeLogo", { defaultValue: "Logo & Tag" })}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeMode === "full_product"}
+                onClick={() => handleModeChange("full_product")}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                  activeMode === "full_product"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Eye className="h-3.5 w-3.5 shrink-0" /> {t("scanner.modeFullProduct", { defaultValue: "Full Product" })}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Main Viewport Content */}
       <div className="p-4 sm:p-6 space-y-5">
+        {/* Shared Hidden File Input (usable in every camera permission state) */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+
         {/* If Still Live Camera or Preparing */}
         {!scanResult && (
           <div className="relative w-full aspect-video sm:aspect-[16/9] max-h-[460px] rounded-2xl overflow-hidden bg-black flex items-center justify-center shadow-inner group">
@@ -772,26 +874,54 @@ Verified on Stash Or Trash Brand Barometer`;
 
             {/* Permission Prompt Screen - Centered in the middle */}
             {permissionState === "prompt" && (
-              <div className="relative z-10 w-full max-w-md mx-auto flex flex-col items-center justify-center text-center p-6 space-y-4">
-                <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/20 text-primary flex items-center justify-center border border-primary/30 shadow-lg">
-                  <Camera className="h-8 w-8" />
+              <div className="relative z-10 w-full max-w-lg mx-auto flex flex-col items-center justify-center text-center p-5 sm:p-6 space-y-4">
+                <div className={`mx-auto h-14 w-14 sm:h-16 sm:w-16 rounded-2xl flex items-center justify-center border shadow-lg ${
+                  activeMode === "qr_code"
+                    ? "bg-blue-500/20 text-blue-300 border-blue-400/30"
+                    : "bg-primary/20 text-primary border-primary/30"
+                }`}>
+                  {activeMode === "qr_code" ? <QrCode className="h-8 w-8" /> : <Camera className="h-8 w-8" />}
                 </div>
                 <div className="space-y-1.5 text-center">
-                  <h3 className="text-lg font-bold text-white tracking-tight">{t("scanner.cameraAccessRequired", { defaultValue: "Camera Access Required" })}</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                    {activeMode === "qr_code"
+                      ? t("scanner.qrCameraAccessRequired", { defaultValue: "QR & Digital Link Scanner Ready" })
+                      : t("scanner.cameraAccessRequired", { defaultValue: "Camera Access Required" })}
+                  </h3>
                   <p className="text-xs text-white/80 max-w-sm mx-auto leading-relaxed">
-                    {t("scanner.cameraAccessDesc", { defaultValue: "Allow camera access to inspect physical packaging, barcodes, luxury logos, and verify if the product is legit or fake." })}
+                    {activeMode === "qr_code"
+                      ? t("scanner.qrCameraAccessDesc", { defaultValue: "Enable camera access to scan live QR tags, upload a photo/screenshot containing a QR code, or paste a verification URL below." })
+                      : t("scanner.cameraAccessDesc", { defaultValue: "Allow camera access to inspect physical packaging, barcodes, luxury logos, and verify if the product is legit or fake." })}
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2.5 justify-center items-center pt-2 w-full max-w-xs sm:max-w-sm mx-auto">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2 justify-center items-center pt-1 w-full max-w-md mx-auto">
                   <Button onClick={startCamera} className="w-full sm:w-auto gap-2 font-semibold shadow-md">
                     <Camera className="h-4 w-4" /> {t("scanner.grantPermission", { defaultValue: "Grant Camera Permission" })}
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full sm:w-auto gap-2 text-white border-white/20 bg-white/10 hover:bg-white/20"
+                    className="w-full sm:w-auto gap-2 text-white border-white/25 bg-white/10 hover:bg-white/20"
                   >
                     <Upload className="h-4 w-4" /> {t("scanner.uploadPhotoInstead", { defaultValue: "Upload Photo Instead" })}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (activeMode === "qr_code") setManualInputTab("qr_code");
+                      setShowManualBarcode((v) => !v);
+                    }}
+                    className="w-full sm:w-auto gap-2 text-blue-200 border-blue-400/35 bg-blue-500/15 hover:bg-blue-500/25"
+                  >
+                    <QrCode className="h-4 w-4" />{" "}
+                    {activeMode === "qr_code"
+                      ? showManualBarcode
+                        ? "Hide QR Input"
+                        : "Enter QR / Link Manually"
+                      : showManualBarcode
+                        ? "Hide Manual Entry"
+                        : "Enter Code / QR"}
                   </Button>
                 </div>
               </div>
@@ -922,7 +1052,9 @@ Verified on Stash Or Trash Brand Barometer`;
               <div
                 className={`absolute top-4 inset-x-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 backdrop-blur-md px-4 py-2.5 rounded-xl text-white shadow-xl z-20 animate-in fade-in ${
                   detectedCode.format === "qr_code"
-                    ? "bg-blue-950/90 border border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+                    ? qrVerdict && !qrVerdict.isOriginal
+                      ? "bg-rose-950/95 border border-rose-500/60 shadow-[0_0_20px_rgba(244,63,94,0.35)]"
+                      : "bg-blue-950/90 border border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
                     : "bg-emerald-950/90 border border-emerald-500/50"
                 }`}
               >
@@ -930,42 +1062,82 @@ Verified on Stash Or Trash Brand Barometer`;
                   <div
                     className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
                       detectedCode.format === "qr_code"
-                        ? "bg-blue-500/20 text-blue-400"
+                        ? qrVerdict && !qrVerdict.isOriginal
+                          ? "bg-rose-500/20 text-rose-300"
+                          : "bg-blue-500/20 text-blue-400"
                         : "bg-emerald-500/20 text-emerald-400"
                     }`}
                   >
                     {detectedCode.format === "qr_code" ? (
-                      <QrCode className="h-4 w-4" />
+                      qrVerdict && !qrVerdict.isOriginal ? (
+                        <AlertTriangle className="h-4 w-4" />
+                      ) : (
+                        <QrCode className="h-4 w-4" />
+                      )
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-bold font-mono tracking-wide truncate">
-                      {detectedCode.format === "qr_code" ? "QR CODE DETECTED: " : "1D BARCODE: "}
+                      {detectedCode.format === "qr_code"
+                        ? parsedQr?.isGs1DigitalLink
+                          ? "GS1 DIGITAL LINK QR: "
+                          : parsedQr?.isAuthPortal
+                            ? "BRAND PORTAL QR: "
+                            : "QR CODE DETECTED: "
+                        : "1D BARCODE: "}
                       <span className="opacity-90">{detectedCode.rawValue}</span>
                     </div>
-                    <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                      <span className={detectedCode.format === "qr_code" ? "text-blue-300 font-semibold" : "text-emerald-300"}>
+                    <div className="text-[10px] text-white/80 flex items-center gap-2 flex-wrap">
+                      <span
+                        className={
+                          detectedCode.format === "qr_code"
+                            ? qrVerdict && !qrVerdict.isOriginal
+                              ? "text-rose-300 font-semibold"
+                              : "text-blue-300 font-semibold"
+                            : "text-emerald-300"
+                        }
+                      >
                         {detectedCode.format === "qr_code"
-                          ? "Cryptographic Digital Passport Ready"
+                          ? qrVerdict?.badgeLabel || "Cryptographic Digital Passport Ready"
                           : `GS1 Origin: ${detectedCode.country || "International"}`}
                       </span>
+                      {parsedQr?.gtin && (
+                        <span className="font-mono text-white/75">• GTIN {parsedQr.gtin}</span>
+                      )}
+                      {parsedQr?.hostname && (
+                        <span className="font-mono text-white/75">• {parsedQr.hostname}</span>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                   {detectedCode.format === "qr_code" ? (
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        processImageForAuthenticity("", "image/jpeg", "", null, undefined, "qr_code", detectedCode.rawValue)
-                      }
-                      className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-8 px-3.5 gap-1.5 shadow-md"
-                    >
-                      <FileText className="h-3.5 w-3.5" /> View Brand Dossier
-                    </Button>
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(detectedCode.rawValue);
+                          toast.success("QR payload copied to clipboard");
+                        }}
+                        className="border-white/25 bg-white/10 hover:bg-white/20 text-white text-xs h-8 px-2.5"
+                        title="Copy QR Payload"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          processImageForAuthenticity("", "image/jpeg", "", null, undefined, "qr_code", detectedCode.rawValue)
+                        }
+                        className="flex-1 sm:flex-initial bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-8 px-3.5 gap-1.5 shadow-md"
+                      >
+                        <FileText className="h-3.5 w-3.5" /> Verify &amp; View Dossier
+                      </Button>
+                    </>
                   ) : (
                     <Button
                       size="sm"
@@ -1044,18 +1216,14 @@ Verified on Stash Or Trash Brand Barometer`;
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowManualBarcode(!showManualBarcode)}
+                onClick={() => {
+                  if (activeMode === "qr_code") setManualInputTab("qr_code");
+                  setShowManualBarcode(!showManualBarcode);
+                }}
                 className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
               >
                 <QrCode className="h-3.5 w-3.5 text-primary" /> {showManualBarcode ? "Hide Code Entry" : "Enter Code or QR"}
               </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
             </div>
 
             {/* Big Shutter Button */}
@@ -1460,15 +1628,22 @@ Verified on Stash Or Trash Brand Barometer`;
                     <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
                       Forensic Authentication Engine
                     </span>
-                    {scanResult.counterfeitAssessment?.isOriginal ? (
-                      <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white font-bold text-xs gap-1">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> VERIFIED ORIGINAL
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-rose-600 hover:bg-rose-600 text-white font-bold text-xs gap-1">
-                        <AlertTriangle className="h-3.5 w-3.5" /> COUNTERFEIT REPLICA RISK
-                      </Badge>
-                    )}
+                    {(() => {
+                      const effectiveOriginal =
+                        scanResult.counterfeitAssessment?.isOriginal ??
+                        (scanResult.counterfeitAssessment?.verdict === "legit" ||
+                          scanResult.counterfeitAssessment?.verdict === "likely_legit" ||
+                          Boolean(qrVerdict?.isOriginal));
+                      return effectiveOriginal ? (
+                        <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white font-bold text-xs gap-1">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> VERIFIED ORIGINAL
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-rose-600 hover:bg-rose-600 text-white font-bold text-xs gap-1">
+                          <AlertTriangle className="h-3.5 w-3.5" /> COUNTERFEIT REPLICA RISK
+                        </Badge>
+                      );
+                    })()}
                   </div>
                   <h4 className="text-base font-bold text-foreground mt-1">
                     Authenticity vs Counterfeit Differentiation Matrix
@@ -1476,7 +1651,7 @@ Verified on Stash Or Trash Brand Barometer`;
                 </div>
 
                 {/* Instant Consumer Verdict Action: Stash as Original vs Trash as Counterfeit */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Button
                     size="sm"
                     variant={userVerdict === "stash" ? "default" : "outline"}
@@ -1523,9 +1698,9 @@ Verified on Stash Or Trash Brand Barometer`;
                 </div>
               </div>
 
-              {/* Decoded QR / Digital Link Inspection Pill (if scanned or manual QR) */}
+              {/* Decoded QR / Digital Link Inspection Card */}
               {(parsedQr || qrVerdict || scanResult.brandInfo.qrOrBarcodeDecoded) && (
-                <div className="p-3.5 rounded-xl border border-border/80 bg-muted/30 text-xs space-y-2">
+                <div className="p-3.5 sm:p-4 rounded-xl border border-border/80 bg-muted/30 text-xs space-y-3">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                       <QrCode className="h-4 w-4 text-primary" />
@@ -1533,25 +1708,58 @@ Verified on Stash Or Trash Brand Barometer`;
                         {parsedQr?.isGs1DigitalLink
                           ? "GS1 Digital Link URI Standard"
                           : parsedQr?.isAuthPortal
-                          ? "Cryptographic Brand Auth Portal"
-                          : "Decoded 2D QR / Digital Tag"}
+                            ? "Cryptographic Brand Auth Portal"
+                            : "Decoded 2D QR / Digital Tag"}
                       </span>
                     </div>
-                    {qrVerdict && (
-                      <Badge
-                        variant="outline"
-                        className={`text-[11px] font-mono ${
-                          qrVerdict.isOriginal
-                            ? "border-emerald-500 text-emerald-600 bg-emerald-500/10"
-                            : "border-rose-500 text-rose-600 bg-rose-500/10"
-                        }`}
-                      >
-                        {qrVerdict.badgeLabel}
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {qrVerdict && (
+                        <Badge
+                          variant="outline"
+                          className={`text-[11px] font-mono ${
+                            qrVerdict.isOriginal
+                              ? "border-emerald-500 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10"
+                              : "border-rose-500 text-rose-700 dark:text-rose-300 bg-rose-500/10"
+                          }`}
+                        >
+                          {qrVerdict.badgeLabel} ({qrVerdict.authenticityScore}%)
+                        </Badge>
+                      )}
+                      {(parsedQr?.raw || scanResult.brandInfo.qrOrBarcodeDecoded) && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const rawVal = parsedQr?.raw || scanResult.brandInfo.qrOrBarcodeDecoded || "";
+                            navigator.clipboard?.writeText(rawVal);
+                            toast.success("Decoded QR payload copied");
+                          }}
+                          className="h-7 px-2 text-[11px] gap-1"
+                        >
+                          <Copy className="h-3 w-3" /> Copy Payload
+                        </Button>
+                      )}
+                      {isSafeVerificationUrl(parsedQr) && (
+                        <a
+                          href={parsedQr!.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold text-[11px] hover:bg-emerald-500/20 transition-colors"
+                        >
+                          Open Verified Portal <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
+                  {parsedQr?.raw && (
+                    <div className="p-2.5 rounded-lg bg-background/90 border border-border font-mono text-[11px] break-all text-muted-foreground">
+                      <span className="text-foreground font-semibold">Decoded Payload:</span> {parsedQr.raw}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-[11px]">
                     <div className="p-2 rounded bg-background/80 border border-border">
                       <span className="text-muted-foreground block text-[10px]">PAYLOAD / DOMAIN</span>
                       <span className="text-foreground font-semibold truncate block" title={parsedQr?.hostname || scanResult.brandInfo.qrOrBarcodeDecoded || ""}>
@@ -1565,17 +1773,42 @@ Verified on Stash Or Trash Brand Barometer`;
                       </span>
                     </div>
                     <div className="p-2 rounded bg-background/80 border border-border">
-                      <span className="text-muted-foreground block text-[10px]">SERIAL / PASS-KEY</span>
+                      <span className="text-muted-foreground block text-[10px]">SERIAL / BATCH LOT</span>
                       <span className="text-foreground font-semibold truncate block">
-                        {parsedQr?.serialNumber || parsedQr?.batchLot || "Verified Registry Checksum"}
+                        {[parsedQr?.batchLot ? `Lot ${parsedQr.batchLot}` : null, parsedQr?.serialNumber ? `SN ${parsedQr.serialNumber}` : null]
+                          .filter(Boolean)
+                          .join(" · ") || "Verified Registry Checksum"}
                       </span>
                     </div>
                   </div>
 
-                  {qrVerdict?.analysisNotes && (
-                    <p className="text-[11px] text-muted-foreground pt-1 leading-relaxed">
-                      <strong>Security Analysis:</strong> {qrVerdict.analysisNotes}
+                  {qrVerdict?.summary && (
+                    <p className="text-[11px] text-foreground/90 leading-relaxed">
+                      <strong>QR Verdict Summary:</strong> {qrVerdict.summary}
                     </p>
+                  )}
+
+                  {qrVerdict?.analysisNotes && qrVerdict.analysisNotes.length > 0 && (
+                    <div className="space-y-1 pt-0.5">
+                      <div className="text-[11px] font-bold text-foreground">Security Analysis Notes:</div>
+                      <ul className="space-y-1 text-[11px] text-muted-foreground">
+                        {qrVerdict.analysisNotes.map((note, idx) => (
+                          <li key={idx} className="flex items-start gap-1.5">
+                            <span className={qrVerdict.isOriginal ? "text-emerald-600 font-bold" : "text-rose-600 font-bold"}>
+                              {qrVerdict.isOriginal ? "•" : "!"}
+                            </span>
+                            <span>{note}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {parsedQr && !isSafeVerificationUrl(parsedQr) && parsedQr.suspiciousIndicators.length > 0 && (
+                    <div className="p-2.5 rounded-lg border border-rose-500/40 bg-rose-500/10 text-[11px] text-rose-800 dark:text-rose-200 font-medium flex items-center gap-2">
+                      <ShieldAlert className="h-4 w-4 text-rose-600 shrink-0" />
+                      <span>External link disabled for your protection due to unencrypted HTTP or spoofed/high-risk domain markers.</span>
+                    </div>
                   )}
                 </div>
               )}

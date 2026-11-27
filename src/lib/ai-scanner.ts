@@ -131,7 +131,7 @@ export async function fileToOptimizedBase64(
         const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
         const base64 = dataUrl.split(",")[1];
 
-        // Attempt ZXing Barcode + QR decode
+        // Attempt ZXing Barcode + QR decode AND independent jsQR scan
         let qrData: string | null = null;
         let barcodeData: string | null = null;
 
@@ -154,11 +154,25 @@ export async function fileToOptimizedBase64(
           // ignore zxing failure
         }
 
-        if (!qrData && !barcodeData) {
+        // Always try jsQR independently on uploaded photos (even if a 1D barcode was also on the packaging)
+        if (!qrData) {
+          qrData = scanQrFromCanvas(canvas);
+        }
+        // Fallback to native BarcodeDetector on static uploaded images if either is still missing
+        if ((!qrData || !barcodeData) && typeof window !== "undefined" && "BarcodeDetector" in window) {
           try {
-            const imageData = ctx.getImageData(0, 0, w, h);
-            const qr = jsQR(imageData.data, w, h, { inversionAttempts: "attemptBoth" });
-            if (qr?.data) qrData = qr.data;
+            // @ts-expect-error BarcodeDetector experimental API
+            const detector = new window.BarcodeDetector({
+              formats: ["qr_code", "ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "data_matrix"],
+            });
+            const hits = await detector.detect(canvas);
+            if (Array.isArray(hits)) {
+              for (const hit of hits) {
+                if (!hit?.rawValue) continue;
+                if (hit.format === "qr_code" && !qrData) qrData = hit.rawValue;
+                else if (hit.format !== "qr_code" && !barcodeData) barcodeData = hit.rawValue;
+              }
+            }
           } catch {
             // ignore
           }
@@ -237,14 +251,8 @@ export async function extractFrameFromVideo(
           // ignore
         }
 
-        if (!qrData && !barcodeData) {
-          try {
-            const imgData = ctx.getImageData(0, 0, w, h);
-            const qr = jsQR(imgData.data, w, h, { inversionAttempts: "attemptBoth" });
-            if (qr?.data) qrData = qr.data;
-          } catch {
-            // ignore
-          }
+        if (!qrData) {
+          qrData = scanQrFromCanvas(canvas);
         }
 
         cleanup();
@@ -266,8 +274,51 @@ export async function extractFrameFromVideo(
 let processingCanvas: HTMLCanvasElement | null = null;
 let croppedCanvas: HTMLCanvasElement | null = null;
 
+function sourceToCanvas(
+  source: HTMLVideoElement | HTMLCanvasElement | ImageBitmap
+): HTMLCanvasElement | null {
+  if (source instanceof HTMLCanvasElement) {
+    return source;
+  }
+  const width =
+    source instanceof HTMLVideoElement ? source.videoWidth : source.width;
+  const height =
+    source instanceof HTMLVideoElement ? source.videoHeight : source.height;
+  if (!width || !height) return null;
+
+  if (!processingCanvas) {
+    processingCanvas = document.createElement("canvas");
+  }
+  processingCanvas.width = width;
+  processingCanvas.height = height;
+  const pCtx = processingCanvas.getContext("2d", { willReadFrequently: true });
+  if (!pCtx) return null;
+  pCtx.drawImage(source, 0, 0, width, height);
+  return processingCanvas;
+}
+
+function getSquareCenterCropCanvas(targetCanvas: HTMLCanvasElement): HTMLCanvasElement | null {
+  const cw = targetCanvas.width;
+  const ch = targetCanvas.height;
+  if (!cw || !ch) return null;
+  const side = Math.max(120, Math.round(Math.min(cw, ch) * 0.72));
+  const cropX = Math.max(0, Math.round((cw - side) / 2));
+  const cropY = Math.max(0, Math.round((ch - side) / 2));
+
+  if (!croppedCanvas) {
+    croppedCanvas = document.createElement("canvas");
+  }
+  croppedCanvas.width = side;
+  croppedCanvas.height = side;
+  const cCtx = croppedCanvas.getContext("2d", { willReadFrequently: true });
+  if (!cCtx) return null;
+  cCtx.drawImage(targetCanvas, cropX, cropY, side, side, 0, 0, side, side);
+  return croppedCanvas;
+}
+
 /**
- * Scans a canvas element for QR codes in real-time (e.g. from camera feed).
+ * Scans a canvas element for QR codes in real-time (e.g. from camera feed or uploaded photo).
+ * Checks both full frame and square center reticle crop.
  */
 export function scanQrFromCanvas(canvas: HTMLCanvasElement): string | null {
   try {
@@ -277,7 +328,23 @@ export function scanQrFromCanvas(canvas: HTMLCanvasElement): string | null {
     const code = jsQR(imgData.data, canvas.width, canvas.height, {
       inversionAttempts: "attemptBoth",
     });
-    return code?.data ?? null;
+    if (code?.data) return code.data;
+
+    // Also try centered square crop for dense / small QR tags on packaging
+    if (canvas.width > 360 && canvas.height > 360) {
+      const squareCrop = getSquareCenterCropCanvas(canvas);
+      if (squareCrop) {
+        const cCtx = squareCrop.getContext("2d", { willReadFrequently: true });
+        if (cCtx) {
+          const cropImg = cCtx.getImageData(0, 0, squareCrop.width, squareCrop.height);
+          const cropCode = jsQR(cropImg.data, squareCrop.width, squareCrop.height, {
+            inversionAttempts: "attemptBoth",
+          });
+          if (cropCode?.data) return cropCode.data;
+        }
+      }
+    }
+    return null;
   } catch {
     return null;
   }
@@ -285,134 +352,138 @@ export function scanQrFromCanvas(canvas: HTMLCanvasElement): string | null {
 
 /**
  * Scans a canvas or image source for Barcodes (UPC-A, EAN-13, Code-128, etc.) and QR codes.
- * Uses native BarcodeDetector when available, with deep fallback to ZXing multi-format reader and jsQR.
+ * Uses native BarcodeDetector when available, with deep fallback to jsQR and ZXing multi-format reader.
+ * When `preferredMode === "qr_code"`, prioritizes 2D QR & GS1 Digital Link square detection first.
  */
 export async function detectBarcodeOrQr(
-  source: HTMLVideoElement | HTMLCanvasElement | ImageBitmap
+  source: HTMLVideoElement | HTMLCanvasElement | ImageBitmap,
+  preferredMode: "barcode" | "qr_code" | "logo" | "full_product" = "barcode"
 ): Promise<{ format: string; rawValue: string } | null> {
+  const isQrMode = preferredMode === "qr_code";
+
   // 1. Try native BarcodeDetector if available
   if (typeof window !== "undefined" && "BarcodeDetector" in window) {
     try {
       // @ts-expect-error BarcodeDetector browser experimental API
       const detector = new window.BarcodeDetector({
-        formats: [
-          "qr_code",
-          "ean_13",
-          "ean_8",
-          "upc_a",
-          "upc_e",
-          "code_128",
-          "code_39",
-          "code_93",
-          "itf",
-          "data_matrix",
-        ],
+        formats: isQrMode
+          ? ["qr_code", "data_matrix", "aztec"]
+          : [
+              "qr_code",
+              "ean_13",
+              "ean_8",
+              "upc_a",
+              "upc_e",
+              "code_128",
+              "code_39",
+              "code_93",
+              "itf",
+              "data_matrix",
+            ],
       });
       const barcodes = await detector.detect(source);
-      if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
-        return {
-          format: barcodes[0].format || "barcode",
-          rawValue: barcodes[0].rawValue,
-        };
+      if (barcodes && barcodes.length > 0) {
+        const preferred = isQrMode
+          ? barcodes.find((b: any) => b.format === "qr_code" && b.rawValue) || barcodes[0]
+          : barcodes[0];
+        if (preferred?.rawValue) {
+          return {
+            format: preferred.format || (isQrMode ? "qr_code" : "barcode"),
+            rawValue: preferred.rawValue,
+          };
+        }
       }
     } catch {
-      // Fallback to ZXing below
+      // Fallback below
     }
   }
 
-  // 2. Fallback to ZXing MultiFormat Reader (handles 1D barcodes like Coca Cola UPC-A/EAN-13 everywhere)
+  const targetCanvas = sourceToCanvas(source);
+
+  // 2. In QR Code mode, immediately try fast square jsQR (full frame + square center reticle crop)
+  if (isQrMode && targetCanvas) {
+    const qrHit = scanQrFromCanvas(targetCanvas);
+    if (qrHit) {
+      return { format: "qr_code", rawValue: qrHit };
+    }
+  }
+
+  // 3. Fallback to ZXing MultiFormat Reader
   try {
     const reader = await getZxingReader();
-    if (reader) {
-      let targetCanvas: HTMLCanvasElement | null = null;
-
-      if (source instanceof HTMLCanvasElement) {
-        targetCanvas = source;
-      } else if (source instanceof HTMLVideoElement && source.videoWidth > 0 && source.videoHeight > 0) {
-        if (!processingCanvas) {
-          processingCanvas = document.createElement("canvas");
-        }
-        processingCanvas.width = source.videoWidth;
-        processingCanvas.height = source.videoHeight;
-        const pCtx = processingCanvas.getContext("2d", { willReadFrequently: true });
-        if (pCtx) {
-          pCtx.drawImage(source, 0, 0, source.videoWidth, source.videoHeight);
-          targetCanvas = processingCanvas;
-        }
-      }
-
-      if (targetCanvas) {
-        // Attempt full frame scan
-        try {
-          const zxResult = reader.decodeFromCanvas(targetCanvas);
-          if (zxResult && zxResult.getText()) {
-            const raw = zxResult.getText();
-            const formatNum = zxResult.getBarcodeFormat();
-            const formatStr = (typeof formatNum === "number" && ZXING_FORMAT_NAMES[formatNum])
+    if (reader && targetCanvas) {
+      try {
+        const zxResult = reader.decodeFromCanvas(targetCanvas);
+        if (zxResult && zxResult.getText()) {
+          const raw = zxResult.getText();
+          const formatNum = zxResult.getBarcodeFormat();
+          const formatStr =
+            typeof formatNum === "number" && ZXING_FORMAT_NAMES[formatNum]
               ? ZXING_FORMAT_NAMES[formatNum]
               : "barcode";
-            return {
-              format: formatStr,
-              rawValue: raw,
-            };
-          }
-        } catch {
-          // If full frame failed, try center crop reticle (ideal for curved bottles / closeups)
-          const cw = targetCanvas.width;
-          const ch = targetCanvas.height;
-          const cropW = Math.round(cw * 0.7);
-          const cropH = Math.round(ch * 0.45);
-          const cropX = Math.round((cw - cropW) / 2);
-          const cropY = Math.round((ch - cropH) / 2);
+          return {
+            format: formatStr,
+            rawValue: raw,
+          };
+        }
+      } catch {
+        // Center crop reticle: square for QR mode, wide rectangle for 1D retail barcodes
+        const cw = targetCanvas.width;
+        const ch = targetCanvas.height;
+        const cropW = isQrMode ? Math.round(Math.min(cw, ch) * 0.72) : Math.round(cw * 0.7);
+        const cropH = isQrMode ? cropW : Math.round(ch * 0.45);
+        const cropX = Math.max(0, Math.round((cw - cropW) / 2));
+        const cropY = Math.max(0, Math.round((ch - cropH) / 2));
 
-          if (!croppedCanvas) {
-            croppedCanvas = document.createElement("canvas");
-          }
-          croppedCanvas.width = cropW;
-          croppedCanvas.height = cropH;
-          const cCtx = croppedCanvas.getContext("2d", { willReadFrequently: true });
-          if (cCtx) {
-            cCtx.drawImage(targetCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-            try {
-              const cropResult = reader.decodeFromCanvas(croppedCanvas);
-              if (cropResult && cropResult.getText()) {
-                const raw = cropResult.getText();
-                const formatNum = cropResult.getBarcodeFormat();
-                const formatStr = (typeof formatNum === "number" && ZXING_FORMAT_NAMES[formatNum])
+        if (!croppedCanvas) {
+          croppedCanvas = document.createElement("canvas");
+        }
+        croppedCanvas.width = cropW;
+        croppedCanvas.height = cropH;
+        const cCtx = croppedCanvas.getContext("2d", { willReadFrequently: true });
+        if (cCtx) {
+          cCtx.drawImage(targetCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+          try {
+            const cropResult = reader.decodeFromCanvas(croppedCanvas);
+            if (cropResult && cropResult.getText()) {
+              const raw = cropResult.getText();
+              const formatNum = cropResult.getBarcodeFormat();
+              const formatStr =
+                typeof formatNum === "number" && ZXING_FORMAT_NAMES[formatNum]
                   ? ZXING_FORMAT_NAMES[formatNum]
                   : "barcode";
-                return {
-                  format: formatStr,
-                  rawValue: raw,
-                };
-              }
-            } catch {
-              // Not detected in crop, try 90-degree rotation (common on vertical bottle barcodes)
-              try {
-                const rotCanvas = document.createElement("canvas");
-                rotCanvas.width = cropH;
-                rotCanvas.height = cropW;
-                const rCtx = rotCanvas.getContext("2d", { willReadFrequently: true });
-                if (rCtx) {
-                  rCtx.translate(cropH / 2, cropW / 2);
-                  rCtx.rotate((90 * Math.PI) / 180);
-                  rCtx.drawImage(croppedCanvas, -cropW / 2, -cropH / 2);
-                  const rotResult = reader.decodeFromCanvas(rotCanvas);
-                  if (rotResult && rotResult.getText()) {
-                    const raw = rotResult.getText();
-                    const formatNum = rotResult.getBarcodeFormat();
-                    const formatStr = (typeof formatNum === "number" && ZXING_FORMAT_NAMES[formatNum])
+              return {
+                format: formatStr,
+                rawValue: raw,
+              };
+            }
+          } catch {
+            // Try 90-degree rotation (common on vertical bottle barcodes)
+            try {
+              const rotCanvas = document.createElement("canvas");
+              rotCanvas.width = cropH;
+              rotCanvas.height = cropW;
+              const rCtx = rotCanvas.getContext("2d", { willReadFrequently: true });
+              if (rCtx) {
+                rCtx.translate(cropH / 2, cropW / 2);
+                rCtx.rotate((90 * Math.PI) / 180);
+                rCtx.drawImage(croppedCanvas, -cropW / 2, -cropH / 2);
+                const rotResult = reader.decodeFromCanvas(rotCanvas);
+                if (rotResult && rotResult.getText()) {
+                  const raw = rotResult.getText();
+                  const formatNum = rotResult.getBarcodeFormat();
+                  const formatStr =
+                    typeof formatNum === "number" && ZXING_FORMAT_NAMES[formatNum]
                       ? ZXING_FORMAT_NAMES[formatNum]
                       : "barcode";
-                    return {
-                      format: formatStr,
-                      rawValue: raw,
-                    };
-                  }
+                  return {
+                    format: formatStr,
+                    rawValue: raw,
+                  };
                 }
-              } catch {
-                // Rotation attempt failed
               }
+            } catch {
+              // Rotation attempt failed
             }
           }
         }
@@ -422,14 +493,9 @@ export async function detectBarcodeOrQr(
     // ZXing fallback error ignored
   }
 
-  // 3. Fallback to jsQR if source is a canvas or captured video
-  if (source instanceof HTMLCanvasElement) {
-    const qr = scanQrFromCanvas(source);
-    if (qr) {
-      return { format: "qr_code", rawValue: qr };
-    }
-  } else if (processingCanvas) {
-    const qr = scanQrFromCanvas(processingCanvas);
+  // 4. Final fallback to jsQR for non-QR modes too (in case a QR is scanned in general/barcode mode)
+  if (!isQrMode && targetCanvas) {
+    const qr = scanQrFromCanvas(targetCanvas);
     if (qr) {
       return { format: "qr_code", rawValue: qr };
     }
@@ -599,6 +665,42 @@ const OFFICIAL_VERIFICATION_DOMAINS = [
 
 const SUSPICIOUS_TLDS = [".xyz", ".top", ".vip", ".cc", ".biz", ".tk", ".cf", ".gq", ".live", ".store", ".online"];
 
+const QR_BRAND_HINTS: Record<string, string> = {
+  "certilogo.com": "Certilogo Protected Brand",
+  "scantrust.com": "ScanTrust Enterprise Brand",
+  "vechain.org": "VeChain Verified Product",
+  "vechain.com": "VeChain Verified Product",
+  "apple.com": "Apple",
+  "checkcoverage.apple.com": "Apple",
+  "nike.com": "Nike",
+  "adidas.com": "Adidas",
+  "gucci.com": "Gucci",
+  "prada.com": "Prada",
+  "louisvuitton.com": "Louis Vuitton",
+  "moncler.com": "Moncler",
+  "code.moncler.com": "Moncler",
+  "rolex.com": "Rolex",
+  "stoneisland.com": "Stone Island",
+  "id.gs1.org": "GS1 Digital Link",
+  "coca-cola.com": "Coca-Cola",
+  "samsung.com": "Samsung",
+  "sony.com": "Sony",
+};
+
+/**
+ * Checks whether a parsed QR destination is safe to expose as an external link.
+ */
+export function isSafeVerificationUrl(parsed?: ParsedQrPayload | null): boolean {
+  if (!parsed?.url) return false;
+  if (parsed.suspiciousIndicators.length > 0) return false;
+  try {
+    const u = new URL(parsed.url);
+    return u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Parses and extracts structured intelligence from a raw QR Code payload.
  */
@@ -612,37 +714,29 @@ export function parseQrPayload(raw: string): ParsedQrPayload {
       const parsedUrl = new URL(clean);
       const host = parsedUrl.hostname.toLowerCase();
       const path = parsedUrl.pathname;
+      const sp = parsedUrl.searchParams;
 
-      // Check for GS1 Digital Link standard (e.g., /01/09506000134352)
-      const gtinMatch = path.match(/\/01\/(\d{8,14})/);
-      const batchMatch = clean.match(/\/10\/([a-zA-Z0-9_-]+)/);
-      const serialMatch = clean.match(/\/21\/([a-zA-Z0-9_-]+)/);
-
-      if (gtinMatch) {
-        return {
-          type: "gs1_digital_link",
-          raw: clean,
-          url: clean,
-          domain: host,
-          hostname: host,
-          gtin: gtinMatch[1],
-          batchOrLot: batchMatch ? batchMatch[1] : undefined,
-          batchLot: batchMatch ? batchMatch[1] : undefined,
-          serial: serialMatch ? serialMatch[1] : undefined,
-          serialNumber: serialMatch ? serialMatch[1] : undefined,
-          isOfficialVerificationPortal: true,
-          isGs1DigitalLink: true,
-          isAuthPortal: true,
-          suspiciousIndicators,
-        };
-      }
-
-      // Check official authentication portal
-      const isOfficial = OFFICIAL_VERIFICATION_DOMAINS.some(
+      const matchedPortalDomain = OFFICIAL_VERIFICATION_DOMAINS.find(
         (dom) => host === dom || host.endsWith("." + dom)
       );
+      const brandHint = matchedPortalDomain ? QR_BRAND_HINTS[matchedPortalDomain] : undefined;
 
-      // Check suspicious lookalike domains
+      // Check for GS1 Digital Link standard in path (/01/09506000134352/10/LOT/21/SER) OR query (?01=...&10=...&21=...)
+      const gtinMatch = path.match(/\/01\/(\d{8,14})/) || (sp.get("01")?.match(/^\d{8,14}$/) ? [sp.get("01")!, sp.get("01")!] : null);
+      const batchVal =
+        clean.match(/\/10\/([a-zA-Z0-9._-]+)/)?.[1] ||
+        sp.get("10") ||
+        sp.get("lot") ||
+        sp.get("batch") ||
+        undefined;
+      const serialVal =
+        clean.match(/\/21\/([a-zA-Z0-9._-]+)/)?.[1] ||
+        sp.get("21") ||
+        sp.get("serial") ||
+        sp.get("sn") ||
+        undefined;
+
+      // Security checks always run (even on GS1-shaped URLs hosted on sketchy HTTP/clone domains!)
       const lookalike = OFFICIAL_VERIFICATION_DOMAINS.find((dom) => {
         const base = dom.split(".")[0];
         return host.includes(base) && !host.endsWith("." + dom) && host !== dom;
@@ -653,24 +747,56 @@ export function parseQrPayload(raw: string): ParsedQrPayload {
         );
       }
 
-      // Check insecure HTTP
       if (parsedUrl.protocol === "http:") {
         suspiciousIndicators.push("Insecure unencrypted HTTP protocol used for authentication QR.");
       }
 
-      // Check suspicious free / clone TLDs
       if (SUSPICIOUS_TLDS.some((tld) => host.endsWith(tld))) {
-        suspiciousIndicators.push(`Suspicious low-reputation top-level domain (${host.split(".").pop()}) frequently utilized by counterfeit rings.`);
+        suspiciousIndicators.push(
+          `Suspicious low-reputation top-level domain (.${host.split(".").pop()}) frequently utilized by counterfeit rings.`
+        );
       }
 
+      if (/(?:-check|-verify|-auth)\./i.test(host)) {
+        suspiciousIndicators.push(`Hyphenated verification clone hostname detected ("${host}").`);
+      }
+
+      if (gtinMatch && suspiciousIndicators.length === 0) {
+        return {
+          type: "gs1_digital_link",
+          raw: clean,
+          url: clean,
+          domain: host,
+          hostname: host,
+          gtin: gtinMatch[1],
+          batchOrLot: batchVal,
+          batchLot: batchVal,
+          serial: serialVal,
+          serialNumber: serialVal,
+          brandHint: brandHint || "GS1 Digital Link",
+          isOfficialVerificationPortal: true,
+          isGs1DigitalLink: true,
+          isAuthPortal: true,
+          suspiciousIndicators,
+        };
+      }
+
+      const isOfficial = Boolean(matchedPortalDomain) && suspiciousIndicators.length === 0;
+
       return {
-        type: isOfficial ? "brand_verification" : "url",
+        type: gtinMatch ? "gs1_digital_link" : isOfficial ? "brand_verification" : "url",
         raw: clean,
         url: clean,
         domain: host,
         hostname: host,
+        gtin: gtinMatch ? gtinMatch[1] : undefined,
+        batchOrLot: batchVal,
+        batchLot: batchVal,
+        serial: serialVal,
+        serialNumber: serialVal,
+        brandHint,
         isOfficialVerificationPortal: isOfficial,
-        isGs1DigitalLink: false,
+        isGs1DigitalLink: Boolean(gtinMatch),
         isAuthPortal: isOfficial,
         suspiciousIndicators,
       };
@@ -680,11 +806,12 @@ export function parseQrPayload(raw: string): ParsedQrPayload {
   }
 
   // Check alphanumeric serial or token
-  if (/^[A-Z0-9]{8,32}$/i.test(clean)) {
+  if (/^[A-Z0-9-]{8,36}$/i.test(clean)) {
     return {
       type: "serial_number",
       raw: clean,
       serial: clean,
+      serialNumber: clean,
       suspiciousIndicators,
     };
   }

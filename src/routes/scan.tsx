@@ -25,13 +25,25 @@ import {
 } from "lucide-react";
 import type { AiScanResult } from "@/lib/ai-scanner";
 
+type ScanSearch = {
+  mode?: "barcode" | "qr_code" | "logo" | "full_product";
+};
+
 export const Route = createFileRoute("/scan")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>): ScanSearch => {
+    const m = search.mode;
+    if (m === "barcode" || m === "qr_code" || m === "logo" || m === "full_product") {
+      return { mode: m };
+    }
+    return {};
+  },
   component: ScanPage,
 });
 
 function ScanPage() {
   const navigate = useNavigate();
+  const { mode: initialModeParam } = Route.useSearch();
   const { t } = useTranslation();
   const [prefilledPost, setPrefilledPost] = useState<{
     brandName: string;
@@ -85,6 +97,7 @@ function ScanPage() {
         {/* Embedded Interactive Camera Scanner Component */}
         <ProductAuthenticityCameraScanner
           standalone
+          initialMode={initialModeParam ?? "barcode"}
           onApplyToPost={handleApplyToPost}
         />
 

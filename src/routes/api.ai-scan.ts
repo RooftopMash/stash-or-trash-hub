@@ -238,8 +238,15 @@ export const Route = (createFileRoute("/api/ai-scan") as any)({
             rawDetails?: string;
           } | null = null;
 
-          const rawDigits = (body?.barcode || body?.qrData || "").trim().replace(/\D/g, "");
-          const rawAlphaCode = (body?.serialOrPartCode || body?.barcode || body?.qrData || "")
+          const qrInputRaw = (body?.qrData || "").trim();
+          const gs1PathGtinMatch = qrInputRaw.match(/(?:\/01\/|[?&]01=)(\d{8,14})/i);
+          const extractedQrGtin = gs1PathGtinMatch?.[1] || "";
+          const rawDigits = (body?.barcode || extractedQrGtin || (!qrInputRaw.includes("://") ? qrInputRaw : ""))
+            .trim()
+            .replace(/\D/g, "");
+          const normalizedLookupDigits =
+            rawDigits.length === 14 && rawDigits.startsWith("0") ? rawDigits.slice(1) : rawDigits;
+          const rawAlphaCode = (body?.serialOrPartCode || body?.barcode || extractedQrGtin || (!qrInputRaw.includes("://") ? qrInputRaw : ""))
             .trim()
             .toUpperCase();
 
@@ -335,8 +342,13 @@ export const Route = (createFileRoute("/api/ai-scan") as any)({
             return null;
           };
 
-          if (rawDigits && KNOWN_BARCODES[rawDigits]) {
-            const kb = KNOWN_BARCODES[rawDigits];
+          const matchedKnownBarcode =
+            (rawDigits && KNOWN_BARCODES[rawDigits]) ||
+            (normalizedLookupDigits && KNOWN_BARCODES[normalizedLookupDigits]) ||
+            null;
+
+          if (matchedKnownBarcode) {
+            const kb = matchedKnownBarcode;
             barcodeVerifiedInfo = {
               brandName: kb.brand,
               brandOwner: kb.owner,
@@ -354,7 +366,8 @@ export const Route = (createFileRoute("/api/ai-scan") as any)({
           }
 
           // 2. Parallel global barcode lookups (Food, Non-Food Household/Appliances, Beauty, UPCitemdb)
-          if (!barcodeVerifiedInfo && rawDigits && rawDigits.length >= 8) {
+          const lookupCode = normalizedLookupDigits || rawDigits;
+          if (!barcodeVerifiedInfo && lookupCode && lookupCode.length >= 8) {
             const safeJsonFetch = async (url: string) => {
               const res = await fetch(url, {
                 headers: { "User-Agent": "StashOrTrash-UniversalVerifier/2.0" },
@@ -365,10 +378,10 @@ export const Route = (createFileRoute("/api/ai-scan") as any)({
             };
 
             const [offFood, offProducts, offBeauty, upcDb] = await Promise.allSettled([
-              safeJsonFetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(rawDigits)}.json`),
-              safeJsonFetch(`https://world.openproductsfacts.org/api/v2/product/${encodeURIComponent(rawDigits)}.json`),
-              safeJsonFetch(`https://world.openbeautyfacts.org/api/v2/product/${encodeURIComponent(rawDigits)}.json`),
-              safeJsonFetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(rawDigits)}`),
+              safeJsonFetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(lookupCode)}.json`),
+              safeJsonFetch(`https://world.openproductsfacts.org/api/v2/product/${encodeURIComponent(lookupCode)}.json`),
+              safeJsonFetch(`https://world.openbeautyfacts.org/api/v2/product/${encodeURIComponent(lookupCode)}.json`),
+              safeJsonFetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(lookupCode)}`),
             ]);
 
             const extractOff = (settled: PromiseSettledResult<any>, defaultCat: string, sourceLabel: string) => {
@@ -697,33 +710,115 @@ Perform an institutional, Moody's-level multi-industry forensic evaluation cover
           }
 
           const lowerQr = qrStr.toLowerCase();
+          let qrHostname = "";
+          let qrProtocol = "";
+          try {
+            if (qrStr.startsWith("http://") || qrStr.startsWith("https://")) {
+              const u = new URL(qrStr);
+              qrHostname = u.hostname.toLowerCase();
+              qrProtocol = u.protocol.toLowerCase();
+            }
+          } catch {
+            // ignore URL parse error
+          }
+
+          const OFFICIAL_QR_BRAND_PORTALS: Array<{
+            domain: string;
+            brand: string;
+            owner: string;
+            category: string;
+            country: string;
+            tier: string;
+          }> = [
+            { domain: "certilogo.com", brand: "Certilogo-Protected Brand", owner: "Certilogo S.p.A. (eBay Authentication)", category: "Luxury Fashion & Apparel", country: "Italy", tier: "Luxury" },
+            { domain: "scantrust.com", brand: "ScanTrust-Protected Brand", owner: "ScanTrust Enterprise Security", category: "Authenticated Goods", country: "Switzerland", tier: "Premium" },
+            { domain: "vechain.org", brand: "VeChain-Authenticated Product", owner: "VeChain Foundation Supply Ledger", category: "Verified Luxury & FMCG", country: "Singapore", tier: "Premium" },
+            { domain: "vechain.com", brand: "VeChain-Authenticated Product", owner: "VeChain Foundation Supply Ledger", category: "Verified Luxury & FMCG", country: "Singapore", tier: "Premium" },
+            { domain: "nike.com", brand: "Nike", owner: "Nike, Inc.", category: "Footwear & Sneakers", country: "United States", tier: "Premium" },
+            { domain: "adidas.com", brand: "Adidas", owner: "Adidas AG", category: "Footwear & Sneakers", country: "Germany", tier: "Premium" },
+            { domain: "coca-cola.com", brand: "Coca-Cola", owner: "The Coca-Cola Company", category: "Food & Beverage", country: "United States", tier: "Mass Market" },
+            { domain: "apple.com", brand: "Apple", owner: "Apple Inc.", category: "Electronics & Appliances", country: "United States", tier: "Luxury" },
+            { domain: "rolex.com", brand: "Rolex", owner: "Rolex SA (Hans Wilsdorf Foundation)", category: "Luxury Watches & Horology", country: "Switzerland", tier: "Luxury" },
+            { domain: "gucci.com", brand: "Gucci", owner: "Kering SA", category: "Luxury Fashion & Apparel", country: "Italy", tier: "Luxury" },
+            { domain: "prada.com", brand: "Prada", owner: "Prada S.p.A.", category: "Luxury Fashion & Apparel", country: "Italy", tier: "Luxury" },
+            { domain: "louisvuitton.com", brand: "Louis Vuitton", owner: "LVMH Moët Hennessy Louis Vuitton", category: "Luxury Fashion & Apparel", country: "France", tier: "Luxury" },
+            { domain: "moncler.com", brand: "Moncler", owner: "Moncler S.p.A.", category: "Luxury Outerwear", country: "Italy", tier: "Luxury" },
+            { domain: "stoneisland.com", brand: "Stone Island", owner: "Moncler Group", category: "Luxury Apparel", country: "Italy", tier: "Luxury" },
+            { domain: "samsung.com", brand: "Samsung", owner: "Samsung Electronics Co., Ltd.", category: "Electronics & Appliances", country: "South Korea", tier: "Premium" },
+            { domain: "sony.com", brand: "Sony", owner: "Sony Group Corporation", category: "Electronics & Appliances", country: "Japan", tier: "Premium" },
+          ];
+
+          const matchedQrPortal = qrHostname
+            ? OFFICIAL_QR_BRAND_PORTALS.find(
+                (p) => qrHostname === p.domain || qrHostname.endsWith(`.${p.domain}`),
+              ) || null
+            : null;
+
+          const spoofedPortal = qrHostname
+            ? OFFICIAL_QR_BRAND_PORTALS.find((p) => {
+                const base = p.domain.split(".")[0];
+                return qrHostname.includes(base) && qrHostname !== p.domain && !qrHostname.endsWith(`.${p.domain}`);
+              }) || null
+            : null;
+
+          const suspiciousTlds = [".xyz", ".top", ".vip", ".cc", ".biz", ".tk", ".cf", ".gq", ".live", ".store", ".online"];
           const isPhishingQr =
             hasQrInput &&
-            (lowerQr.includes(".xyz") ||
-              lowerQr.includes(".top") ||
+            (qrProtocol === "http:" ||
+              lowerQr.startsWith("http://") ||
+              suspiciousTlds.some((tld) => qrHostname.endsWith(tld) || lowerQr.includes(`${tld}/`)) ||
               lowerQr.includes("-check.") ||
-              lowerQr.startsWith("http://"));
-          const isCertilogo = lowerQr.includes("certilogo.com");
-          const isGs1DigitalLink = lowerQr.includes("/01/") || lowerQr.includes("id.gs1.org");
+              lowerQr.includes("-verify.") ||
+              lowerQr.includes("-auth.") ||
+              Boolean(spoofedPortal));
+
+          const isCertilogo = Boolean(qrHostname && (qrHostname === "certilogo.com" || qrHostname.endsWith(".certilogo.com")));
+          const isGs1DigitalLink =
+            lowerQr.includes("/01/") ||
+            /[?&]01=\d{8,14}/i.test(lowerQr) ||
+            qrHostname === "id.gs1.org";
 
           const bName =
             barcodeVerifiedInfo?.brandName ||
-            (isCertilogo ? "Certilogo-Protected Brand" : oemBatchNote ? "Verified Brand OEM Registry" : "Unverified QR Brand");
+            (spoofedPortal
+              ? `${spoofedPortal.brand} (Spoofed QR Warning)`
+              : matchedQrPortal?.brand ||
+                (isGs1DigitalLink ? "GS1 Digital Link Product" : oemBatchNote ? "Verified Brand OEM Registry" : "Unverified QR Brand"));
           const bOwner =
             barcodeVerifiedInfo?.brandOwner ||
-            (isCertilogo ? "Verified Brand Registrar (Certilogo)" : "Unresolved Domain Registrar");
+            (spoofedPortal
+              ? `Unverified Lookalike Domain (${qrHostname})`
+              : matchedQrPortal?.owner ||
+                (isGs1DigitalLink ? "GS1 Global Trade Item Registry" : "Unresolved Domain Registrar"));
           const pName =
             barcodeVerifiedInfo?.productName ||
-            (hasQrInput ? `QR Target (${qrStr.slice(0, 48)})` : `GS1 / OEM Code #${rawDigits || rawAlphaCode}`);
-          const cat = barcodeVerifiedInfo?.category || "Consumer Goods";
-          const bcLabel = body?.barcode || rawDigits || rawAlphaCode || (hasQrInput ? "QR-2D" : "GS1-REGISTRY");
+            (extractedQrGtin
+              ? `GS1 GTIN ${extractedQrGtin}`
+              : hasQrInput
+                ? `QR Target (${qrHostname || qrStr.slice(0, 48)})`
+                : `GS1 / OEM Code #${rawDigits || rawAlphaCode}`);
+          const cat = barcodeVerifiedInfo?.category || matchedQrPortal?.category || "Consumer Goods";
+          const bcLabel = body?.barcode || extractedQrGtin || rawDigits || rawAlphaCode || (hasQrInput ? "QR-2D" : "GS1-REGISTRY");
 
-          const verdict: "legit" | "high_risk_fake" | "inconclusive" = isPhishingQr
+          const verdict: "legit" | "likely_legit" | "high_risk_fake" | "inconclusive" = isPhishingQr
             ? "high_risk_fake"
-            : hasBarcodeMatch || isCertilogo || isGs1DigitalLink || Boolean(oemBatchNote)
+            : hasBarcodeMatch || Boolean(matchedQrPortal) || isGs1DigitalLink || Boolean(oemBatchNote)
               ? "legit"
-              : "inconclusive";
-          const authScore = isPhishingQr ? 22 : hasBarcodeMatch || oemBatchNote ? 89 : isCertilogo || isGs1DigitalLink ? 84 : 50;
+              : qrProtocol === "https:"
+                ? "likely_legit"
+                : "inconclusive";
+          const isGenuineQrOrBarcode = verdict === "legit" || verdict === "likely_legit";
+          const authScore = isPhishingQr
+            ? 18
+            : hasBarcodeMatch || oemBatchNote
+              ? 92
+              : isGs1DigitalLink
+                ? 96
+                : matchedQrPortal
+                  ? 94
+                  : qrProtocol === "https:"
+                    ? 80
+                    : 50;
           const fakeScore = 100 - authScore;
           const badgeLabel = isPhishingQr
             ? "Suspicious QR Domain Risk"
@@ -731,69 +826,90 @@ Perform an institutional, Moody's-level multi-industry forensic evaluation cover
               ? "OEM Whitelist Matched"
               : hasBarcodeMatch
                 ? "Global Registry / OEM Format Matched"
-                : isCertilogo || isGs1DigitalLink
-                  ? "Verified Protocol Link"
-                  : "Inconclusive Code (Visual Inspection Recommended)";
+                : isCertilogo
+                  ? "Verified Certilogo Portal"
+                  : isGs1DigitalLink
+                    ? "Verified GS1 Digital Link"
+                    : matchedQrPortal
+                      ? `Verified ${matchedQrPortal.brand} Portal`
+                      : qrProtocol === "https:"
+                        ? "Likely Original (HTTPS QR)"
+                        : "Inconclusive Code (Visual Inspection Recommended)";
 
           const deterministicResult = {
             brandInfo: {
-              identified: hasBarcodeMatch || isCertilogo || isGs1DigitalLink || Boolean(oemBatchNote),
+              identified: hasBarcodeMatch || Boolean(matchedQrPortal) || isGs1DigitalLink || Boolean(oemBatchNote) || Boolean(spoofedPortal),
               brandName: bName,
               brandOwner: bOwner,
-              parentCompanyContext: hasBarcodeMatch
-                ? `${bName} matched against global GS1 / UPC / Industrial OEM decoder (${bOwner}).`
-                : "Evaluated via deterministic QR host inspection.",
+              parentCompanyContext: isPhishingQr
+                ? `Alert: "${qrHostname || qrStr}" exhibits counterfeit/phishing indicators${spoofedPortal ? ` mimicking official ${spoofedPortal.domain}` : ""}.`
+                : hasBarcodeMatch
+                  ? `${bName} matched against global GS1 / UPC / Industrial OEM decoder (${bOwner}).`
+                  : matchedQrPortal
+                    ? `${matchedQrPortal.brand} official HTTPS verification portal (${matchedQrPortal.domain}) operated by ${matchedQrPortal.owner}.`
+                    : isGs1DigitalLink
+                      ? `Standard GS1 Digital Link URI encoding GTIN ${extractedQrGtin || rawDigits} via ${qrHostname || "GS1 resolver"}.`
+                      : "Evaluated via deterministic QR host inspection.",
               productName: pName,
               category: cat,
-              marketTier: barcodeVerifiedInfo?.marketTier || "Mass Market",
-              countryOfOrigin: barcodeVerifiedInfo?.countryOfOrigin || "International GS1 / OEM",
-              confidence: hasBarcodeMatch || oemBatchNote ? 88 : 55,
+              marketTier: barcodeVerifiedInfo?.marketTier || matchedQrPortal?.tier || "Mass Market",
+              countryOfOrigin: barcodeVerifiedInfo?.countryOfOrigin || matchedQrPortal?.country || "International GS1 / OEM",
+              confidence: isPhishingQr ? 92 : hasBarcodeMatch || oemBatchNote || isGs1DigitalLink || matchedQrPortal ? 91 : 60,
               qrOrBarcodeDecoded: qrStr || bcLabel,
               industrySector: body?.industrySector || "general_retail",
               serialOrPartNumberDetected: rawAlphaCode || bcLabel,
-              regulatoryComplianceMarks: "GS1 / OEM Serial Taxonomy Checked",
+              regulatoryComplianceMarks: isGs1DigitalLink ? "GS1 Digital Link / GTIN Standard" : "GS1 / OEM Serial Taxonomy Checked",
               summary: isPhishingQr
-                ? "Alert: QR destination uses an unencrypted HTTP scheme or non-standard domain often flagged in phishing/counterfeit links."
+                ? "Alert: QR destination uses an unencrypted HTTP scheme, lookalike host, or high-risk domain often flagged in counterfeit tags."
                 : hasBarcodeMatch
                   ? `${barcodeVerifiedInfo?.rawDetails || ""} ${oemBatchNote}`.trim()
-                  : "QR URL structure checked without visual AI. Confirm the printed domain matches the manufacturer's official site.",
+                  : isGs1DigitalLink
+                    ? `GS1 Digital Link validated for GTIN ${extractedQrGtin || rawDigits}.`
+                    : matchedQrPortal
+                      ? `Official ${matchedQrPortal.brand} HTTPS verification portal detected (${matchedQrPortal.domain}).`
+                      : "QR URL structure checked without visual AI. Confirm the printed domain matches the manufacturer's official site.",
             },
             authenticity: {
               score: authScore,
               isLegitimate: !isPhishingQr,
-              verdictStatus: isPhishingQr ? "suspicious_tampering" : hasBarcodeMatch ? "likely_authentic" : "inconclusive",
+              verdictStatus: isPhishingQr ? "suspicious_tampering" : isGenuineQrOrBarcode ? "likely_authentic" : "inconclusive",
               badgeLabel,
-              confidence: hasBarcodeMatch ? "medium" : "low",
+              confidence: hasBarcodeMatch || isGs1DigitalLink || matchedQrPortal || isPhishingQr ? "high" : "medium",
               forensics: {
                 physicalLighting: "Not inspected (deterministic GS1 / QR lookup only; GEMINI_API_KEY required for image lighting analysis).",
                 textureAndNoise: "Not inspected (deterministic GS1 / QR lookup only).",
                 textIntegrity: hasQrInput
                   ? isPhishingQr
-                    ? "Non-official or unencrypted URL scheme flagged in 2D QR payload."
+                    ? "Non-official, lookalike, or unencrypted URL scheme flagged in 2D QR payload."
                     : "HTTPS or GS1 Digital Link syntax validated."
                   : `Valid GS1 digit structure for code ${bcLabel}.`,
                 aiGenerationMarkers: "Image pixel synthesis check skipped (deterministic registry lookup only).",
               },
               reasons: isPhishingQr
-                ? ["QR payload routes to insecure HTTP or high-risk novelty TLD (.xyz / .top)."]
+                ? ["QR payload routes to insecure HTTP, lookalike brand host, or high-risk novelty TLD (.xyz / .top)."]
                 : [
                     hasBarcodeMatch
                       ? `Barcode ${bcLabel} resolved in GS1 / Open Food Facts registry (${bOwner}).`
-                      : "QR syntax evaluated deterministically.",
+                      : isGs1DigitalLink
+                        ? `GS1 Digital Link syntax (/01/${extractedQrGtin || rawDigits}) verified.`
+                        : matchedQrPortal
+                          ? `Verified corporate domain (${matchedQrPortal.domain}) confirmed.`
+                          : "QR syntax evaluated deterministically.",
                     "Enable GEMINI_API_KEY on server to unlock full visual tamper & stitching inspection.",
                   ],
               flags: isPhishingQr ? ["suspicious_qr_domain"] : [],
             },
             counterfeitAssessment: {
+              isOriginal: isGenuineQrOrBarcode,
               verdict,
               authenticityScore: authScore,
               counterfeitRiskScore: fakeScore,
-              confidence: hasBarcodeMatch ? "medium" : "low",
+              confidence: hasBarcodeMatch || isGs1DigitalLink || matchedQrPortal || isPhishingQr ? "high" : "medium",
               badgeLabel,
               logoInspection: "Visual logo inspection requires GEMINI_API_KEY; verify embossed/printed emblem sharpness manually.",
               barcodeAndTagsInspection: hasBarcodeMatch
                 ? `Barcode ${bcLabel} matches ${bOwner} registry metadata.`
-                : `2D payload "${qrStr}" checked for TLS and domain spoofing indicators.`,
+                : `2D payload "${qrStr}" checked for GS1 syntax, TLS encryption, and domain spoofing indicators.`,
               materialAndCraftsmanship: "Physical material & stitch analysis requires GEMINI_API_KEY visual pipeline.",
               clientVerificationGuide: [
                 "Inspect the tamper-evident seal and batch stamp near the neck or care tag.",
@@ -801,11 +917,11 @@ Perform an institutional, Moody's-level multi-industry forensic evaluation cover
                 "Purchase from authorized stockists and retain your POS till slip for receipt authentication.",
               ],
               brandProtectionTracking: {
-                brandOwnerConfirmed: hasBarcodeMatch,
+                brandOwnerConfirmed: Boolean(hasBarcodeMatch || matchedQrPortal || isGs1DigitalLink),
                 authorizedChannels: "Authorized retail outlets and official brand stores.",
                 advice: isPhishingQr
                   ? "Do not trust unverified third-party domains claiming instant authentication."
-                  : "Combine GS1 registry checks with visual packaging seal inspection.",
+                  : "Combine GS1/QR registry checks with visual packaging seal inspection.",
               },
               keyDifferencesToLookFor: [
                 "Genuine brand QR portals use official HTTPS manufacturer domains or certified GS1 Digital Links.",
